@@ -77,6 +77,6 @@ This doc is built *live in chat* and updated into the repo as we answer.
 - [x] Trigger type chosen (periodic program + optional flare-up support)
 - [x] Modality chosen (CTA + CBT + physio-adjacent)
 - [x] Market chosen (India providers; global clients; Indian expat focus)
-- [ ] Define the *first narrow wedge* within chronic pain for MVP (one segment)
+- [x] Define the *first narrow wedge* within chronic pain for MVP: **musculoskeletal chronic pain** (back/neck/shoulder/hip/knee etc.), from varied causes/events (not desk-only)
 - [ ] Define pricing + delivery model (1:1 / group / hybrid)
 - [ ] Decide what therapist help means in-product (live sessions vs async messaging vs content + review)
