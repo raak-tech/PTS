@@ -1,65 +1,77 @@
-import Image from "next/image";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import styles from "./page.module.css";
 
 export default function Home() {
+  const router = useRouter();
+
+  const [primaryPainArea, setPrimaryPainArea] = useState("");
+  const [primaryGoal, setPrimaryGoal] = useState("");
+
   return (
     <div className={styles.page}>
       <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
         <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
+          <h1>Get a Week 1 Plan</h1>
           <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
+            This is a lightweight, no-storage preview to help you see what a Week 1
+            structure could look like.
           </p>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            // No persistence in Sprint 1: we only route to a static plan page.
+            // We intentionally do not store or transmit the entered details.
+            router.push("/plan");
+          }}
+          style={{ width: "100%", maxWidth: 560, display: "grid", gap: 16 }}
+        >
+          <div style={{ display: "grid", gap: 8 }}>
+            <label htmlFor="primaryPainArea">Primary pain area</label>
+            <input
+              id="primaryPainArea"
+              name="primaryPainArea"
+              value={primaryPainArea}
+              onChange={(e) => setPrimaryPainArea(e.target.value)}
+              placeholder="e.g., Lower back"
+              required
+              style={{ padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
             />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+
+          <div style={{ display: "grid", gap: 8 }}>
+            <label htmlFor="primaryGoal">Primary goal for the next 2 weeks</label>
+            <input
+              id="primaryGoal"
+              name="primaryGoal"
+              value={primaryGoal}
+              onChange={(e) => setPrimaryGoal(e.target.value)}
+              placeholder="e.g., Sleep better and return to short walks"
+              required
+              style={{ padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            style={{
+              padding: "10px 14px",
+              borderRadius: 999,
+              border: "1px solid #111",
+              background: "#111",
+              color: "#fafafa",
+              width: "fit-content",
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
           >
-            Documentation
-          </a>
-        </div>
+            Generate Week 1 Plan
+          </button>
+        </form>
       </main>
     </div>
   );
