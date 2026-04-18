@@ -9,6 +9,15 @@ export default function PlanPage() {
       </p>
 
       <section style={{ marginTop: 32 }}>
+        <h2>Overview</h2>
+        <p style={{ maxWidth: 680 }}>
+          Week 1 is a conservative start: small daily practices, gentle pacing,
+          and a simple weekly check-in. This page is static in Sprint 1 (no
+          storage, no personalization).
+        </p>
+      </section>
+
+      <section style={{ marginTop: 32 }}>
         <h2>Daily Micro-practices</h2>
         <ul>
           <li>2 minutes: breathing / grounding</li>
@@ -18,11 +27,36 @@ export default function PlanPage() {
       </section>
 
       <section style={{ marginTop: 32 }}>
+        <h2>Weekly check-in (preview)</h2>
+        <ul>
+          <li>What did you try most days this week?</li>
+          <li>What felt easier vs harder?</li>
+          <li>Whats one small adjustment youll try next week?</li>
+        </ul>
+      </section>
+
+      <section style={{ marginTop: 32 }}>
+        <h2>Red flags: when to seek care</h2>
+        <p style={{ maxWidth: 680 }}>
+          If you have symptoms that worry you (new severe weakness, loss of
+          bladder/bowel control, fever with severe back pain, major trauma, or
+          unexplained weight loss), pause this program and seek in-person medical
+          evaluation.
+        </p>
+      </section>
+
+      <section style={{ marginTop: 32 }}>
         <h2>Safety &amp; Boundaries</h2>
         <ul>
           <li>This is not medical advice.</li>
-          <li>This is not for emergencies. If you think you may be in danger, seek local emergency help.</li>
-          <li>Stop any activity that feels unsafe and consider consulting a licensed clinician.</li>
+          <li>
+            This is not for emergencies. If you think you may be in danger, seek
+            local emergency help.
+          </li>
+          <li>
+            Stop any activity that feels unsafe and consider consulting a
+            licensed clinician.
+          </li>
         </ul>
       </section>
     </main>
