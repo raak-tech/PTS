@@ -7,10 +7,10 @@ This doc is built *live in chat* and updated into the repo as we answer.
 
 ---
 
-## One-line problem statement (draft)
-**User:** People living with chronic pain who want therapist-guided support to live a fuller life (with cultural context fit for Indian / Indian-expat clients).
-**Problem:** Chronic pain impacts identity, mood, relationships, sleep, work, and adherence to care plans; people struggle to sustain coping skills without structured, ongoing support.
-**Promise:** Provide therapist-led, culturally-attuned, ongoing intervention (CTA-first with CBT + physio-adjacent supports) that helps clients function better and feel more in control over time  with optional in-the-moment support during flare-ups.
+## One-line product statement (draft)
+**User:** People living with chronic musculoskeletal chronic pain who want therapist-guided support to live a fuller life (with cultural context fit for Indian / Indian-expat clients).
+**Problem:** Chronic pain affects identity, mood, relationships, sleep, work, and adherence; people struggle to sustain coping skills without structure and accountability.
+**Offer (no outcome guarantees):** A therapist-led, culturally-attuned support ecosystem (CTA-first with CBT + physio-adjacent supports) delivered as a structured program + between-session tools, with clear safety boundaries and optional in-the-moment flare-up support.
 
 ---
 

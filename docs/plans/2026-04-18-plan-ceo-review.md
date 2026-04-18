@@ -10,14 +10,14 @@
 ---
 
 ## What is the 10-star product here?
-A product that makes chronic musculoskeletal pain feel *less like a life sentence* by giving clients a **structured, therapist-led program** that reliably increases:
-- functional capacity (sleep/work/mood/relationships)
-- perceived control/self-efficacy
-- adherence to skills and movement practices
+A product that makes chronic musculoskeletal pain feel *less like a life sentence* by providing a **structured, therapist-led support ecosystem** that:
+- improves adherence to skills and movement practices (structure + accountability)
+- increases clarity and perceived control/self-efficacy (CTA-first)
+- supports functional goals (sleep/work/mood/relationships) *without promising outcomes*
 
-…and does it in a way that feels culturally fluent for Indian expats, with India-based providers.
+…in a way that is culturally fluent for Indian expats, with India-based providers.
 
-10-star means: the client says, *“This finally fits my life and I can actually stick to it. My pain isn’t gone, but it’s no longer running my life.”*
+10-star means the client says: *“This finally fits my life and I can actually stick to it. I feel more in control.”* (Aspirational testimonial framing; not a guarantee).
 
 ---
 
