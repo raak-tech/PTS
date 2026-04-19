@@ -21,3 +21,4 @@ Use this to record decisions that affect architecture, product scope, safety/pri
 - **Why:** Matches the project brief: program cadence first, minimal data posture, and clear boundaries (not medical advice; no outcome guarantees).
 - **Alternatives considered:** Unlimited chat-first product (rejected for scope/safety), outcome-based metrics in MVP (rejected; process-first).
 - **Consequences / follow-ups:** Primary MVP metric is activation (intake completed -> user reaches /plan). Defer data storage + analytics until explicit consent + retention policy.
+- **Refs:** Decision brief: `docs/plans/2026-04-19-sprint-0-delivery-model-and-metric.md` (tracks issue #5)
