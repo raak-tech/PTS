@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import styles from "./page.module.css";
@@ -50,6 +51,9 @@ export default function Home() {
             <p style={{ margin: 0, fontSize: 13, color: "#333" }}>
               <strong>Not for emergencies.</strong> If you might be having an emergency,
               contact local emergency services.
+            </p>
+            <p style={{ margin: 0, fontSize: 13 }}>
+              <Link href="/red-flags">Red flags guidance</Link>
             </p>
           </div>
         </div>

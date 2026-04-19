@@ -12,3 +12,19 @@ test('plan and check-in pages offer a consistent "Back to intake" link', async (
 
   expect(errors, `Console errors:\n${errors.join('\n')}`).toEqual([]);
 });
+
+test('intake page offers a "Red flags guidance" link for safety context', async ({ page }) => {
+  const errors = startConsoleErrorCollector(page);
+
+  await page.goto('/');
+
+  const redFlagsLink = page.getByRole('link', { name: /red flags guidance/i });
+  await expect(redFlagsLink).toBeVisible();
+
+  await redFlagsLink.click();
+
+  await expect(page).toHaveURL(/\/red-flags/);
+  await expect(page.getByRole('heading', { name: /red flags/i })).toBeVisible();
+
+  expect(errors, `Console errors:\n${errors.join('\n')}`).toEqual([]);
+});
