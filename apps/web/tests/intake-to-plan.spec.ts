@@ -7,6 +7,10 @@ test('intake form submits and plan page renders required sections', async ({ pag
     page.getByRole('heading', { name: /get a week 1 plan/i })
   ).toBeVisible();
 
+  // Intake guardrails should be visible before any submission.
+  await expect(page.getByText(/not medical advice/i)).toBeVisible();
+  await expect(page.getByText(/not for emergencies/i)).toBeVisible();
+
   await page.getByLabel(/primary pain area/i).fill('Lower back');
   await page.getByLabel(/primary goal for the next 2 weeks/i).fill(
     'Sleep better and return to short walks'

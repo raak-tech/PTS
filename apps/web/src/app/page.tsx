@@ -20,6 +20,15 @@ export default function Home() {
             This is a lightweight, no-storage preview to help you see what a Week 1
             structure could look like.
           </p>
+          <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
+            <p style={{ margin: 0, fontSize: 13, color: "#333" }}>
+              <strong>Not medical advice.</strong>
+            </p>
+            <p style={{ margin: 0, fontSize: 13, color: "#333" }}>
+              <strong>Not for emergencies.</strong> If you might be having an emergency,
+              contact local emergency services.
+            </p>
+          </div>
         </div>
 
         <form
