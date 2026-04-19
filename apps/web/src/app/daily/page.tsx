@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { Guardrails } from "../../components/Guardrails";
 
 type ChecklistItem = {
   id: string;
@@ -73,17 +74,7 @@ export default function DailyChecklistPage() {
         </ul>
       </section>
 
-      <section style={{ marginTop: 24 }}>
-        <h2>Safety &amp; Boundaries</h2>
-        <ul>
-          <li>This is not medical advice.</li>
-          <li>
-            This is not for emergencies. If you think you may be in danger, seek local
-            emergency help.
-          </li>
-          <li>Stop any activity that feels unsafe and consider professional care.</li>
-        </ul>
-      </section>
+      <Guardrails style={{ marginTop: 24 }} />
 
       <div style={{ marginTop: 32, display: "flex", gap: 16 }}>
         <Link href="/plan">Back to Week 1 Plan</Link>
