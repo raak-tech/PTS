@@ -88,6 +88,7 @@ export default function DailyChecklistPage() {
             id="reflection"
             name="reflection"
             rows={4}
+            placeholder="Optional. Not saved."
             value={reflection}
             onChange={(e) => setReflection(e.target.value)}
             style={{ width: "100%", maxWidth: 680 }}

@@ -35,6 +35,13 @@ test('user can reset daily checklist checkmarks (local-only)', async ({ page }) 
   await expect(grounding).not.toBeChecked();
 });
 
+test('daily checklist includes an optional reflection note that is clearly marked as not saved', async ({ page }) => {
+  await page.goto('/daily');
+
+  const reflection = page.getByLabel(/reflection/i);
+  await expect(reflection).toHaveAttribute('placeholder', /not saved/i);
+});
+
 test('daily checklist includes an optional reflection note that can be cleared with reset', async ({ page }) => {
   await page.goto('/daily');
 
