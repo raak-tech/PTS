@@ -10,7 +10,7 @@ Goal: keep the loop moving **without waiting for Satheesh approval** for routine
 ## What autopilot can do WITHOUT approval
 - Create/update docs (plans, architecture, sprint breakdowns, reports)
 - Create/update GitHub issues and labels
-- Create branches, commits, and PRs
+- Create branches, commits, PRs, and **merge autopilot PRs** when local tests pass
 - Implement small UI slices in `apps/web` that do not store personal data
 - Add/modify Playwright tests and run `npm test`
 - Refactors that are covered by tests
