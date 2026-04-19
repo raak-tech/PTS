@@ -12,6 +12,33 @@ test('intake prevents navigation and shows validation copy on empty submit', asy
   ).toBeVisible();
 });
 
+test('empty submit focuses the first invalid field (a11y)', async ({ page }) => {
+  await page.goto('/');
+
+  await page.getByRole('button', { name: /generate week 1 plan/i }).click();
+
+  await expect(page.getByLabel(/primary pain area/i)).toBeFocused();
+});
+
+test('empty submit connects inputs to their error messages via aria-describedby (a11y)', async ({ page }) => {
+  await page.goto('/');
+
+  await page.getByRole('button', { name: /generate week 1 plan/i }).click();
+
+  await expect(page.getByText(/primary pain area is required/i)).toBeVisible();
+  await expect(page.getByText(/primary goal for the next 2 weeks is required/i)).toBeVisible();
+
+  await expect(page.getByLabel(/primary pain area/i)).toHaveAttribute(
+    'aria-describedby',
+    /primaryPainAreaError/
+  );
+
+  await expect(page.getByLabel(/primary goal for the next 2 weeks/i)).toHaveAttribute(
+    'aria-describedby',
+    /primaryGoalError/
+  );
+});
+
 test('intake form submits and plan page renders required sections', async ({ page }) => {
   await page.goto('/');
 

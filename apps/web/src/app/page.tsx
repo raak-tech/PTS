@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import styles from "./page.module.css";
 
 export default function Home() {
@@ -10,6 +10,9 @@ export default function Home() {
   const [primaryPainArea, setPrimaryPainArea] = useState("");
   const [primaryGoal, setPrimaryGoal] = useState("");
   const [hasRedFlags, setHasRedFlags] = useState(false);
+
+  const primaryPainAreaRef = useRef<HTMLInputElement>(null);
+  const primaryGoalRef = useRef<HTMLInputElement>(null);
 
   const [didSubmit, setDidSubmit] = useState(false);
 
@@ -22,6 +25,14 @@ export default function Home() {
     didSubmit && primaryGoal.trim().length === 0
       ? "Primary goal for the next 2 weeks is required."
       : "";
+
+  const primaryPainAreaDescribedBy = primaryPainAreaError
+    ? "primaryPainAreaHelp primaryPainAreaError"
+    : "primaryPainAreaHelp";
+
+  const primaryGoalDescribedBy = primaryGoalError
+    ? "primaryGoalHelp primaryGoalError"
+    : "primaryGoalHelp";
 
   return (
     <div className={styles.page}>
@@ -51,7 +62,16 @@ export default function Home() {
 
             const painOk = primaryPainArea.trim().length > 0;
             const goalOk = primaryGoal.trim().length > 0;
-            if (!painOk || !goalOk) return;
+
+            if (!painOk) {
+              primaryPainAreaRef.current?.focus();
+              return;
+            }
+
+            if (!goalOk) {
+              primaryGoalRef.current?.focus();
+              return;
+            }
 
             // No persistence in Sprint 1: we only route to static pages.
             // We intentionally do not store or transmit the entered details.
@@ -65,17 +85,22 @@ export default function Home() {
               Short and specific is fine. This stays on your device in Sprint 1.
             </p>
             <input
+              ref={primaryPainAreaRef}
               id="primaryPainArea"
               name="primaryPainArea"
               value={primaryPainArea}
               onChange={(e) => setPrimaryPainArea(e.target.value)}
               placeholder="e.g., Lower back"
-              aria-describedby="primaryPainAreaHelp"
+              aria-describedby={primaryPainAreaDescribedBy}
               aria-invalid={primaryPainAreaError ? "true" : "false"}
               style={{ padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
             />
             {primaryPainAreaError ? (
-              <p role="alert" style={{ margin: 0, fontSize: 13, color: "#b00020" }}>
+              <p
+                id="primaryPainAreaError"
+                role="alert"
+                style={{ margin: 0, fontSize: 13, color: "#b00020" }}
+              >
                 {primaryPainAreaError}
               </p>
             ) : null}
@@ -87,17 +112,22 @@ export default function Home() {
               Something measurable and realistic for Week 1. This stays on your device in Sprint 1.
             </p>
             <input
+              ref={primaryGoalRef}
               id="primaryGoal"
               name="primaryGoal"
               value={primaryGoal}
               onChange={(e) => setPrimaryGoal(e.target.value)}
               placeholder="e.g., Sleep better and return to short walks"
-              aria-describedby="primaryGoalHelp"
+              aria-describedby={primaryGoalDescribedBy}
               aria-invalid={primaryGoalError ? "true" : "false"}
               style={{ padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
             />
             {primaryGoalError ? (
-              <p role="alert" style={{ margin: 0, fontSize: 13, color: "#b00020" }}>
+              <p
+                id="primaryGoalError"
+                role="alert"
+                style={{ margin: 0, fontSize: 13, color: "#b00020" }}
+              >
                 {primaryGoalError}
               </p>
             ) : null}
