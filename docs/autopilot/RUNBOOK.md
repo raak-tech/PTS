@@ -1,0 +1,42 @@
+# PTS Autopilot Runbook
+
+This repo uses an autonomous "autopilot" loop to keep changes small, tested, and reviewable.
+
+## Source of truth
+
+- Standing orders: `docs/AUTOPILOT_POLICY.md`
+
+## What autopilot does each run (high level)
+
+1) If there are open autopilot PRs:
+   - check out each PR branch
+   - run the fastest suite (`apps/web`): `npm test`
+   - if green and no stop-condition, squash-merge + delete branch
+   - if red, create/update an issue with a short failure summary
+
+2) Otherwise:
+   - pick one small, safe task (docs/tests/refactor covered by tests)
+   - open a PR
+   - run `apps/web` tests
+   - merge when green
+
+## Local verification (apps/web)
+
+```bash
+cd apps/web
+npm ci
+npm test
+```
+
+Notes:
+- `npm test` runs lint and Playwright E2E for the web app.
+- Keep changes reversible and avoid force-push.
+
+## Stop-conditions (must not proceed without explicit approval)
+
+See `docs/AUTOPILOT_POLICY.md`. Key examples:
+- storing user PII / health data
+- adding analytics/telemetry
+- external integrations (payments, messaging, deployments)
+- destructive git ops (history rewrites)
+- outcome-claim language in product copy
