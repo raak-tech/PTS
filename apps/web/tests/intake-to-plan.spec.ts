@@ -1,5 +1,17 @@
 import { test, expect } from '@playwright/test';
 
+test('intake prevents navigation and shows validation copy on empty submit', async ({ page }) => {
+  await page.goto('/');
+
+  await page.getByRole('button', { name: /generate week 1 plan/i }).click();
+
+  await expect(page).toHaveURL('/');
+  await expect(page.getByText(/primary pain area is required/i)).toBeVisible();
+  await expect(
+    page.getByText(/primary goal for the next 2 weeks is required/i)
+  ).toBeVisible();
+});
+
 test('intake form submits and plan page renders required sections', async ({ page }) => {
   await page.goto('/');
 
