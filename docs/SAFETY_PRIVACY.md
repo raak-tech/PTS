@@ -92,7 +92,7 @@ Implementation note: free-text may contain red-flag descriptions even if a check
 
 ## Sensitive content handling
 - Clearly label what the system can/can't do.
-- Provide escalation paths: call therapist, seek care, emergency.
+- Provide escalation paths: `call therapist`, `seek care`, `emergency`.
 
 ## Security baseline (eventual)
 - Encryption in transit (TLS) and at rest.
