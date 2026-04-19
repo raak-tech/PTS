@@ -14,6 +14,13 @@ Deliverables:
 ## Sprint 1  Thin vertical slice (no persistence)
 **Goal:** client intake  generate week-1 plan  daily checklist + check-in.
 
+Acceptance criteria (Sprint 1):
+- User can complete intake and reach a Week 1 plan page.
+- User can navigate to a Daily Checklist page (local-only; no server persistence).
+- User can navigate to a Weekly Check-in page (local-only; no server persistence).
+- Safety/guardrail copy is present on key pages (eg, local-only and not medical advice).
+- No matching/marketplace work is introduced in v1.
+
 ## Sprint 2  Provider console + persistence + consent (if required)
 **Goal:** therapist can view client and update weekly plan; add consented storage.
 
