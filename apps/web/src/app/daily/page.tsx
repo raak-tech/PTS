@@ -20,6 +20,7 @@ export default function DailyChecklistPage() {
   );
 
   const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [reflection, setReflection] = useState("");
 
   const totalCount = items.length;
   const completedCount = items.reduce(
@@ -44,7 +45,13 @@ export default function DailyChecklistPage() {
         <h2>Today’s micro-practices</h2>
 
         <div style={{ marginTop: 8, marginBottom: 12 }}>
-          <button type="button" onClick={() => setChecked({})}>
+          <button
+            type="button"
+            onClick={() => {
+              setChecked({});
+              setReflection("");
+            }}
+          >
             Reset checklist
           </button>
         </div>
@@ -72,6 +79,20 @@ export default function DailyChecklistPage() {
             </li>
           ))}
         </ul>
+
+        <div style={{ marginTop: 18 }}>
+          <label htmlFor="reflection" style={{ display: "block", fontWeight: 600 }}>
+            Reflection (optional)
+          </label>
+          <textarea
+            id="reflection"
+            name="reflection"
+            rows={4}
+            value={reflection}
+            onChange={(e) => setReflection(e.target.value)}
+            style={{ width: "100%", maxWidth: 680 }}
+          />
+        </div>
       </section>
 
       <Guardrails style={{ marginTop: 24 }} />
