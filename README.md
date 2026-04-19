@@ -16,5 +16,16 @@ Therapy-focused product exploration + build scaffold.
 2. Add a **data/privacy** posture in `docs/SAFETY_PRIVACY.md`.
 3. Decide MVP slice in `docs/plans/` and build thin vertical slice.
 
-## Local dev (placeholder)
-This will be filled once we pick the stack (e.g., Next.js + FastAPI, or similar).
+## Local dev
+
+### Web app
+
+```bash
+cd apps/web
+npm ci
+npm test
+```
+
+Notes:
+- `npm test` runs eslint + Playwright end-to-end tests.
+- The web app is intentionally local-only (no persistence / no PII storage).
