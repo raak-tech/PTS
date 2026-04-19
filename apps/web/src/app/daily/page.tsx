@@ -30,7 +30,14 @@ export default function DailyChecklistPage() {
       </p>
 
       <section style={{ marginTop: 24 }}>
-        <h2>Todays micro-practices</h2>
+        <h2>Today’s micro-practices</h2>
+
+        <div style={{ marginTop: 8, marginBottom: 12 }}>
+          <button type="button" onClick={() => setChecked({})}>
+            Reset checklist
+          </button>
+        </div>
+
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12 }}>
           {items.map((item) => (
             <li key={item.id}>

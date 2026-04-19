@@ -19,6 +19,9 @@ export default function PlanPage() {
         <p>
           <Link href="/daily">Open Daily Checklist</Link>
         </p>
+        <p>
+          <Link href="/check-in">Open Weekly Check-in</Link>
+        </p>
       </section>
 
       <section style={{ marginTop: 32 }}>
@@ -44,7 +47,7 @@ export default function PlanPage() {
         <ul>
           <li>What did you try most days this week?</li>
           <li>What felt easier vs harder?</li>
-          <li>Whats one small adjustment youll try next week?</li>
+          <li>What is one small adjustment you will try next week?</li>
         </ul>
       </section>
 
@@ -75,3 +78,4 @@ export default function PlanPage() {
     </main>
   );
 }
+

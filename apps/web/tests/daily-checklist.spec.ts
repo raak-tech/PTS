@@ -21,3 +21,16 @@ test('user can navigate from plan page to daily checklist (local-only stub)', as
   await expect(page.getByText(/local-only/i)).toBeVisible();
   await expect(page.getByText(/not medical advice/i)).toBeVisible();
 });
+
+test('user can reset daily checklist checkmarks (local-only)', async ({ page }) => {
+  await page.goto('/daily');
+
+  const grounding = page.getByLabel(/breathing \/ grounding/i);
+  await expect(grounding).not.toBeChecked();
+
+  await grounding.check();
+  await expect(grounding).toBeChecked();
+
+  await page.getByRole('button', { name: /reset checklist/i }).click();
+  await expect(grounding).not.toBeChecked();
+});
