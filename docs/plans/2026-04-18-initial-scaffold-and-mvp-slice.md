@@ -1,10 +1,10 @@
-# Initial Scaffold + MVP Slice  Implementation Plan
+# Initial Scaffold + MVP Slice - Implementation Plan
 
 > **For Hermes:** Use subagent-driven-development skill to execute this plan task-by-task.
 
 **Goal:** Turn this scaffold into a thin vertical slice for a pain-management therapy use case.
 
-**Architecture:** Start with docs-first + safety/privacy constraints, then implement a minimal web intake  structured plan output flow. Keep components separable (web app  API) but dont overbuild.
+**Architecture:** Start with docs-first + safety/privacy constraints, then implement a minimal web intake -> structured plan output flow. Keep components separable (web app -> API) but don't overbuild.
 
 **Tech Stack:** TBD (choose after brief). Candidate: Next.js (web) + FastAPI (API) + Postgres.
 
@@ -17,8 +17,8 @@
 - Modify: `docs/PROJECT_BRIEF.md`
 
 **Steps:**
-1. Fill sections 15.
-2. Define exactly one first session flow.
+1. Fill sections 1-5.
+2. Define exactly one `first session` flow.
 
 **Verify:** A reader can describe the MVP in 60 seconds.
 
@@ -45,7 +45,7 @@
 
 ---
 
-## Task 3: Implement Intake form  structured plan output (no persistence)
+## Task 3: Implement `Intake` form -> structured plan output (no persistence)
 **Objective:** Collect minimal user inputs and produce a safe, structured response.
 
 **Verify:** Manual test: submit intake; get a result with disclaimers.
