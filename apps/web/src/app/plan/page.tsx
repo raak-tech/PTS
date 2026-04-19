@@ -24,6 +24,9 @@ export default function PlanPage() {
         <p>
           <Link href="/check-in">Open Weekly Check-in</Link>
         </p>
+        <p>
+          <Link href="/flare-up">Open Flare-up Protocol</Link>
+        </p>
       </section>
 
       <section style={{ marginTop: 32 }}>
