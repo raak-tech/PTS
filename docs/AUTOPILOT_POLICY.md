@@ -26,7 +26,8 @@ Only for high-risk / irreversible / policy-affecting actions:
    - crisis/emergency flows beyond simple red-flag routing placeholders
 3) **Destructive git operations**
    - force-push, rewriting history
-   - deleting branches remotely
+   - deleting long-lived/shared branches remotely (e.g. master/main/develop)
+   - Note: deleting the PR branch as part of merging an autopilot PR (gh pr merge --delete-branch) is allowed
 4) **External integrations**
    - payments, SMS/WhatsApp/email sending, calendar integrations
    - deploying to production environments
