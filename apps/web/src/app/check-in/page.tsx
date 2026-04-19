@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Guardrails } from "../../components/Guardrails";
 
 export default function WeeklyCheckInPage() {
   return (
@@ -18,13 +19,7 @@ export default function WeeklyCheckInPage() {
         </ul>
       </section>
 
-      <section style={{ marginTop: 32 }}>
-        <h2>Safety</h2>
-        <ul>
-          <li>This is not medical advice.</li>
-          <li>This is not for emergencies.</li>
-        </ul>
-      </section>
+      <Guardrails style={{ marginTop: 32 }} />
 
       <p style={{ marginTop: 32 }}>
         <Link href="/plan">Back to plan</Link>
