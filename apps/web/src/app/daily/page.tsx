@@ -20,6 +20,12 @@ export default function DailyChecklistPage() {
 
   const [checked, setChecked] = useState<Record<string, boolean>>({});
 
+  const totalCount = items.length;
+  const completedCount = items.reduce(
+    (acc, item) => acc + (checked[item.id] ? 1 : 0),
+    0
+  );
+
   return (
     <main style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px" }}>
       <h1>Daily Checklist</h1>
@@ -27,6 +33,10 @@ export default function DailyChecklistPage() {
       <p style={{ maxWidth: 680 }}>
         Local-only: your checkmarks stay in this browser session only (no storage, no
         syncing).
+      </p>
+
+      <p style={{ marginTop: 8, marginBottom: 0, fontSize: 14, color: "#333" }}>
+        <strong>Progress:</strong> {completedCount}/{totalCount}
       </p>
 
       <section style={{ marginTop: 24 }}>
