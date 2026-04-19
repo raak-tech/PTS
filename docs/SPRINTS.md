@@ -19,6 +19,10 @@ Acceptance criteria (Sprint 1):
 - User can navigate to a Daily Checklist page (local-only; no server persistence).
 - User can navigate to a Weekly Check-in page (local-only; no server persistence).
 - Safety/guardrail copy is present on key pages (eg, local-only and not medical advice).
+- Red-flags routing exists and is high-salience:
+  - If any red flag is indicated, user is routed to /red-flags and the coaching flow is blocked.
+  - /red-flags is reachable from intake and from inside the program (plan/daily/check-in).
+  - No persistence of red-flag answers by default (treat as highly sensitive).
 - No matching/marketplace work is introduced in v1.
 
 ## Sprint 2 - Provider console + persistence + consent (if required)
