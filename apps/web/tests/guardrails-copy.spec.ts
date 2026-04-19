@@ -12,6 +12,8 @@ async function expectSharedGuardrails(page: Page) {
 
   await expect(page.getByText(/this is not medical advice\./i)).toBeVisible();
 
+  await expect(page.getByText(/no outcome guarantees\./i)).toBeVisible();
+
   await expect(
     page.getByText(
       /this is not for emergencies\. if you think you may be in danger, seek local emergency help\./i
