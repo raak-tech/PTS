@@ -1,0 +1,26 @@
+import { test, expect } from '@playwright/test';
+
+test('user can navigate from plan page to weekly check-in (local-only stub)', async ({ page }) => {
+  // Start from intake and generate the static plan page
+  await page.goto('/');
+  await page.getByLabel(/primary pain area/i).fill('Lower back');
+  await page
+    .getByLabel(/primary goal for the next 2 weeks/i)
+    .fill('Sleep better and return to short walks');
+
+  await page.getByRole('button', { name: /generate week 1 plan/i }).click();
+  await expect(page).toHaveURL(/\/plan/);
+
+  // From the plan page, user should be able to open a weekly check-in stub.
+  await page.getByRole('link', { name: /open weekly check-in/i }).click();
+
+  await expect(page).toHaveURL(/\/check-in/);
+  await expect(
+    page.getByRole('heading', { name: /weekly check-in/i })
+  ).toBeVisible();
+
+  // Guardrails: local-only + safety boundaries.
+  await expect(page.getByText(/local-only/i)).toBeVisible();
+  await expect(page.getByText(/not medical advice/i)).toBeVisible();
+  await expect(page.getByText(/not for emergencies/i)).toBeVisible();
+});
