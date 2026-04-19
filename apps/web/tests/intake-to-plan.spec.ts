@@ -7,6 +7,10 @@ test('intake form submits and plan page renders required sections', async ({ pag
     page.getByRole('heading', { name: /get a week 1 plan/i })
   ).toBeVisible();
 
+  // Intake guardrails should be visible before any submission.
+  await expect(page.getByText(/not medical advice/i)).toBeVisible();
+  await expect(page.getByText(/not for emergencies/i)).toBeVisible();
+
   await page.getByLabel(/primary pain area/i).fill('Lower back');
   await page.getByLabel(/primary goal for the next 2 weeks/i).fill(
     'Sleep better and return to short walks'
@@ -19,14 +23,25 @@ test('intake form submits and plan page renders required sections', async ({ pag
   await expect(
     page.getByRole('heading', { name: /your week 1 plan/i })
   ).toBeVisible();
+
+  // Plan sub-sections should exist (Sprint 1 vertical slice: static safe copy).
+  await expect(
+    page.getByRole('heading', { name: /overview/i })
+  ).toBeVisible();
   await expect(
     page.getByRole('heading', { name: /daily micro-practices/i })
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: /weekly check-in/i })
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: /red flags/i })
   ).toBeVisible();
   await expect(
     page.getByRole('heading', { name: /safety & boundaries/i })
   ).toBeVisible();
 
   // Guardrail copy: no outcome promises, clear safety boundaries.
-  await expect(page.getByText(/not medical advice/i)).toBeVisible();
-  await expect(page.getByText(/not for emergencies/i)).toBeVisible();
+  await expect(page.getByText(/not medical advice/i)).toHaveCount(1);
+  await expect(page.getByText(/not for emergencies/i)).toHaveCount(1);
 });
