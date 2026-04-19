@@ -11,6 +11,18 @@ export default function Home() {
   const [primaryGoal, setPrimaryGoal] = useState("");
   const [hasRedFlags, setHasRedFlags] = useState(false);
 
+  const [didSubmit, setDidSubmit] = useState(false);
+
+  const primaryPainAreaError =
+    didSubmit && primaryPainArea.trim().length === 0
+      ? "Primary pain area is required."
+      : "";
+
+  const primaryGoalError =
+    didSubmit && primaryGoal.trim().length === 0
+      ? "Primary goal for the next 2 weeks is required."
+      : "";
+
   return (
     <div className={styles.page}>
       <main className={styles.main}>
@@ -32,8 +44,15 @@ export default function Home() {
         </div>
 
         <form
+          noValidate
           onSubmit={(e) => {
             e.preventDefault();
+            setDidSubmit(true);
+
+            const painOk = primaryPainArea.trim().length > 0;
+            const goalOk = primaryGoal.trim().length > 0;
+            if (!painOk || !goalOk) return;
+
             // No persistence in Sprint 1: we only route to static pages.
             // We intentionally do not store or transmit the entered details.
             router.push(hasRedFlags ? "/red-flags" : "/plan");
@@ -42,28 +61,46 @@ export default function Home() {
         >
           <div style={{ display: "grid", gap: 8 }}>
             <label htmlFor="primaryPainArea">Primary pain area</label>
+            <p id="primaryPainAreaHelp" style={{ margin: 0, fontSize: 13, color: "#555" }}>
+              Short and specific is fine. This stays on your device in Sprint 1.
+            </p>
             <input
               id="primaryPainArea"
               name="primaryPainArea"
               value={primaryPainArea}
               onChange={(e) => setPrimaryPainArea(e.target.value)}
               placeholder="e.g., Lower back"
-              required
+              aria-describedby="primaryPainAreaHelp"
+              aria-invalid={primaryPainAreaError ? "true" : "false"}
               style={{ padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
             />
+            {primaryPainAreaError ? (
+              <p role="alert" style={{ margin: 0, fontSize: 13, color: "#b00020" }}>
+                {primaryPainAreaError}
+              </p>
+            ) : null}
           </div>
 
           <div style={{ display: "grid", gap: 8 }}>
             <label htmlFor="primaryGoal">Primary goal for the next 2 weeks</label>
+            <p id="primaryGoalHelp" style={{ margin: 0, fontSize: 13, color: "#555" }}>
+              Something measurable and realistic for Week 1. This stays on your device in Sprint 1.
+            </p>
             <input
               id="primaryGoal"
               name="primaryGoal"
               value={primaryGoal}
               onChange={(e) => setPrimaryGoal(e.target.value)}
               placeholder="e.g., Sleep better and return to short walks"
-              required
+              aria-describedby="primaryGoalHelp"
+              aria-invalid={primaryGoalError ? "true" : "false"}
               style={{ padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
             />
+            {primaryGoalError ? (
+              <p role="alert" style={{ margin: 0, fontSize: 13, color: "#b00020" }}>
+                {primaryGoalError}
+              </p>
+            ) : null}
           </div>
 
           <div style={{ display: "grid", gap: 8 }}>
