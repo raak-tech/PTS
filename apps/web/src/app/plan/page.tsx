@@ -34,6 +34,24 @@ export default function PlanPage() {
       </section>
 
       <section style={{ marginTop: 32 }}>
+        <h2>Weekly focus</h2>
+        <p style={{ maxWidth: 680 }}>
+          Aim for consistency over intensity. Keep effort in a comfortable range.
+          If symptoms spike, scale down and consider pausing anything that feels
+          unsafe.
+        </p>
+      </section>
+
+      <section style={{ marginTop: 32 }}>
+        <h2>Reflection prompt</h2>
+        <ul>
+          <li>What felt a little easier this week?</li>
+          <li>What felt harder (and what might have contributed)?</li>
+          <li>What is one small adjustment you will try tomorrow?</li>
+        </ul>
+      </section>
+
+      <section style={{ marginTop: 32 }}>
         <h2>Daily Micro-practices</h2>
         <ul>
           <li>2 minutes: breathing / grounding</li>
