@@ -14,6 +14,7 @@ export function Guardrails({ style }: GuardrailsProps) {
           <Link href="/red-flags">Red flags guidance</Link>
         </li>
         <li>This is not medical advice.</li>
+        <li>No outcome guarantees.</li>
         <li>
           This is not for emergencies. If you think you may be in danger, seek local
           emergency help.
