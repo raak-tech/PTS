@@ -7,17 +7,22 @@ test('intake routes to red-flags guidance when user indicates red-flag symptoms'
   await page.getByLabel(/primary goal for the next 2 weeks/i).fill('Sleep better');
 
   // Red flags are a safety boundary: we should route to guidance instead of generating a plan.
-  await page
-    .getByLabel(/i have (possible )?red flag symptoms/i)
-    .check();
+  await page.getByLabel(/i have (possible )?red flag symptoms/i).check();
 
   await page.getByRole('button', { name: /generate week 1 plan/i }).click();
 
   await expect(page).toHaveURL(/\/red-flags/);
-  await expect(
-    page.getByRole('heading', { name: /red flags/i })
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: /red flags/i })).toBeVisible();
 
   // Guardrail copy: no emergency handling in-product.
   await expect(page.getByText(/not for emergencies/i)).toHaveCount(1);
+});
+
+test('plan page safety section links to red-flags guidance', async ({ page }) => {
+  await page.goto('/plan');
+
+  await page.getByRole('link', { name: /red flags/i }).click();
+
+  await expect(page).toHaveURL(/\/red-flags/);
+  await expect(page.getByRole('heading', { name: /red flags/i })).toBeVisible();
 });

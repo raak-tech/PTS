@@ -82,6 +82,9 @@ export default function PlanPage() {
       <section style={{ marginTop: 32 }}>
         <h2>Safety &amp; Boundaries</h2>
         <ul>
+          <li>
+            <Link href="/red-flags">Red flags guidance</Link>
+          </li>
           <li>This is not medical advice.</li>
           <li>
             This is not for emergencies. If you think you may be in danger, seek
