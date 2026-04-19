@@ -22,7 +22,7 @@ This doc is built *live in chat* and updated into the repo as we answer.
 - B) postpartum pain / pelvic pain
 - C) migraine sufferers
 - D) arthritis / older adults
-- E) custom: chronic pain (broad)  therapist-guided sustained support
+- E) custom: chronic pain (broad) - therapist-guided sustained support
 
 **Answer:** E) People living with chronic pain who need sustained, periodic therapist-led support to learn to live with/address/deal with pain and enable a more wholesome life.
 
@@ -34,15 +34,15 @@ This doc is built *live in chat* and updated into the repo as we answer.
 
 ### 4) What’s the narrowest wedge we can ship that’s still valuable?
 **Answer (draft):** A therapist-led, CTA-first program delivered as a structured weekly cadence (e.g., 6-week starter) with:
-- a 1520 min weekly session plan + 510 min daily practices
+- a 15-20 min weekly `session plan` + 5-10 min daily practices
 - CBT micro-skill reinforcement
 - physio-adjacent coaching checklists (safe/standardized; no diagnosis)
-- optional flare-up quick protocol for symptom-management moments
+- optional `flare-up` quick protocol for symptom-management moments
 
 ### 5) What do we need to observe to know it’s working?
 **Answer (draft):**
 - Adherence: weekly check-in completion, daily practice completion
-- Outcomes: brief pain interference score (work/sleep/mood), self-efficacy / control, and simple better/same/worse after flare-up protocol
+- Outcomes: brief pain interference score (work/sleep/mood), self-efficacy / control, and simple `better/same/worse` after flare-up protocol
 - Retention: week-2 and week-6 retention
 - Safety: red-flag routing rate + follow-through
 
@@ -54,9 +54,9 @@ This doc is built *live in chat* and updated into the repo as we answer.
 ## MVP slice (draft)
 **Program flow (periodic intervention):**
 1) Intake + eligibility + red flags + consent (what is/isn't therapy / not emergency)
-2) Assign a 6-week starter track (CTA-first; CBT support; physio-adjacent coaching)
+2) Assign a `6-week starter track` (CTA-first; CBT support; physio-adjacent coaching)
 3) Weekly therapist check-in + daily micro-practices + weekly reflection
-4) Optional flare-up protocol: quick in-the-moment plan + stop / seek care rules
+4) Optional flare-up protocol: quick in-the-moment plan + `stop / seek care` rules
 
 **Provider/client market:**
 - Providers: India-based therapists
@@ -77,6 +77,6 @@ This doc is built *live in chat* and updated into the repo as we answer.
 - [x] Trigger type chosen (periodic program + optional flare-up support)
 - [x] Modality chosen (CTA + CBT + physio-adjacent)
 - [x] Market chosen (India providers; global clients; Indian expat focus)
-- [x] Define the *first narrow wedge* within chronic pain for MVP: **musculoskeletal chronic pain** (back/neck/shoulder/hip/knee etc.), from varied causes/events (not desk-only)
+- [x] Define the *first narrow wedge* within `chronic pain` for MVP: **musculoskeletal chronic pain** (back/neck/shoulder/hip/knee etc.), from varied causes/events (not desk-only)
 - [ ] Define pricing + delivery model (1:1 / group / hybrid)
-- [ ] Decide what therapist help means in-product (live sessions vs async messaging vs content + review)
+- [ ] Decide what `therapist help` means in-product (live sessions vs async messaging vs content + review)
