@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { startConsoleErrorCollector } from './helpers/console';
 
 test('intake prevents navigation and shows validation copy on empty submit', async ({ page }) => {
   await page.goto('/');
@@ -40,6 +41,8 @@ test('empty submit connects inputs to their error messages via aria-describedby 
 });
 
 test('intake form submits and plan page renders required sections', async ({ page }) => {
+  const errors = startConsoleErrorCollector(page);
+
   await page.goto('/');
 
   await expect(
@@ -81,4 +84,6 @@ test('intake form submits and plan page renders required sections', async ({ pag
   // Guardrail copy: no outcome promises, clear safety boundaries.
   await expect(page.getByText(/not medical advice/i)).toHaveCount(1);
   await expect(page.getByText(/not for emergencies/i)).toHaveCount(1);
+
+  expect(errors, `Console errors:\n${errors.join('\n')}`).toEqual([]);
 });
