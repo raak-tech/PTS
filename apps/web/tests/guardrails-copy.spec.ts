@@ -34,3 +34,13 @@ test('weekly check-in shows the shared Safety & Boundaries guardrails block', as
   await page.goto('/check-in');
   await expectSharedGuardrails(page);
 });
+
+test('plan page shows the shared Safety & Boundaries guardrails block', async ({ page }) => {
+  await page.goto('/plan');
+  await expectSharedGuardrails(page);
+});
+
+test('flare-up page shows the shared Safety & Boundaries guardrails block', async ({ page }) => {
+  await page.goto('/flare-up');
+  await expectSharedGuardrails(page);
+});

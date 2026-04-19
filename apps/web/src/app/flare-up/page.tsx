@@ -41,9 +41,6 @@ export default function FlareUpProtocolPage() {
           bladder/bowel control, fever with severe back pain, major trauma, or unexplained
           weight loss), do not use this protocol. Seek in-person medical evaluation.
         </p>
-        <p>
-          <Link href="/red-flags">Open red flags guidance</Link>
-        </p>
       </section>
 
       <Guardrails style={{ marginTop: 32 }} />
