@@ -82,6 +82,10 @@ export default function PlanPage() {
       </section>
 
       <Guardrails style={{ marginTop: 32 }} />
+
+      <div style={{ marginTop: 32, display: "flex", gap: 16 }}>
+        <Link href="/">Back to intake</Link>
+      </div>
     </main>
   );
 }
