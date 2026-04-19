@@ -37,18 +37,16 @@ test('intake form submits and plan page renders required sections', async ({ pag
   ).toBeVisible();
 
   // Plan sub-sections should exist (Sprint 1 vertical slice: static safe copy).
-  await expect(
-    page.getByRole('heading', { name: /overview/i })
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: /overview/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /weekly focus/i })).toBeVisible();
   await expect(
     page.getByRole('heading', { name: /daily micro-practices/i })
   ).toBeVisible();
   await expect(
-    page.getByRole('heading', { name: /weekly check-in/i })
+    page.getByRole('heading', { name: /reflection prompt/i })
   ).toBeVisible();
-  await expect(
-    page.getByRole('heading', { name: /red flags/i })
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: /weekly check-in/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /red flags/i })).toBeVisible();
   await expect(
     page.getByRole('heading', { name: /safety & boundaries/i })
   ).toBeVisible();
