@@ -16,6 +16,13 @@ Therapy-focused product exploration + build scaffold.
 2. Add a **data/privacy** posture in `docs/SAFETY_PRIVACY.md`.
 3. Decide MVP slice in `docs/plans/` and build thin vertical slice.
 
+## Autopilot
+
+- Standing orders: `docs/AUTOPILOT_POLICY.md`
+- Runbook: `docs/autopilot/RUNBOOK.md`
+- Reports: `docs/autopilot/reports/` (one file per run; UTC timestamped)
+- Note: the default branch is `master` (do not assume `main`).
+
 ## Local dev
 
 ### Web app
