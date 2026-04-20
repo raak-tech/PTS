@@ -15,6 +15,12 @@ test("layout includes a skip-to-content link and main landmark", async ({ page }
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/#main-content$/);
 
+  const main = page.locator("#main-content");
+
   // The main content target exists.
-  await expect(page.locator("#main-content")).toBeVisible();
+  await expect(main).toBeVisible();
+
+  // A11y: focus should move to main content so screen readers/keyboard users
+  // are actually placed at the start of the page content.
+  await expect(main).toBeFocused();
 });
