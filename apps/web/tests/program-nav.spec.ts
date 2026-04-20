@@ -8,6 +8,7 @@ test('program pages show a consistent program navigation block', async ({ page }
     { path: '/daily', heading: /daily checklist/i },
     { path: '/check-in', heading: /weekly check-in/i },
     { path: '/plan', heading: /week 1 plan/i },
+    { path: '/weeks', heading: /weeks 2\s*[-–]\s*6/i },
     { path: '/flare-up', heading: /flare-up protocol/i },
     { path: '/red-flags', heading: /red flags/i },
   ];
@@ -30,6 +31,10 @@ test('program pages show a consistent program navigation block', async ({ page }
     await expect(nav.getByRole('link', { name: /week 1 plan/i })).toHaveAttribute(
       'href',
       '/plan'
+    );
+    await expect(nav.getByRole('link', { name: /weeks 2\s*[-–]\s*6/i })).toHaveAttribute(
+      'href',
+      '/weeks'
     );
     await expect(nav.getByRole('link', { name: /flare-up protocol/i })).toHaveAttribute(
       'href',
