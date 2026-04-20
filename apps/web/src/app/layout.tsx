@@ -13,7 +13,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PTS",
+  title: {
+    default: "PTS",
+    template: "%s | PTS",
+  },
   description: "PTS web preview (Sprint 1: local-only, no storage).",
 };
 

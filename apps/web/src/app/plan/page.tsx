@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Guardrails } from "../../components/Guardrails";
 import { ProgramNav } from "../../components/ProgramNav";
+
+export const metadata: Metadata = {
+  title: "Plan",
+};
 
 export default function PlanPage() {
   return (
