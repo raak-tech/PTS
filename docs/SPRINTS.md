@@ -25,6 +25,10 @@ Acceptance criteria (Sprint 1):
   - No persistence of red-flag answers by default (treat as highly sensitive).
 - No matching/marketplace work is introduced in v1.
 
+Artifacts (Sprint 1):
+- Manual QA smoke checklist: docs/qa/sprint-1-smoke-checklist.md
+- Next tasks (issues): #68 #69 #70 #71 #72
+
 ## Sprint 2 - Provider console + persistence + consent (if required)
 **Goal:** therapist can view client and update weekly plan; add consented storage.
 
