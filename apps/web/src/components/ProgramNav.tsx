@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import type { CSSProperties } from 'react';
 
 type Props = {
@@ -6,31 +9,29 @@ type Props = {
 };
 
 export function ProgramNav({ style }: Props) {
+  const pathname = usePathname();
+
+  const links = [
+    { href: '/daily', label: 'Daily checklist' },
+    { href: '/check-in', label: 'Weekly check-in' },
+    { href: '/plan', label: 'Back to Week 1 plan' },
+    { href: '/weeks', label: 'Weeks 2-6' },
+    { href: '/flare-up', label: 'Flare-up protocol' },
+    { href: '/red-flags', label: 'Safety guidance' },
+    { href: '/', label: 'Back to intake' },
+  ] as const;
+
   return (
     <nav aria-label="Program navigation" style={style}>
       <div style={{ fontWeight: 700, marginBottom: 8 }}>Program navigation</div>
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
-        <li>
-          <Link href="/daily">Daily checklist</Link>
-        </li>
-        <li>
-          <Link href="/check-in">Weekly check-in</Link>
-        </li>
-        <li>
-          <Link href="/plan">Back to Week 1 plan</Link>
-        </li>
-        <li>
-          <Link href="/weeks">Weeks 2-6</Link>
-        </li>
-        <li>
-          <Link href="/flare-up">Flare-up protocol</Link>
-        </li>
-        <li>
-          <Link href="/red-flags">Safety guidance</Link>
-        </li>
-        <li>
-          <Link href="/">Back to intake</Link>
-        </li>
+        {links.map((l) => (
+          <li key={l.href}>
+            <Link href={l.href} aria-current={pathname === l.href ? 'page' : undefined}>
+              {l.label}
+            </Link>
+          </li>
+        ))}
       </ul>
     </nav>
   );

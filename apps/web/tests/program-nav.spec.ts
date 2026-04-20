@@ -5,12 +5,12 @@ test('program pages show a consistent program navigation block', async ({ page }
   const errors = startConsoleErrorCollector(page);
 
   const pages = [
-    { path: '/daily', heading: /daily checklist/i },
-    { path: '/check-in', heading: /weekly check-in/i },
-    { path: '/plan', heading: /week 1 plan/i },
-    { path: '/weeks', heading: /weeks 2\s*[-–]\s*6/i },
-    { path: '/flare-up', heading: /flare-up protocol/i },
-    { path: '/red-flags', heading: /red flags/i },
+    { path: '/daily', heading: /daily checklist/i, currentText: /daily checklist/i },
+    { path: '/check-in', heading: /weekly check-in/i, currentText: /weekly check-in/i },
+    { path: '/plan', heading: /week 1 plan/i, currentText: /week 1 plan/i },
+    { path: '/weeks', heading: /weeks 2\s*[-–]\s*6/i, currentText: /weeks 2\s*[-–]\s*6/i },
+    { path: '/flare-up', heading: /flare-up protocol/i, currentText: /flare-up protocol/i },
+    { path: '/red-flags', heading: /red flags/i, currentText: /safety guidance/i },
   ];
 
   for (const p of pages) {
@@ -48,6 +48,10 @@ test('program pages show a consistent program navigation block', async ({ page }
       'href',
       '/'
     );
+
+    const current = nav.locator('a[aria-current="page"]');
+    await expect(current).toHaveCount(1);
+    await expect(current).toHaveText(p.currentText);
   }
 
   expect(errors, `Console errors:\n${errors.join('\n')}`).toEqual([]);
