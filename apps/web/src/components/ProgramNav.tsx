@@ -20,6 +20,9 @@ export function ProgramNav({ style }: Props) {
           <Link href="/plan">Back to Week 1 plan</Link>
         </li>
         <li>
+          <Link href="/weeks">Weeks 2-6</Link>
+        </li>
+        <li>
           <Link href="/flare-up">Flare-up protocol</Link>
         </li>
         <li>
