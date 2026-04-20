@@ -1,6 +1,5 @@
-import Link from "next/link";
-
 import { Guardrails } from "../../components/Guardrails";
+import { ProgramNav } from "../../components/ProgramNav";
 
 export default function FlareUpProtocolPage() {
   return (
@@ -45,10 +44,7 @@ export default function FlareUpProtocolPage() {
 
       <Guardrails style={{ marginTop: 32 }} />
 
-      <div style={{ marginTop: 32, display: "flex", gap: 16 }}>
-        <Link href="/plan">Back to Week 1 Plan</Link>
-        <Link href="/">Back to intake</Link>
-      </div>
+      <ProgramNav style={{ marginTop: 24 }} />
     </main>
   );
 }

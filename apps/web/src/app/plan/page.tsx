@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Guardrails } from "../../components/Guardrails";
+import { ProgramNav } from "../../components/ProgramNav";
 
 export default function PlanPage() {
   return (
@@ -86,9 +87,7 @@ export default function PlanPage() {
 
       <Guardrails style={{ marginTop: 32 }} />
 
-      <div style={{ marginTop: 32, display: "flex", gap: 16 }}>
-        <Link href="/">Back to intake</Link>
-      </div>
+      <ProgramNav style={{ marginTop: 24 }} />
     </main>
   );
 }

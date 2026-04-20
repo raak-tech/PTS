@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { Guardrails } from "../../components/Guardrails";
+import { ProgramNav } from "../../components/ProgramNav";
 
 type Prompt = {
   id: string;
@@ -75,10 +75,7 @@ export default function WeeklyCheckInPage() {
 
       <Guardrails style={{ marginTop: 32 }} />
 
-      <div style={{ marginTop: 32, display: "flex", gap: 16 }}>
-        <Link href="/plan">Back to plan</Link>
-        <Link href="/">Back to intake</Link>
-      </div>
+      <ProgramNav style={{ marginTop: 24 }} />
     </main>
   );
 }

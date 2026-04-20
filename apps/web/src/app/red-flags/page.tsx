@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { ProgramNav } from '../../components/ProgramNav';
 
 export default function RedFlagsPage() {
   return (
@@ -36,9 +36,7 @@ export default function RedFlagsPage() {
         </ul>
       </section>
 
-      <div style={{ marginTop: 32 }}>
-        <Link href="/">Back to intake</Link>
-      </div>
+      <ProgramNav style={{ marginTop: 24 }} />
     </main>
   );
 }

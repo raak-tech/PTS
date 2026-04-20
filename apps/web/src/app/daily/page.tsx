@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Guardrails } from "../../components/Guardrails";
+import { ProgramNav } from "../../components/ProgramNav";
 
 type ChecklistItem = {
   id: string;
@@ -98,10 +98,8 @@ export default function DailyChecklistPage() {
 
       <Guardrails style={{ marginTop: 24 }} />
 
-      <div style={{ marginTop: 32, display: "flex", gap: 16 }}>
-        <Link href="/plan">Back to Week 1 Plan</Link>
-        <Link href="/">Back to intake</Link>
-      </div>
+      <ProgramNav style={{ marginTop: 24 }} />
+
     </main>
   );
 }
