@@ -8,6 +8,9 @@ This repo uses an autonomous "autopilot" loop to keep changes small, tested, and
 
 ## What autopilot does each run (high level)
 
+Notes:
+- Always target the repo's **default branch** as the PR base (currently `master`). Do not assume `main`.
+
 1) If there are open autopilot PRs:
    - check out each PR branch
    - run the fastest suite (`apps/web`): `npm test`
