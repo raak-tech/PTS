@@ -44,6 +44,10 @@ export default function Home() {
             This is a lightweight, no-storage preview to help you see what a Week 1
             structure could look like.
           </p>
+          <p style={{ marginTop: 8, marginBottom: 0, fontSize: 13, color: "#333" }}>
+            <strong>Local-only:</strong> your inputs are not saved (no localStorage, no
+            sessionStorage) and not sent to a server.
+          </p>
           <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
             <p style={{ margin: 0, fontSize: 13, color: "#333" }}>
               <strong>Not medical advice.</strong>
