@@ -3,11 +3,15 @@ import { test, expect } from "@playwright/test";
 test("daily checklist can be completed using keyboard only (tab + space + enter)", async ({ page }) => {
   await page.goto("/daily");
 
+  const skip = page.getByRole("link", { name: /skip to content/i });
   const reset = page.getByRole("button", { name: /reset checklist/i });
   const grounding = page.getByLabel(/2 minutes: breathing \/ grounding/i);
   const movement = page.getByLabel(/5 minutes: gentle movement/i);
 
-  // Tab order: Reset -> first checkbox -> second checkbox ...
+  // Tab order: Skip link -> Reset -> first checkbox -> second checkbox ...
+  await page.keyboard.press("Tab");
+  await expect(skip).toBeFocused();
+
   await page.keyboard.press("Tab");
   await expect(reset).toBeFocused();
 
