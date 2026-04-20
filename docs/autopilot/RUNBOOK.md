@@ -23,6 +23,13 @@ Notes:
    - run `apps/web` tests
    - merge when green
 
+## Reports
+
+- Write a per-run report under `docs/autopilot/reports/`.
+- Use a unique UTC timestamp in the filename to avoid cron collisions:
+  - `docs/autopilot/reports/YYYY-MM-DD-HHMMSS-UTC.md`
+- Do not overwrite older reports; append a new file per run.
+
 ## Local verification (apps/web)
 
 ```bash
