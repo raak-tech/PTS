@@ -87,3 +87,13 @@ test('intake form submits and plan page renders required sections', async ({ pag
 
   expect(errors, `Console errors:\n${errors.join('\n')}`).toEqual([]);
 });
+
+test('intake marks required fields as required (a11y)', async ({ page }) => {
+  await page.goto('/');
+
+  await expect(page.getByLabel(/primary pain area/i)).toHaveAttribute('required', '');
+  await expect(page.getByLabel(/primary goal for the next 2 weeks/i)).toHaveAttribute(
+    'required',
+    ''
+  );
+});

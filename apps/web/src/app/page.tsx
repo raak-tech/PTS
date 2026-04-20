@@ -99,6 +99,7 @@ export default function Home() {
               value={primaryPainArea}
               onChange={(e) => setPrimaryPainArea(e.target.value)}
               placeholder="e.g., Lower back"
+              required
               aria-describedby={primaryPainAreaDescribedBy}
               aria-invalid={primaryPainAreaError ? "true" : "false"}
               style={{ padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
@@ -126,6 +127,7 @@ export default function Home() {
               value={primaryGoal}
               onChange={(e) => setPrimaryGoal(e.target.value)}
               placeholder="e.g., Sleep better and return to short walks"
+              required
               aria-describedby={primaryGoalDescribedBy}
               aria-invalid={primaryGoalError ? "true" : "false"}
               style={{ padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
