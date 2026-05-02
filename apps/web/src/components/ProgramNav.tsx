@@ -17,7 +17,7 @@ export function ProgramNav({ style }: Props) {
     { href: '/plan', label: 'Back to Week 1 plan' },
     { href: '/weeks', label: 'Weeks 2-6' },
     { href: '/flare-up', label: 'Flare-up protocol' },
-    { href: '/red-flags', label: 'Safety guidance' },
+    { href: '/red-flags', label: 'Red flags guidance' },
     { href: '/', label: 'Back to intake' },
   ] as const;
 
