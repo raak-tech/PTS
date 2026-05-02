@@ -10,7 +10,7 @@ test('program pages show a consistent program navigation block', async ({ page }
     { path: '/plan', heading: /week 1 plan/i, currentText: /week 1 plan/i },
     { path: '/weeks', heading: /weeks 2\s*[-–]\s*6/i, currentText: /weeks 2\s*[-–]\s*6/i },
     { path: '/flare-up', heading: /flare-up protocol/i, currentText: /flare-up protocol/i },
-    { path: '/red-flags', heading: /red flags/i, currentText: /safety guidance/i },
+    { path: '/red-flags', heading: /red flags/i, currentText: /red flags guidance/i },
   ];
 
   for (const p of pages) {
@@ -40,7 +40,7 @@ test('program pages show a consistent program navigation block', async ({ page }
       'href',
       '/flare-up'
     );
-    await expect(nav.getByRole('link', { name: /safety guidance/i })).toHaveAttribute(
+    await expect(nav.getByRole('link', { name: /red flags guidance/i })).toHaveAttribute(
       'href',
       '/red-flags'
     );

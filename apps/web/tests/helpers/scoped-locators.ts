@@ -1,7 +1,12 @@
 import type { Locator, Page } from "@playwright/test";
 
-export function getRegion(page: Page, name: RegExp | string) {
-  return page.getByRole("navigation", { name });
+export function programNav(page: Page): Locator {
+  return page.getByRole("navigation", { name: /program navigation/i });
+}
+
+export function sectionByHeading(page: Page, headingName: RegExp | string): Locator {
+  // Most sections follow: <section><h2>...</h2> ...</section>
+  return page.getByRole("heading", { name: headingName }).locator("..");
 }
 
 type RegionRole = "navigation" | "main" | "banner" | "contentinfo" | "complementary";

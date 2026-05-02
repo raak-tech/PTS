@@ -1,11 +1,12 @@
 import { test, expect, Page } from '@playwright/test';
 
-async function expectSharedGuardrails(page: Page) {
-  await expect(
-    page.getByRole('heading', { name: /safety & boundaries/i })
-  ).toBeVisible();
+import { sectionByHeading } from './helpers/scoped-locators';
 
-  await expect(page.getByRole('link', { name: /red flags guidance/i })).toHaveAttribute(
+async function expectSharedGuardrails(page: Page) {
+  const guardrails = sectionByHeading(page, /safety & boundaries/i);
+  await expect(guardrails.getByRole('heading', { name: /safety & boundaries/i })).toBeVisible();
+
+  await expect(guardrails.getByRole('link', { name: /red flags guidance/i })).toHaveAttribute(
     'href',
     '/red-flags'
   );

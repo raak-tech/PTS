@@ -31,6 +31,7 @@ test("layout includes a skip-to-content link and main landmark", async ({ page }
   // A11y: focus should move to main content so screen readers/keyboard users
   // are actually placed at the start of the page content.
   await expect(main).toBeFocused();
+
 });
 
 test("skip-to-content works after client-side navigation", async ({ page }) => {
