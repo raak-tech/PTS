@@ -13,6 +13,8 @@ export function ProviderNav({ style }: Props) {
 
   const links = [
     { href: '/provider', label: 'Console home' },
+    { href: '/provider/assignments', label: 'Assignments' },
+    { href: '/provider/join', label: 'Join flow' },
     { href: '/provider/clients', label: 'Clients' },
     { href: '/provider/clients/client-001', label: 'Sample client' },
   ] as const;

@@ -30,10 +30,13 @@ export default function ProviderHomePage() {
       <section style={{ marginTop: 32 }}>
         <h2>Open the mock views</h2>
         <p>
-          <Link href="/provider/clients">Browse clients</Link>
+          <Link href="/provider/assignments">Manage assignments</Link>
         </p>
         <p>
-          <Link href="/provider/clients/client-001">Open sample client</Link>
+          <Link href="/provider/join">Open client join flow</Link>
+        </p>
+        <p>
+          <Link href="/provider/clients">Browse clients</Link>
         </p>
       </section>
 
