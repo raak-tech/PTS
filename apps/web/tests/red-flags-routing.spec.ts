@@ -21,7 +21,10 @@ test('intake routes to red-flags guidance when user indicates red-flag symptoms'
 test('plan page safety section links to red-flags guidance', async ({ page }) => {
   await page.goto('/plan');
 
-  await page.getByRole('link', { name: /red flags/i }).click();
+  const heading = page.getByRole('heading', { name: /safety & boundaries/i });
+  const guardrailsSection = page.locator('section', { has: heading });
+
+  await guardrailsSection.getByRole('link', { name: /red flags guidance/i }).click();
 
   await expect(page).toHaveURL(/\/red-flags/);
   await expect(page.getByRole('heading', { name: /red flags/i })).toBeVisible();

@@ -1,14 +1,14 @@
 import { test, expect, Page } from '@playwright/test';
 
 async function expectSharedGuardrails(page: Page) {
-  await expect(
-    page.getByRole('heading', { name: /safety & boundaries/i })
-  ).toBeVisible();
+  const heading = page.getByRole('heading', { name: /safety & boundaries/i });
+  await expect(heading).toBeVisible();
 
-  await expect(page.getByRole('link', { name: /red flags guidance/i })).toHaveAttribute(
-    'href',
-    '/red-flags'
-  );
+  // Strict-mode safe: scope the link to the guardrails section (not the program nav).
+  const guardrailsSection = page.locator('section', { has: heading });
+  await expect(
+    guardrailsSection.getByRole('link', { name: /red flags guidance/i })
+  ).toHaveAttribute('href', '/red-flags');
 
   await expect(page.getByText(/this is not medical advice\./i)).toBeVisible();
 

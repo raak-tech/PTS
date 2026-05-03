@@ -1,16 +1,30 @@
 import type { Locator, Page } from "@playwright/test";
 
-export function getRegion(page: Page, name: RegExp | string) {
-  return page.getByRole("navigation", { name });
-}
+type RegionRole =
+  | "navigation"
+  | "main"
+  | "banner"
+  | "contentinfo"
+  | "complementary";
 
-type RegionRole = "navigation" | "main" | "banner" | "contentinfo" | "complementary";
+export function getRegion(page: Page, region: { role: RegionRole; name: RegExp | string }) {
+  return page.getByRole(region.role, { name: region.name });
+}
 
 export function getLinkInRegion(
   page: Page,
   region: { role: RegionRole; name: RegExp | string },
   linkName: RegExp | string,
 ): Locator {
-  const regionLocator = page.getByRole(region.role, { name: region.name });
-  return regionLocator.getByRole("link", { name: linkName });
+  return getRegion(page, region).getByRole("link", { name: linkName });
+}
+
+// Convenience helpers used by strict-mode-safe tests
+export function programNav(page: Page): Locator {
+  return getRegion(page, { role: "navigation", name: /program navigation/i });
+}
+
+export function sectionByHeading(page: Page, headingName: RegExp | string): Locator {
+  const heading = page.getByRole("heading", { name: headingName });
+  return page.locator("section", { has: heading });
 }
