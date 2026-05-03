@@ -14,6 +14,7 @@
 - Safety/privacy posture
 
 ### Phase 1 (MVP software)
+- Client auth (register/login/logout) for pilot access
 - Client intake + eligibility/red flags + consent
 - Program track delivery (weekly cadence + daily micro-practices)
 - Weekly check-in + reflections

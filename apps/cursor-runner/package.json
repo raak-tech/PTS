@@ -1,0 +1,19 @@
+{
+  "name": "cursor-runner",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --import tsx/esm src/smoke.ts",
+    "list-models": "node --import tsx/esm src/list-models.ts",
+    "prompt": "node --import tsx/esm src/prompt.ts",
+    "dev-agent": "node --import tsx/esm src/dev-agent.ts"
+  },
+  "dependencies": {
+    "@cursor/sdk": "^1.0.12",
+    "dotenv": "^17.2.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  }
+}

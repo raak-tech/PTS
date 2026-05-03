@@ -22,3 +22,9 @@ Use this to record decisions that affect architecture, product scope, safety/pri
 - **Alternatives considered:** Unlimited chat-first product (rejected for scope/safety), outcome-based metrics in MVP (rejected; process-first).
 - **Consequences / follow-ups:** Primary MVP metric is activation (intake completed -> user reaches /plan). Defer data storage + analytics until explicit consent + retention policy.
 - **Refs:** Decision brief: `docs/plans/2026-04-19-sprint-0-delivery-model-and-metric.md` (tracks issue #5)
+
+- **Date:** 2026-05-03
+- **Decision:** Add a pilot-ready email/password auth slice (register, login, logout) backed by secure HTTP-only cookie sessions.
+- **Why:** Unblocks early client pilot logins while keeping the current data posture conservative and leaving password reset for a follow-up slice.
+- **Alternatives considered:** Waiting for the full consent/persistence phase (too slow for pilot momentum), or adding an external auth provider first (extra integration overhead).
+- **Consequences / follow-ups:** Password reset and any route protection beyond the pilot shell remain follow-up work; auth now exists as the foundation for client onboarding.
