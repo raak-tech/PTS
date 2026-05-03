@@ -3,22 +3,32 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node ./scripts/migrate.mjs && next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node ./scripts/migrate.mjs && next start",
     "lint": "eslint",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node ./scripts/migrate.mjs",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "eslint .",
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "argon2": "^0.44.0",
+    "better-sqlite3": "^12.9.0",
+    "drizzle-kit": "^0.31.10",
+    "drizzle-orm": "^0.45.2",
     "next": "16.2.4",
+    "nodemailer": "^8.0.7",
+    "postgres": "^3.4.9",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zod": "^4.4.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
