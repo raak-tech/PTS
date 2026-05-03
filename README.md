@@ -25,6 +25,11 @@ Therapy-focused product exploration + build scaffold.
 
 ## Local dev
 
+### Cursor agent flow
+
+- Repo-local Cursor SDK runner: `apps/cursor-runner/`
+- See `docs/CURSOR_AGENT.md` for usage and verification status
+
 ### Web app
 
 ```bash

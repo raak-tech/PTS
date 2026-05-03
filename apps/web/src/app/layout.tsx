@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     default: "PTS",
     template: "%s | PTS",
   },
-  description: "PTS web preview (Sprint 1: local-only, no storage).",
+  description: "PTS web preview with pilot auth.",
 };
 
 export default function RootLayout({
