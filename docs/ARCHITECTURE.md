@@ -19,7 +19,7 @@
 - Program track delivery (weekly cadence + daily micro-practices)
 - Weekly check-in + reflections
 - Optional flare-up protocol (with strict boundaries)
-- Minimal provider console (view client summary + track template)
+- Minimal provider console (view client summary + weekly review loop + track template)
 
 ### Deferred
 - Matching/marketplace
