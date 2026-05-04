@@ -21,6 +21,7 @@ export default function WeeklyCheckInPage() {
   );
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [status, setStatus] = useState('');
 
   const totalCount = prompts.length;
   const completedCount = prompts.reduce(
@@ -45,7 +46,13 @@ export default function WeeklyCheckInPage() {
         <h2>Prompts</h2>
 
         <div style={{ marginTop: 8, marginBottom: 12 }}>
-          <button type="button" onClick={() => setAnswers({})}>
+          <button
+            type="button"
+            onClick={() => {
+              setAnswers({});
+              setStatus('');
+            }}
+          >
             Reset answers
           </button>
         </div>
@@ -71,6 +78,35 @@ export default function WeeklyCheckInPage() {
             );
           })}
         </div>
+      </section>
+
+      <section style={{ marginTop: 20, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          onClick={async () => {
+            setStatus('');
+            const response = await fetch('/api/support/artifacts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                kind: 'check-in',
+                title: 'Weekly check-in',
+                bodyText: prompts
+                  .map((prompt) => `${prompt.question}\n${answers[prompt.id]?.trim() || 'None'}`)
+                  .join('\n\n'),
+              }),
+            });
+
+            setStatus(response.ok ? 'Weekly check-in saved.' : 'Enable support storage first.');
+          }}
+        >
+          Save weekly check-in
+        </button>
+        {status ? (
+          <p role="status" style={{ margin: 0, fontWeight: 600 }}>
+            {status}
+          </p>
+        ) : null}
       </section>
 
       <Guardrails style={{ marginTop: 32 }} />

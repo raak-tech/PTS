@@ -41,6 +41,15 @@ export const userConsents = sqliteTable("user_consents", {
   revokedAt: integer("revoked_at", { mode: "timestamp" }),
 });
 
+export const supportArtifacts = sqliteTable("support_artifacts", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  kind: text("kind").notNull(),
+  title: text("title").notNull(),
+  bodyText: text("body_text").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
 export const inviteCodes = sqliteTable("invite_codes", {
   code: text("code").primaryKey(),
   providerUserId: text("provider_user_id").notNull(),

@@ -14,6 +14,7 @@ export function ProgramNav({ style }: Props) {
   const links = [
     { href: '/daily', label: 'Daily checklist' },
     { href: '/check-in', label: 'Weekly check-in' },
+    { href: '/support', label: 'Support storage' },
     { href: '/plan', label: 'Back to Week 1 plan' },
     { href: '/weeks', label: 'Weeks 2-6' },
     { href: '/flare-up', label: 'Flare-up protocol' },

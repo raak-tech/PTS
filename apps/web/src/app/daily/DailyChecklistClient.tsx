@@ -22,6 +22,7 @@ export function DailyChecklistClient() {
 
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [reflection, setReflection] = useState("");
+  const [status, setStatus] = useState("");
 
   const totalCount = items.length;
   const completedCount = items.reduce(
@@ -51,6 +52,7 @@ export function DailyChecklistClient() {
             onClick={() => {
               setChecked({});
               setReflection("");
+              setStatus("");
             }}
           >
             Reset checklist
@@ -94,6 +96,34 @@ export function DailyChecklistClient() {
             onChange={(e) => setReflection(e.target.value)}
             style={{ width: "100%", maxWidth: 680 }}
           />
+        </div>
+
+        <div style={{ marginTop: 18, display: "flex", gap: 12, alignItems: "center" }}>
+          <button
+            type="button"
+            onClick={async () => {
+              setStatus("");
+              const completed = items.filter((item) => checked[item.id]).map((item) => item.label);
+              const response = await fetch("/api/support/artifacts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  kind: "daily",
+                  title: "Daily completion",
+                  bodyText: `Completed items:\n${completed.join("\n") || "None"}\n\nReflection:\n${reflection.trim() || "None"}`,
+                }),
+              });
+
+              setStatus(response.ok ? "Daily completion saved." : "Enable support storage first.");
+            }}
+          >
+            Save daily completion
+          </button>
+          {status ? (
+            <p role="status" style={{ margin: 0, fontWeight: 600 }}>
+              {status}
+            </p>
+          ) : null}
         </div>
       </section>
 

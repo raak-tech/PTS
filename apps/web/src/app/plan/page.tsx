@@ -8,10 +8,23 @@ export const metadata: Metadata = {
   title: "Plan",
 };
 
-export default function PlanPage() {
+type Props = {
+  searchParams?: Promise<{ saved?: string }>;
+};
+
+export default async function PlanPage({ searchParams }: Props) {
+  const params = (searchParams ? await searchParams : {}) ?? {};
+  const savedMessage = params.saved === "support" ? "Saved to your support record." : "";
+
   return (
     <main style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px" }}>
       <h1>Your Week 1 Plan</h1>
+
+      {savedMessage ? (
+        <p role="status" style={{ maxWidth: 680, padding: 12, border: "1px solid #cfe8cf", background: "#f3fff3" }}>
+          {savedMessage}
+        </p>
+      ) : null}
 
       <p style={{ maxWidth: 680 }}>
         This preview is for planning and reflection support only. It is not a
