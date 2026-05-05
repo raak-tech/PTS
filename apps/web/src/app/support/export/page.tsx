@@ -68,6 +68,16 @@ export default async function SupportExportPage() {
               <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'inherit' }}>
                 {record.bodyText}
               </pre>
+              {record.reflectionCiphertext ? (
+                <div style={{ marginTop: 12 }}>
+                  <h3 style={{ marginBottom: 8 }}>Encrypted reflection</h3>
+                  <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'inherit' }}>
+                    Ciphertext: {record.reflectionCiphertext}
+
+                    Meta: {record.reflectionEncryptionMeta ?? 'n/a'}
+                  </pre>
+                </div>
+              ) : null}
             </section>
           ))}
         </div>

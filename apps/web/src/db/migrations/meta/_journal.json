@@ -15,6 +15,13 @@
       "when": 1777914772343,
       "tag": "0001_clammy_lila_cheney",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1777940974344,
+      "tag": "0002_aromatic_anthem",
+      "breakpoints": true
     }
   ]
 }

@@ -39,6 +39,10 @@ export const userConsents = sqliteTable("user_consents", {
     .default(false),
   enabledAt: integer("enabled_at", { mode: "timestamp" }),
   revokedAt: integer("revoked_at", { mode: "timestamp" }),
+  reflectionEncryptionEnabled: integer("reflection_encryption_enabled", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  reflectionSalt: text("reflection_salt"),
 });
 
 export const supportArtifacts = sqliteTable("support_artifacts", {
@@ -47,6 +51,8 @@ export const supportArtifacts = sqliteTable("support_artifacts", {
   kind: text("kind").notNull(),
   title: text("title").notNull(),
   bodyText: text("body_text").notNull(),
+  reflectionCiphertext: text("reflection_ciphertext"),
+  reflectionEncryptionMeta: text("reflection_encryption_meta"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
 

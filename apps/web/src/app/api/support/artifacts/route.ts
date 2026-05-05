@@ -12,6 +12,8 @@ const artifactSchema = z.object({
   kind: z.enum(['intake', 'plan', 'daily', 'check-in']),
   title: z.string().trim().min(1).max(120),
   bodyText: z.string().trim().min(1).max(5000),
+  reflectionCiphertext: z.string().trim().min(1).max(12000).optional(),
+  reflectionEncryptionMeta: z.string().trim().min(1).max(12000).optional(),
 });
 
 function unauthorized() {
@@ -39,14 +41,19 @@ export async function POST(request: Request) {
   }
 
   const now = new Date();
-  await db.insert(supportArtifacts).values({
-    id: randomUUID(),
-    userId: user.id,
-    kind: parsed.data.kind,
-    title: parsed.data.title,
-    bodyText: parsed.data.bodyText,
-    createdAt: now,
-  }).run();
+  await db
+    .insert(supportArtifacts)
+    .values({
+      id: randomUUID(),
+      userId: user.id,
+      kind: parsed.data.kind,
+      title: parsed.data.title,
+      bodyText: parsed.data.bodyText,
+      reflectionCiphertext: parsed.data.reflectionCiphertext ?? null,
+      reflectionEncryptionMeta: parsed.data.reflectionEncryptionMeta ?? null,
+      createdAt: now,
+    })
+    .run();
 
   return NextResponse.json({ ok: true });
 }

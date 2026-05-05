@@ -38,14 +38,14 @@ test('user can reset daily checklist checkmarks (local-only)', async ({ page }) 
 test('daily checklist includes an optional reflection note that is clearly marked as not saved', async ({ page }) => {
   await page.goto('/daily');
 
-  const reflection = page.getByLabel(/reflection/i);
+  const reflection = page.getByRole('textbox', { name: /reflection \(optional\)/i });
   await expect(reflection).toHaveAttribute('placeholder', /not saved/i);
 });
 
 test('daily checklist includes an optional reflection note that can be cleared with reset', async ({ page }) => {
   await page.goto('/daily');
 
-  const reflection = page.getByLabel(/reflection/i);
+  const reflection = page.getByRole('textbox', { name: /reflection \(optional\)/i });
   await reflection.fill('Felt more confident doing gentle movement.');
   await expect(reflection).toHaveValue(/more confident/i);
 
