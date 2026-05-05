@@ -95,7 +95,7 @@ export function DailyChecklistClient() {
   }
 
   return (
-    <main style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px" }}>
+    <main className="pageShell" style={{ maxWidth: 800 }}>
       <h1>Daily Checklist</h1>
 
       <p style={{ maxWidth: 680 }}>
@@ -103,11 +103,11 @@ export function DailyChecklistClient() {
         syncing).
       </p>
 
-      <p style={{ marginTop: 8, marginBottom: 0, fontSize: 14, color: "#333" }}>
+      <p className="statusBanner" style={{ marginTop: 8 }}>
         <strong>Progress:</strong> {completedCount}/{totalCount}
       </p>
 
-      <section style={{ marginTop: 24 }}>
+      <section className="sectionStack" style={{ marginTop: 24 }}>
         <h2>Today&apos;s micro-practices</h2>
 
         <div style={{ marginTop: 8, marginBottom: 12 }}>
@@ -171,7 +171,7 @@ export function DailyChecklistClient() {
             Encrypt optional reflections before saving
           </label>
 
-          <p style={{ margin: 0, maxWidth: 720, fontSize: 13, color: "#444" }}>
+          <p className="mutedText" style={{ margin: 0, maxWidth: 720, fontSize: 13 }}>
             When enabled, PTS encrypts the reflection in your browser before sending it.
             The server stores ciphertext and metadata only. Lost secrets cannot be
             recovered.
@@ -198,7 +198,7 @@ export function DailyChecklistClient() {
           </p>
 
           {settingsStatus ? (
-            <p role="status" style={{ margin: 0, fontWeight: 600 }}>
+            <p role="status" className="statusBanner" style={{ margin: 0 }}>
               {settingsStatus}
             </p>
           ) : null}
@@ -253,16 +253,16 @@ export function DailyChecklistClient() {
             Save daily completion
           </button>
           {status ? (
-            <p role="status" style={{ margin: 0, fontWeight: 600 }}>
+            <p role="status" className="statusBanner" style={{ margin: 0 }}>
               {status}
             </p>
           ) : null}
         </div>
       </section>
 
-      <Guardrails style={{ marginTop: 24 }} />
+      <Guardrails className="sectionStack" style={{ marginTop: 24 }} />
 
-      <ProgramNav style={{ marginTop: 24 }} />
+      <ProgramNav className="sectionStack" style={{ marginTop: 24 }} />
     </main>
   );
 }

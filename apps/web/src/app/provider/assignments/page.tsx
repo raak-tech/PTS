@@ -35,7 +35,7 @@ export default function ProviderAssignmentsPage() {
   }
 
   return (
-    <main style={{ maxWidth: 900, margin: '0 auto', padding: '48px 24px' }}>
+    <main className="pageShell" style={{ maxWidth: 900 }}>
       <h1>Provider assignments</h1>
 
       <p style={{ maxWidth: 720 }}>
@@ -43,7 +43,7 @@ export default function ProviderAssignmentsPage() {
         which is enough to demo the shape of the workflow without introducing backend storage.
       </p>
 
-      <section style={{ marginTop: 24 }}>
+      <section className="sectionStack" style={{ marginTop: 24 }}>
         <h2>Current invite code</h2>
         <p data-testid="invite-code" style={{ fontSize: 20, fontWeight: 700, letterSpacing: 1 }}>
           {state.inviteCode}
@@ -59,14 +59,14 @@ export default function ProviderAssignmentsPage() {
         </p>
       </section>
 
-      <section style={{ marginTop: 32 }}>
+      <section className="sectionStack" style={{ marginTop: 32 }}>
         <h2>Linked clients</h2>
         {state.links.length === 0 ? (
           <p>No clients linked yet.</p>
         ) : (
           <ul data-testid="linked-clients-list" style={{ display: 'grid', gap: 12, paddingLeft: 20 }}>
             {state.links.map((client) => (
-              <li key={client.id}>
+              <li key={client.id} style={{ padding: 16, border: '1px solid var(--border)', borderRadius: 18, background: 'var(--surface-2)' }}>
                 <div>
                   <strong>{client.clientName}</strong> linked at {formatUtcTimestamp(client.linkedAt)}
                 </div>
@@ -83,7 +83,7 @@ export default function ProviderAssignmentsPage() {
         )}
       </section>
 
-      <section style={{ marginTop: 32 }}>
+      <section className="sectionStack" style={{ marginTop: 32 }}>
         <h2>Audit trail</h2>
         <ul data-testid="assignment-audit-trail" style={{ display: 'grid', gap: 8, paddingLeft: 20 }}>
           {state.auditTrail.map((event) => (
@@ -94,14 +94,14 @@ export default function ProviderAssignmentsPage() {
         </ul>
       </section>
 
-      <section style={{ marginTop: 32 }}>
+      <section className="heroPanel" style={{ marginTop: 32 }}>
         <h2>Try the client join flow</h2>
         <p>
-          <a href="/provider/join">Open the client code entry page</a>
+          <a href="/provider/join" className="actionLink secondary">Open the client code entry page</a>
         </p>
       </section>
 
-      <ProviderNav style={{ marginTop: 32 }} />
+      <ProviderNav className="sectionStack" style={{ marginTop: 32 }} />
     </main>
   );
 }

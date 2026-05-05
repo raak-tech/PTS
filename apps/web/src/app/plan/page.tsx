@@ -17,11 +17,11 @@ export default async function PlanPage({ searchParams }: Props) {
   const savedMessage = params.saved === "support" ? "Saved to your support record." : "";
 
   return (
-    <main style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px" }}>
+    <main className="pageShell" style={{ maxWidth: 800 }}>
       <h1>Your Week 1 Plan</h1>
 
       {savedMessage ? (
-        <p role="status" style={{ maxWidth: 680, padding: 12, border: "1px solid #cfe8cf", background: "#f3fff3" }}>
+        <p role="status" className="statusBanner" style={{ marginTop: 12 }}>
           {savedMessage}
         </p>
       ) : null}
@@ -31,20 +31,26 @@ export default async function PlanPage({ searchParams }: Props) {
         substitute for professional care.
       </p>
 
-      <section style={{ marginTop: 24 }}>
+      <section className="heroPanel" style={{ marginTop: 24 }}>
         <h2>Next step</h2>
         <p style={{ maxWidth: 680 }}>
           If you want something more actionable, open a local-only daily checklist
           (no storage) to help you track small practices.
         </p>
-        <p>
-          <Link href="/daily">Open Daily Checklist</Link>
+        <p style={{ marginTop: 12 }}>
+          <Link href="/daily" className="actionLink">
+            Open Daily Checklist
+          </Link>
         </p>
-        <p>
-          <Link href="/check-in">Open Weekly Check-in</Link>
+        <p style={{ marginTop: 10 }}>
+          <Link href="/check-in" className="actionLink secondary">
+            Open Weekly Check-in
+          </Link>
         </p>
-        <p>
-          <Link href="/flare-up">Open Flare-up Protocol</Link>
+        <p style={{ marginTop: 10 }}>
+          <Link href="/flare-up" className="actionLink secondary">
+            Open Flare-up Protocol
+          </Link>
         </p>
       </section>
 
@@ -103,9 +109,9 @@ export default async function PlanPage({ searchParams }: Props) {
         </p>
       </section>
 
-      <Guardrails style={{ marginTop: 32 }} />
+      <Guardrails className="sectionStack" style={{ marginTop: 32 }} />
 
-      <ProgramNav style={{ marginTop: 24 }} />
+      <ProgramNav className="sectionStack" style={{ marginTop: 24 }} />
     </main>
   );
 }

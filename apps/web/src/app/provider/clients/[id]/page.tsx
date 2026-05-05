@@ -53,9 +53,11 @@ export default async function ProviderClientDetailPage({ params }: Props) {
   }
 
   return (
-    <main style={{ maxWidth: 900, margin: '0 auto', padding: '48px 24px' }}>
+    <main className="pageShell" style={{ maxWidth: 900 }}>
       <p>
-        <Link href="/provider/clients">← Back to clients</Link>
+        <Link href="/provider/clients" className="actionLink secondary">
+          ← Back to clients
+        </Link>
       </p>
 
       <h1>{client.name}</h1>
@@ -65,7 +67,7 @@ export default async function ProviderClientDetailPage({ params }: Props) {
         preview, not a live patient chart.
       </p>
 
-      <section style={{ marginTop: 24 }}>
+      <section className="sectionStack" style={{ marginTop: 24 }}>
         <h2>Snapshot</h2>
         <ul>
           <li><strong>Program:</strong> {client.program}</li>
@@ -74,17 +76,17 @@ export default async function ProviderClientDetailPage({ params }: Props) {
         </ul>
       </section>
 
-      <section style={{ marginTop: 32 }}>
+      <section className="sectionStack" style={{ marginTop: 32 }}>
         <h2>Provider note</h2>
         <p style={{ maxWidth: 720 }}>{client.summary}</p>
       </section>
 
-      <section style={{ marginTop: 32 }}>
+      <section className="sectionStack" style={{ marginTop: 32 }}>
         <h2>Safety and follow-up</h2>
         <p style={{ maxWidth: 720 }}>{client.safety}</p>
       </section>
 
-      <section style={{ marginTop: 32 }}>
+      <section className="heroPanel" style={{ marginTop: 32 }}>
         <h2>Next action</h2>
         <p style={{ maxWidth: 720 }}>
           In the real console this is where a provider would review the next
@@ -92,7 +94,7 @@ export default async function ProviderClientDetailPage({ params }: Props) {
         </p>
       </section>
 
-      <ProviderNav style={{ marginTop: 32 }} />
+      <ProviderNav className="sectionStack" style={{ marginTop: 32 }} />
     </main>
   );
 }

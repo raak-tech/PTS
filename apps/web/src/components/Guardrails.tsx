@@ -3,11 +3,12 @@ import type { CSSProperties } from "react";
 
 type GuardrailsProps = {
   style?: CSSProperties;
+  className?: string;
 };
 
-export function Guardrails({ style }: GuardrailsProps) {
+export function Guardrails({ style, className }: GuardrailsProps) {
   return (
-    <section style={style}>
+    <section className={className} style={style}>
       <h2>Safety &amp; Boundaries</h2>
       <ul>
         <li>

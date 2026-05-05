@@ -15,7 +15,7 @@ export default function ProviderJoinPage() {
   const [message, setMessage] = useState('');
 
   return (
-    <main style={{ maxWidth: 900, margin: '0 auto', padding: '48px 24px' }}>
+    <main className="pageShell" style={{ maxWidth: 900 }}>
       <h1>Join with invite code</h1>
 
       <p style={{ maxWidth: 720 }}>
@@ -23,7 +23,7 @@ export default function ProviderJoinPage() {
         This demo keeps the data in the browser only.
       </p>
 
-      <section style={{ marginTop: 24, display: 'grid', gap: 12, maxWidth: 520 }}>
+      <section className="sectionStack" style={{ marginTop: 24, display: 'grid', gap: 12, maxWidth: 520 }}>
         <label style={{ display: 'grid', gap: 6 }}>
           <span>Invite code</span>
           <input value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} />
@@ -52,17 +52,17 @@ export default function ProviderJoinPage() {
           Link to provider
         </button>
 
-        {message ? <p role="status">{message}</p> : null}
+        {message ? <p role="status" className="statusBanner">{message}</p> : null}
       </section>
 
-      <section style={{ marginTop: 32 }}>
+      <section className="heroPanel" style={{ marginTop: 32 }}>
         <h2>Need the latest code?</h2>
         <p>
-          <a href="/provider/assignments">Check the provider assignment page</a>
+          <a href="/provider/assignments" className="actionLink secondary">Check the provider assignment page</a>
         </p>
       </section>
 
-      <ProviderNav style={{ marginTop: 32 }} />
+      <ProviderNav className="sectionStack" style={{ marginTop: 32 }} />
     </main>
   );
 }

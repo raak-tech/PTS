@@ -30,7 +30,7 @@ export default function WeeklyCheckInPage() {
   );
 
   return (
-    <main style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px" }}>
+    <main className="pageShell" style={{ maxWidth: 800 }}>
       <h1>Weekly Check-in</h1>
 
       <p style={{ maxWidth: 680 }}>
@@ -38,11 +38,11 @@ export default function WeeklyCheckInPage() {
         syncing).
       </p>
 
-      <p style={{ marginTop: 8, marginBottom: 0, fontSize: 14, color: "#333" }}>
+      <p className="statusBanner" style={{ marginTop: 8 }}>
         <strong>Progress:</strong> {completedCount}/{totalCount}
       </p>
 
-      <section style={{ marginTop: 24 }}>
+      <section className="sectionStack" style={{ marginTop: 24 }}>
         <h2>Prompts</h2>
 
         <div style={{ marginTop: 8, marginBottom: 12 }}>
@@ -102,16 +102,16 @@ export default function WeeklyCheckInPage() {
         >
           Save weekly check-in
         </button>
-        {status ? (
-          <p role="status" style={{ margin: 0, fontWeight: 600 }}>
+          {status ? (
+          <p role="status" className="statusBanner" style={{ margin: 0 }}>
             {status}
           </p>
         ) : null}
       </section>
 
-      <Guardrails style={{ marginTop: 32 }} />
+      <Guardrails className="sectionStack" style={{ marginTop: 32 }} />
 
-      <ProgramNav style={{ marginTop: 24 }} />
+      <ProgramNav className="sectionStack" style={{ marginTop: 24 }} />
     </main>
   );
 }

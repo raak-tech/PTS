@@ -6,9 +6,10 @@ import type { CSSProperties } from 'react';
 
 type Props = {
   style?: CSSProperties;
+  className?: string;
 };
 
-export function ProgramNav({ style }: Props) {
+export function ProgramNav({ style, className }: Props) {
   const pathname = usePathname();
 
   const links = [
@@ -23,7 +24,7 @@ export function ProgramNav({ style }: Props) {
   ] as const;
 
   return (
-    <nav aria-label="Program navigation" style={style}>
+    <nav aria-label="Program navigation" className={className} style={style}>
       <div style={{ fontWeight: 700, marginBottom: 8 }}>Program navigation</div>
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
         {links.map((l) => (
