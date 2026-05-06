@@ -1,4 +1,10 @@
+import type { Metadata } from 'next';
+
 import { ProgramNav } from '../../components/ProgramNav';
+
+export const metadata: Metadata = {
+  title: 'Red flags',
+};
 
 export default function RedFlagsPage() {
   return (

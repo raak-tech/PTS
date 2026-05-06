@@ -16,6 +16,10 @@ test('provider console shell renders and navigates', async ({ page }) => {
   await page.getByRole('link', { name: 'Open client summary' }).first().click();
   await expect(page).toHaveURL(/\/provider\/clients\/client-001$/);
   await expect(page.getByRole('heading', { name: 'A. Client' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Weekly review panel' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Continue' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Adjust' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Escalate' })).toBeVisible();
 
   await page.getByRole('link', { name: 'Clients', exact: true }).click();
   await expect(page).toHaveURL(/\/provider\/clients$/);

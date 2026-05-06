@@ -53,9 +53,11 @@ export default async function ProviderClientDetailPage({ params }: Props) {
   }
 
   return (
-    <main style={{ maxWidth: 900, margin: '0 auto', padding: '48px 24px' }}>
+    <main className="pageShell" style={{ maxWidth: 900 }}>
       <p>
-        <Link href="/provider/clients">← Back to clients</Link>
+        <Link href="/provider/clients" className="actionLink secondary">
+          ← Back to clients
+        </Link>
       </p>
 
       <h1>{client.name}</h1>
@@ -65,7 +67,16 @@ export default async function ProviderClientDetailPage({ params }: Props) {
         preview, not a live patient chart.
       </p>
 
-      <section style={{ marginTop: 24 }}>
+      <section className="heroPanel" style={{ marginTop: 24 }}>
+        <h2>Review status</h2>
+        <ul>
+          <li><strong>Status:</strong> {client.status}</li>
+          <li><strong>Program:</strong> {client.program}</li>
+          <li><strong>Adherence:</strong> {client.adherence}</li>
+        </ul>
+      </section>
+
+      <section className="sectionStack" style={{ marginTop: 32 }}>
         <h2>Snapshot</h2>
         <ul>
           <li><strong>Program:</strong> {client.program}</li>
@@ -74,25 +85,37 @@ export default async function ProviderClientDetailPage({ params }: Props) {
         </ul>
       </section>
 
-      <section style={{ marginTop: 32 }}>
+      <section className="sectionStack" style={{ marginTop: 32 }}>
         <h2>Provider note</h2>
         <p style={{ maxWidth: 720 }}>{client.summary}</p>
       </section>
 
-      <section style={{ marginTop: 32 }}>
+      <section className="sectionStack" style={{ marginTop: 32 }}>
         <h2>Safety and follow-up</h2>
         <p style={{ maxWidth: 720 }}>{client.safety}</p>
       </section>
 
-      <section style={{ marginTop: 32 }}>
-        <h2>Next action</h2>
+      <section className="heroPanel" style={{ marginTop: 32 }}>
+        <h2>Weekly review panel</h2>
         <p style={{ maxWidth: 720 }}>
-          In the real console this is where a provider would review the next
-          touchpoint. For now it is just a static placeholder.
+          In the real console, this is where a provider would review the current
+          week and decide whether to continue, make a small adjustment, or
+          escalate to red-flags guidance.
+        </p>
+
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
+          <button type="button">Continue</button>
+          <button type="button">Adjust</button>
+          <button type="button">Escalate</button>
+        </div>
+
+        <p style={{ marginTop: 12, maxWidth: 720 }}>
+          This sample panel is static and local-only. It exists to show the shape
+          of the review workflow without implying a live patient chart.
         </p>
       </section>
 
-      <ProviderNav style={{ marginTop: 32 }} />
+      <ProviderNav className="sectionStack" style={{ marginTop: 32 }} />
     </main>
   );
 }

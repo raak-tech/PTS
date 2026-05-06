@@ -27,13 +27,16 @@ const clients = [
   },
 ] as const;
 
+const reviewCount = clients.filter((client) => client.status === 'Needs review').length;
+const activeCount = clients.length;
+
 export const metadata: Metadata = {
   title: 'Provider clients',
 };
 
 export default function ProviderClientsPage() {
   return (
-    <main style={{ maxWidth: 900, margin: '0 auto', padding: '48px 24px' }}>
+    <main className="pageShell" style={{ maxWidth: 900 }}>
       <h1>Clients</h1>
 
       <p style={{ maxWidth: 720 }}>
@@ -41,17 +44,25 @@ export default function ProviderClientsPage() {
         client records.
       </p>
 
-      <section style={{ marginTop: 24 }}>
+      <section className="heroPanel" style={{ marginTop: 24 }}>
+        <h2>Review queue</h2>
+        <p style={{ maxWidth: 720 }}>
+          {reviewCount} client needs review and {activeCount} active clients are currently in this sample queue.
+        </p>
+      </section>
+
+      <section className="sectionStack" style={{ marginTop: 24 }}>
         <div style={{ display: 'grid', gap: 12 }}>
           {clients.map((client) => (
             <article
               key={client.id}
               style={{
-                border: '1px solid #ddd',
-                borderRadius: 12,
-                padding: 16,
+                border: '1px solid var(--border)',
+                borderRadius: 18,
+                padding: 18,
                 display: 'grid',
                 gap: 8,
+                background: 'var(--surface-2)',
               }}
             >
               <h2 style={{ margin: 0 }}>{client.name}</h2>
@@ -65,14 +76,16 @@ export default function ProviderClientsPage() {
                 <strong>Last touchpoint:</strong> {client.lastTouchpoint}
               </p>
               <p style={{ marginBottom: 0 }}>
-                <Link href={`/provider/clients/${client.id}`}>Open client summary</Link>
+                <Link href={`/provider/clients/${client.id}`} className="actionLink secondary">
+                  Open client summary
+                </Link>
               </p>
             </article>
           ))}
         </div>
       </section>
 
-      <ProviderNav style={{ marginTop: 32 }} />
+      <ProviderNav className="sectionStack" style={{ marginTop: 32 }} />
     </main>
   );
 }

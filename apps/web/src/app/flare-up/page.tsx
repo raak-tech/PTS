@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
+
 import { Guardrails } from "../../components/Guardrails";
 import { ProgramNav } from "../../components/ProgramNav";
+
+export const metadata: Metadata = {
+  title: 'Flare-up protocol',
+};
 
 export default function FlareUpProtocolPage() {
   return (

@@ -35,9 +35,10 @@ Therapy-focused product exploration + build scaffold.
 ```bash
 cd apps/web
 npm ci
+npm run db:migrate
 npm test
 ```
 
 Notes:
 - `npm test` runs eslint + Playwright end-to-end tests.
-- The web app is intentionally local-only (no persistence / no PII storage).
+- The web app now defaults to PostgreSQL with consent-gated storage for support artifacts.

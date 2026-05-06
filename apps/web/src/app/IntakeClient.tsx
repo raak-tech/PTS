@@ -11,6 +11,7 @@ export function IntakeClient() {
   const [primaryPainArea, setPrimaryPainArea] = useState("");
   const [primaryGoal, setPrimaryGoal] = useState("");
   const [hasRedFlags, setHasRedFlags] = useState(false);
+  const [saveSupportData, setSaveSupportData] = useState(false);
 
   const primaryPainAreaRef = useRef<HTMLInputElement>(null);
   const primaryGoalRef = useRef<HTMLInputElement>(null);
@@ -64,7 +65,7 @@ export function IntakeClient() {
 
         <form
           noValidate
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
             setDidSubmit(true);
 
@@ -81,9 +82,44 @@ export function IntakeClient() {
               return;
             }
 
-            // No persistence in Sprint 1: we only route to static pages.
-            // We intentionally do not store or transmit the entered details.
-            router.push(hasRedFlags ? "/red-flags" : "/plan");
+            let nextPath = hasRedFlags ? "/red-flags" : "/plan";
+
+            if (saveSupportData && !hasRedFlags) {
+              const consentResponse = await fetch("/api/support/consent", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ enabled: true }),
+              });
+
+              const intakeSummary = `Primary pain area: ${primaryPainArea}\nPrimary goal: ${primaryGoal}`;
+              const planSnapshot = `Week 1 plan for ${primaryPainArea}:\n- Keep effort in a comfortable range\n- Use gentle pacing\n- Review the weekly goal: ${primaryGoal}`;
+
+              if (consentResponse.ok) {
+                await fetch("/api/support/artifacts", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    kind: "intake",
+                    title: "Intake summary",
+                    bodyText: intakeSummary,
+                  }),
+                });
+
+                await fetch("/api/support/artifacts", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    kind: "plan",
+                    title: "Week 1 plan",
+                    bodyText: planSnapshot,
+                  }),
+                });
+
+                nextPath = "/plan?saved=support";
+              }
+            }
+
+            router.push(nextPath);
           }}
           style={{ width: "100%", maxWidth: 560, display: "grid", gap: 16 }}
         >
@@ -157,6 +193,23 @@ export function IntakeClient() {
             <p style={{ margin: 0, fontSize: 13, color: "#555" }}>
               Examples: new severe weakness, loss of bladder/bowel control, fever with
               severe back pain, major trauma, or unexplained weight loss.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gap: 8 }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <input
+                id="saveSupportData"
+                name="saveSupportData"
+                type="checkbox"
+                checked={saveSupportData}
+                onChange={(e) => setSaveSupportData(e.target.checked)}
+              />
+              <label htmlFor="saveSupportData">Save my support data on this account</label>
+            </div>
+            <p style={{ margin: 0, fontSize: 13, color: "#555" }}>
+              If enabled, PTS will save an intake summary and Week 1 plan snapshot for
+              this account.
             </p>
           </div>
 

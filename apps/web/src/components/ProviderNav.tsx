@@ -6,9 +6,10 @@ import type { CSSProperties } from 'react';
 
 type Props = {
   style?: CSSProperties;
+  className?: string;
 };
 
-export function ProviderNav({ style }: Props) {
+export function ProviderNav({ style, className }: Props) {
   const pathname = usePathname();
 
   const links = [
@@ -20,7 +21,7 @@ export function ProviderNav({ style }: Props) {
   ] as const;
 
   return (
-    <nav aria-label="Provider navigation" style={style}>
+    <nav aria-label="Provider navigation" className={className} style={style}>
       <div style={{ fontWeight: 700, marginBottom: 8 }}>Provider navigation</div>
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
         {links.map((link) => (

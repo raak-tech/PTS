@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   }
 
   const db = getDb();
-  const user = db.select().from(users).where(eq(users.email, parsed.data.email)).get();
+  const [user] = await db.select().from(users).where(eq(users.email, parsed.data.email)).limit(1);
 
   if (!user) {
     return errorRedirect(request, 'invalid');
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     tokenHash: hashToken(sessionToken),
     createdAt: now,
     expiresAt,
-  }).run();
+  });
 
   const response = NextResponse.redirect(new URL('/', request.url), 303);
   response.cookies.set(createSessionCookie(sessionToken));

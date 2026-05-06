@@ -1,8 +1,6 @@
-# Autopilot reports
+# Autopilot Reports
 
-This directory stores daily autopilot run reports.
+This directory holds run-by-run progress notes for PTS autopilot sessions.
 
-- Reports live in `docs/autopilot/reports/YYYY-MM-DD.md`
-- Reports should be concise and focus on: open PR handling, what changed, tests run, and what merged
-
-Policy: see `docs/AUTOPILOT_POLICY.md`.
+- Daily report: `reports/YYYY-MM-DD.md`
+- Per-run report: `reports/YYYY-MM-DD-HHMMSS-UTC.md`

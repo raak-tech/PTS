@@ -1,24 +1,24 @@
-import fs from "node:fs";
-import path from "node:path";
+import { createRequire } from "node:module";
+import * as os from "node:os";
 
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+const require = createRequire(`${process.cwd()}/noop.js`);
+const { drizzle } = require('drizzle-orm/postgres-js');
+const postgres = require('postgres');
 
 export type Db = ReturnType<typeof getDb>;
 
 let cached: ReturnType<typeof drizzle> | null = null;
 
-function ensureSqliteDir(sqlitePath: string) {
-  const dir = path.dirname(sqlitePath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+function defaultDatabaseUrl() {
+  const username = encodeURIComponent(os.userInfo().username);
+  return `postgresql://${username}@127.0.0.1:5433/pts`;
 }
 
 export function getDb() {
   if (cached) return cached;
 
-  const sqlitePath = process.env.SQLITE_PATH ?? "./.data/dev.db";
-  ensureSqliteDir(sqlitePath);
-  const sqlite = new Database(sqlitePath);
-  cached = drizzle(sqlite);
+  const connectionString = process.env.DATABASE_URL ?? defaultDatabaseUrl();
+  const client = postgres(connectionString, { max: 1 });
+  cached = drizzle(client);
   return cached;
 }

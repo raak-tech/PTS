@@ -4,15 +4,14 @@ import { getDb } from '../../src/db/index';
 import { emailOutbox, passwordResetTokens } from '../../src/db/schema';
 import { hashToken } from '../../src/lib/auth';
 
-export function getLatestOutboxBodyForEmail(toEmail: string) {
+export async function getLatestOutboxBodyForEmail(toEmail: string) {
   const db = getDb();
-  const row = db
+  const [row] = await db
     .select()
     .from(emailOutbox)
     .where(eq(emailOutbox.toEmail, toEmail))
     .orderBy(desc(emailOutbox.createdAt))
-    .limit(1)
-    .get();
+    .limit(1);
   return row?.bodyText ?? null;
 }
 
@@ -21,12 +20,11 @@ export function extractTokenFromOutboxBody(body: string): string | null {
   return m ? m[1] : null;
 }
 
-export function expirePasswordResetTokenByPlaintext(plainToken: string) {
+export async function expirePasswordResetTokenByPlaintext(plainToken: string) {
   const db = getDb();
   const tokenHash = hashToken(plainToken);
   const past = new Date(0);
-  db.update(passwordResetTokens)
+  await db.update(passwordResetTokens)
     .set({ expiresAt: past })
-    .where(eq(passwordResetTokens.tokenHash, tokenHash))
-    .run();
+    .where(eq(passwordResetTokens.tokenHash, tokenHash));
 }
