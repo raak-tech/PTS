@@ -28,3 +28,9 @@ Use this to record decisions that affect architecture, product scope, safety/pri
 - **Why:** Unblocks early client pilot logins while keeping the current data posture conservative and leaving password reset for a follow-up slice.
 - **Alternatives considered:** Waiting for the full consent/persistence phase (too slow for pilot momentum), or adding an external auth provider first (extra integration overhead).
 - **Consequences / follow-ups:** Password reset and any route protection beyond the pilot shell remain follow-up work; auth now exists as the foundation for client onboarding.
+
+- **Date:** 2026-05-05
+- **Decision:** Switch the web app's default development backend from SQLite to PostgreSQL and run a local Postgres instance for the repo.
+- **Why:** The project now has auth, consent, and support-storage flows that are easier to develop and validate against a real Postgres backend.
+- **Alternatives considered:** Keep SQLite as the default (rejected), use a managed external database (rejected for local iteration).
+- **Consequences / follow-ups:** Keep `DATABASE_URL` override support, document the local DB endpoint, and treat Postgres as the default backend in future work.
