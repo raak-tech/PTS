@@ -11,7 +11,14 @@
 - Build daily checklist + reflections (local-only)
 - UX validation checklist + QA smoke test plan
 
+## Next (Sprint 2)
+- #125 Provider dashboard with assigned clients and review status
+- #126 Client detail review panel with conservative weekly plan updates
+- #127 Provider-client linking via invite code or admin assignment
+- #128 Granular consent controls and revocation behavior
+- #129 Retention, export, and deletion audit trail for support data
+- #130 Playwright coverage for provider workflow and consent controls
+
 ## Later
-- Consent + persistence
-- Provider console
 - Matching
+- Quality + instrumentation

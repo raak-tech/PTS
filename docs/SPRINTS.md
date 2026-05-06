@@ -29,8 +29,16 @@ Artifacts (Sprint 1):
 - Manual QA smoke checklist: docs/qa/sprint-1-smoke-checklist.md
 - Next tasks (issues): #68 #69 #70 #71
 
-## Sprint 2 - Provider console + persistence + consent (if required)
-**Goal:** therapist can view client and update weekly plan; add consented storage.
+## Sprint 2 - Provider console + persistence hardening + consent controls
+**Goal:** let providers review assigned clients, make conservative weekly plan updates, and tighten consented storage.
+
+Deliverables:
+- #125 Provider dashboard with assigned clients and review status
+- #126 Client detail review panel with conservative weekly plan updates
+- #127 Provider-client linking via invite code or admin assignment
+- #128 Granular consent controls and revocation behavior
+- #129 Retention, export, and deletion audit trail for support data
+- #130 Playwright coverage for provider workflow and consent controls
 
 ## Sprint 3 - Quality + instrumentation
 **Goal:** automated QA, metrics, and operational tooling.
