@@ -26,10 +26,11 @@
 - Payments
 - Rich scheduling
 
-## Proposed system (TBD stack)
+## Proposed system (current stack)
 - Web app (client + provider console)
-- API service (auth, program data)
-- Storage (only with consent)
+- API/data access layer in `apps/web`
+- PostgreSQL storage (default dev backend)
+- Storage only with consent for support artifacts
 
 ## Safety & boundaries
 See `docs/SAFETY_PRIVACY.md`.
