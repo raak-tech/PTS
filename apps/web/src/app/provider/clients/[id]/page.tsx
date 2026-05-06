@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { ProviderNav } from '../../../../components/ProviderNav';
+import {
+  ProviderClientReviewClient,
+  type ClientReviewData,
+} from './ProviderClientReviewClient';
 
-const clientSummaries = {
+const clientSummaries: Record<string, ClientReviewData> = {
   'client-001': {
     name: 'A. Client',
     program: 'Week 1 pilot',
@@ -12,6 +14,11 @@ const clientSummaries = {
     adherence: '4 of 5 daily items completed this week',
     summary: 'Small, steady progress. No escalation signals in this mock view.',
     safety: 'No red flags recorded in sample data.',
+    intakeSummary: 'New intake shows steady follow-through and no urgent concerns.',
+    currentPlan: 'Keep the current weekly plan unchanged and maintain gentle follow-up.',
+    weeklyCheckIn: 'The weekly check-in shows routine notes only, with no red-flag escalation.',
+    dailyAdherence: '4 of 5 daily items completed this week.',
+    redFlagStatus: 'No red flags recorded in sample data.',
   },
   'client-002': {
     name: 'B. Client',
@@ -20,6 +27,11 @@ const clientSummaries = {
     adherence: '2 of 5 daily items completed this week',
     summary: 'A gentle follow-up would make sense in a real workflow.',
     safety: 'Mock caution note only, nothing urgent.',
+    intakeSummary: 'Intake notes mention a slow week and the need for a careful check-in.',
+    currentPlan: 'Current plan is a light weekly structure with simple daily prompts.',
+    weeklyCheckIn: 'The latest weekly check-in suggests a short provider review is enough.',
+    dailyAdherence: '2 of 5 daily items completed this week.',
+    redFlagStatus: 'No red flags recorded, but the case is marked for review.',
   },
   'client-003': {
     name: 'C. Client',
@@ -28,8 +40,13 @@ const clientSummaries = {
     adherence: '3 of 5 daily items completed this week',
     summary: 'Stable sample case with routine follow-up only.',
     safety: 'No safety concerns in sample data.',
+    intakeSummary: 'Baseline intake looks stable with no urgent concerns to escalate.',
+    currentPlan: 'Maintain the current weekly plan and review again next week.',
+    weeklyCheckIn: 'Weekly check-in reports are routine and do not show a spike in concern.',
+    dailyAdherence: '3 of 5 daily items completed this week.',
+    redFlagStatus: 'No red flags recorded in sample data.',
   },
-} as const;
+};
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -52,70 +69,5 @@ export default async function ProviderClientDetailPage({ params }: Props) {
     notFound();
   }
 
-  return (
-    <main className="pageShell" style={{ maxWidth: 900 }}>
-      <p>
-        <Link href="/provider/clients" className="actionLink secondary">
-          ← Back to clients
-        </Link>
-      </p>
-
-      <h1>{client.name}</h1>
-
-      <p style={{ maxWidth: 720 }}>
-        Mock-only client detail page for the provider shell. This is a static
-        preview, not a live patient chart.
-      </p>
-
-      <section className="heroPanel" style={{ marginTop: 24 }}>
-        <h2>Review status</h2>
-        <ul>
-          <li><strong>Status:</strong> {client.status}</li>
-          <li><strong>Program:</strong> {client.program}</li>
-          <li><strong>Adherence:</strong> {client.adherence}</li>
-        </ul>
-      </section>
-
-      <section className="sectionStack" style={{ marginTop: 32 }}>
-        <h2>Snapshot</h2>
-        <ul>
-          <li><strong>Program:</strong> {client.program}</li>
-          <li><strong>Status:</strong> {client.status}</li>
-          <li><strong>Adherence:</strong> {client.adherence}</li>
-        </ul>
-      </section>
-
-      <section className="sectionStack" style={{ marginTop: 32 }}>
-        <h2>Provider note</h2>
-        <p style={{ maxWidth: 720 }}>{client.summary}</p>
-      </section>
-
-      <section className="sectionStack" style={{ marginTop: 32 }}>
-        <h2>Safety and follow-up</h2>
-        <p style={{ maxWidth: 720 }}>{client.safety}</p>
-      </section>
-
-      <section className="heroPanel" style={{ marginTop: 32 }}>
-        <h2>Weekly review panel</h2>
-        <p style={{ maxWidth: 720 }}>
-          In the real console, this is where a provider would review the current
-          week and decide whether to continue, make a small adjustment, or
-          escalate to red-flags guidance.
-        </p>
-
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
-          <button type="button">Continue</button>
-          <button type="button">Adjust</button>
-          <button type="button">Escalate</button>
-        </div>
-
-        <p style={{ marginTop: 12, maxWidth: 720 }}>
-          This sample panel is static and local-only. It exists to show the shape
-          of the review workflow without implying a live patient chart.
-        </p>
-      </section>
-
-      <ProviderNav className="sectionStack" style={{ marginTop: 32 }} />
-    </main>
-  );
+  return <ProviderClientReviewClient client={client} />;
 }
