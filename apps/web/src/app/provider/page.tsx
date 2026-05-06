@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { ProviderNav } from '../../components/ProviderNav';
+import { ProviderLinkedClientsPanel } from './ProviderLinkedClientsPanel';
 
 type AssignedClient = {
   id: string;
@@ -124,6 +125,8 @@ export default async function ProviderHomePage({ searchParams }: { searchParams?
           </Link>
         </p>
       </section>
+
+      <ProviderLinkedClientsPanel />
 
       <section className="sectionStack" style={{ marginTop: 32 }}>
         <h2>What is here</h2>

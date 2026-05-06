@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useSyncExternalStore } from 'react';
 
 import { ProviderNav } from '../../../components/ProviderNav';
@@ -97,7 +98,7 @@ export default function ProviderAssignmentsClient() {
       <section className="heroPanel" style={{ marginTop: 32 }}>
         <h2>Try the client join flow</h2>
         <p>
-          <a href="/provider/join" className="actionLink secondary">Open the client code entry page</a>
+          <Link href="/provider/join" className="actionLink secondary">Open the client code entry page</Link>
         </p>
       </section>
 

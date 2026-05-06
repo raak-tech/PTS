@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 import { ProviderNav } from '../../../components/ProviderNav';
 import {
@@ -24,14 +25,14 @@ export default function ProviderJoinClient() {
       </p>
 
       <section className="sectionStack" style={{ marginTop: 24, display: 'grid', gap: 12, maxWidth: 520 }}>
-        <label style={{ display: 'grid', gap: 6 }}>
+        <label htmlFor="provider-invite-code" style={{ display: 'grid', gap: 6 }}>
           <span>Invite code</span>
-          <input value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} />
+          <input id="provider-invite-code" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} />
         </label>
 
-        <label style={{ display: 'grid', gap: 6 }}>
+        <label htmlFor="provider-client-name" style={{ display: 'grid', gap: 6 }}>
           <span>Client name</span>
-          <input value={clientName} onChange={(e) => setClientName(e.target.value)} />
+          <input id="provider-client-name" value={clientName} onChange={(e) => setClientName(e.target.value)} />
         </label>
 
         <button
@@ -58,7 +59,7 @@ export default function ProviderJoinClient() {
       <section className="heroPanel" style={{ marginTop: 32 }}>
         <h2>Need the latest code?</h2>
         <p>
-          <a href="/provider/assignments" className="actionLink secondary">Check the provider assignment page</a>
+          <Link href="/provider/assignments" className="actionLink secondary">Check the provider assignment page</Link>
         </p>
       </section>
 
