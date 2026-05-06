@@ -32,34 +32,32 @@ export async function POST(request: Request) {
   }
 
   const db = getDb();
-  const user = db.select().from(users).where(eq(users.email, parsed.data.email)).get();
+  const [user] = await db.select().from(users).where(eq(users.email, parsed.data.email)).limit(1);
 
   if (!user) {
     return redirectSent(request);
   }
 
-  db.delete(passwordResetTokens)
-    .where(and(eq(passwordResetTokens.userId, user.id), isNull(passwordResetTokens.usedAt)))
-    .run();
+  await db.delete(passwordResetTokens)
+    .where(and(eq(passwordResetTokens.userId, user.id), isNull(passwordResetTokens.usedAt)));
 
   const rawToken = createPasswordResetToken();
   const now = new Date();
   const expiresAt = new Date(now.getTime() + PASSWORD_RESET_MAX_AGE_SECONDS * 1000);
 
-  db.insert(passwordResetTokens)
+  await db.insert(passwordResetTokens)
     .values({
       id: randomUUID(),
       userId: user.id,
       tokenHash: hashToken(rawToken),
       createdAt: now,
       expiresAt,
-    })
-    .run();
+    });
 
   const resetUrl = new URL('/reset-password', request.url);
   resetUrl.searchParams.set('token', rawToken);
 
-  recordPasswordResetOutbox({
+  await recordPasswordResetOutbox({
     toEmail: user.email,
     resetUrl: resetUrl.toString(),
   });

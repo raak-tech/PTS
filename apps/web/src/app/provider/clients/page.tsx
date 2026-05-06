@@ -27,6 +27,9 @@ const clients = [
   },
 ] as const;
 
+const reviewCount = clients.filter((client) => client.status === 'Needs review').length;
+const activeCount = clients.length;
+
 export const metadata: Metadata = {
   title: 'Provider clients',
 };
@@ -40,6 +43,13 @@ export default function ProviderClientsPage() {
         Static sample roster for the provider shell. These are mock rows, not real
         client records.
       </p>
+
+      <section className="heroPanel" style={{ marginTop: 24 }}>
+        <h2>Review queue</h2>
+        <p style={{ maxWidth: 720 }}>
+          {reviewCount} client needs review and {activeCount} active clients are currently in this sample queue.
+        </p>
+      </section>
 
       <section className="sectionStack" style={{ marginTop: 24 }}>
         <div style={{ display: 'grid', gap: 12 }}>

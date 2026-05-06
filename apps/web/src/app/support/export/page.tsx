@@ -36,12 +36,11 @@ export default async function SupportExportPage() {
   }
 
   const db = getDb();
-  const records = db
+  const records = await db
     .select()
     .from(supportArtifacts)
     .where(eq(supportArtifacts.userId, user.id))
-    .orderBy(desc(supportArtifacts.createdAt))
-    .all();
+    .orderBy(desc(supportArtifacts.createdAt));
 
   return (
     <main style={{ maxWidth: 860, margin: '0 auto', padding: '48px 24px' }}>
@@ -53,6 +52,7 @@ export default async function SupportExportPage() {
 
       <p style={{ maxWidth: 720 }}>
         Human-readable export of the support artifacts saved for your account.
+        Encrypted reflections remain ciphertext-only here.
       </p>
 
       {records.length === 0 ? (

@@ -30,7 +30,7 @@ export async function GET(request: Request) {
   if (!user) return unauthorized();
 
   const db = getDb();
-  const consent = db.select().from(userConsents).where(eq(userConsents.userId, user.id)).get();
+  const [consent] = await db.select().from(userConsents).where(eq(userConsents.userId, user.id)).limit(1);
 
   return NextResponse.json({
     ok: true,
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
 
   const now = new Date();
   const db = getDb();
-  const current = db.select().from(userConsents).where(eq(userConsents.userId, user.id)).get();
+  const [current] = await db.select().from(userConsents).where(eq(userConsents.userId, user.id)).limit(1);
   const nextStorageEnabled = parsed.data.enabled ?? current?.dataStorageEnabled ?? false;
   const reflectionEncryptionEnabled = parsed.data.reflectionEncryptionEnabled ?? current?.reflectionEncryptionEnabled ?? false;
   const reflectionSalt =
@@ -83,8 +83,7 @@ export async function POST(request: Request) {
         reflectionEncryptionEnabled,
         reflectionSalt,
       },
-    })
-    .run();
+    });
 
   return NextResponse.json({
     ok: true,

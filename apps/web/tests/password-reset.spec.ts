@@ -44,7 +44,7 @@ test('request reset records outbox and reset updates password', async ({ page, c
   await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page).toHaveURL(/\/forgot-password\?sent=1/);
 
-  const body = getLatestOutboxBodyForEmail(email);
+  const body = await getLatestOutboxBodyForEmail(email);
   expect(body).toBeTruthy();
   const token = extractTokenFromOutboxBody(body!);
   expect(token).toBeTruthy();
@@ -86,7 +86,7 @@ test('reset token cannot be reused', async ({ page, context }) => {
   await page.getByLabel('Email').fill(email);
   await page.getByRole('button', { name: 'Continue' }).click();
 
-  const body = getLatestOutboxBodyForEmail(email);
+  const body = await getLatestOutboxBodyForEmail(email);
   const token = extractTokenFromOutboxBody(body!);
   expect(token).toBeTruthy();
 
@@ -121,11 +121,11 @@ test('expired reset token is rejected', async ({ page, context }) => {
   await page.getByLabel('Email').fill(email);
   await page.getByRole('button', { name: 'Continue' }).click();
 
-  const body = getLatestOutboxBodyForEmail(email);
+  const body = await getLatestOutboxBodyForEmail(email);
   const token = extractTokenFromOutboxBody(body!);
   expect(token).toBeTruthy();
 
-  expirePasswordResetTokenByPlaintext(token!);
+  await expirePasswordResetTokenByPlaintext(token!);
 
   await page.goto(`/reset-password?token=${token}`);
   await page.getByLabel('New password').fill('DoesNotMatter99!');

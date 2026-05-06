@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   if (!user) return unauthorized();
 
   const db = getDb();
-  await db.delete(supportArtifacts).where(eq(supportArtifacts.userId, user.id)).run();
+  await db.delete(supportArtifacts).where(eq(supportArtifacts.userId, user.id));
   await db
     .insert(userConsents)
     .values({
@@ -30,8 +30,7 @@ export async function POST(request: Request) {
         enabledAt: null,
         revokedAt: new Date(),
       },
-    })
-    .run();
+    });
 
   return NextResponse.json({ ok: true });
 }

@@ -55,9 +55,13 @@ export default async function ResetPasswordPage({
               type="password"
               autoComplete="new-password"
               minLength={8}
+              aria-describedby="reset-password-help"
               required
             />
           </label>
+          <p id="reset-password-help" style={{ margin: 0, fontSize: 13, color: '#555' }}>
+            Use at least 8 characters. Choose a password you have not used elsewhere.
+          </p>
 
           <button type="submit">Update password</button>
         </form>

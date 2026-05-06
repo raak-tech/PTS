@@ -16,7 +16,7 @@ export default async function ForgotPasswordPage({
   return (
     <section style={{ maxWidth: 480, margin: '0 auto', padding: '3rem 1rem' }}>
       <h1>Reset your password</h1>
-      <p>Enter the email you use for PTS. Further steps depend on whether an account exists.</p>
+      <p>Enter the email you use for PTS. If an account exists, reset steps are queued in a local outbox during the pilot.</p>
 
       {sent ? (
         <p role="status">

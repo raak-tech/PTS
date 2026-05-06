@@ -22,17 +22,18 @@ export async function getUserFromCookieHeader(cookieHeader: string | null) {
   if (!token) return null;
 
   const db = getDb();
-  const session = db
+  const [session] = await db
     .select()
     .from(sessions)
     .where(eq(sessions.tokenHash, hashToken(token)))
-    .get();
+    .limit(1);
 
   if (!session || session.revokedAt || session.expiresAt <= new Date()) {
     return null;
   }
 
-  return db.select().from(users).where(eq(users.id, session.userId)).get() ?? null;
+  const [user] = await db.select().from(users).where(eq(users.id, session.userId)).limit(1);
+  return user ?? null;
 }
 
 export function hasSupportCookie(cookieHeader: string | null) {

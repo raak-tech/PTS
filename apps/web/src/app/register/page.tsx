@@ -48,9 +48,13 @@ export default async function RegisterPage({
             type="password"
             autoComplete="new-password"
             minLength={8}
+            aria-describedby="register-password-help"
             required
           />
         </label>
+        <p id="register-password-help" style={{ margin: 0, fontSize: 13, color: '#555' }}>
+          Use at least 8 characters. A longer password is better.
+        </p>
 
         <button type="submit">Create account</button>
       </form>

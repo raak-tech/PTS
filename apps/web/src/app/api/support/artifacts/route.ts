@@ -30,11 +30,7 @@ export async function POST(request: Request) {
   }
 
   const db = getDb();
-  const consent = db
-    .select()
-    .from(userConsents)
-    .where(eq(userConsents.userId, user.id))
-    .get();
+  const [consent] = await db.select().from(userConsents).where(eq(userConsents.userId, user.id)).limit(1);
 
   if (!consent?.dataStorageEnabled) {
     return NextResponse.json({ error: 'consent-required' }, { status: 403 });
@@ -52,8 +48,7 @@ export async function POST(request: Request) {
       reflectionCiphertext: parsed.data.reflectionCiphertext ?? null,
       reflectionEncryptionMeta: parsed.data.reflectionEncryptionMeta ?? null,
       createdAt: now,
-    })
-    .run();
+    });
 
   return NextResponse.json({ ok: true });
 }

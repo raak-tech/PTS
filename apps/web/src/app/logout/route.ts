@@ -26,8 +26,7 @@ async function logout(request: Request) {
     await db
       .update(sessions)
       .set({ revokedAt: new Date() })
-      .where(eq(sessions.tokenHash, hashToken(cookieValue)))
-      .run();
+      .where(eq(sessions.tokenHash, hashToken(cookieValue)));
   }
 
   const response = NextResponse.redirect(new URL('/login', request.url), 303);

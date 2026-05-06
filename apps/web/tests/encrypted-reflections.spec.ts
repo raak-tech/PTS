@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import * as path from 'node:path';
 
-import Database from 'better-sqlite3';
+import { desc, eq } from 'drizzle-orm';
 import { expect, test } from '@playwright/test';
 
+import { getDb } from '../src/db';
+import { supportArtifacts } from '../src/db/schema';
 import { startConsoleErrorCollector } from './helpers/console';
 
 function uniqueEmail(prefix: string) {
@@ -41,28 +42,23 @@ test('optional reflections can be encrypted client-side before support storage s
   await page.getByRole('button', { name: /save daily completion/i }).click();
   await expect(page.getByText(/daily completion saved/i)).toBeVisible();
 
-  const db = new Database(path.resolve(process.cwd(), '.data/dev.db'));
-  const row = db
-    .prepare(
-      `select body_text, reflection_ciphertext, reflection_encryption_meta
-       from support_artifacts
-       where kind = 'daily'
-       order by created_at desc
-       limit 1`
-    )
-    .get() as
-    | {
-        body_text: string;
-        reflection_ciphertext: string | null;
-        reflection_encryption_meta: string | null;
-      }
-    | undefined;
+  const db = getDb();
+  const [row] = await db
+    .select({
+      bodyText: supportArtifacts.bodyText,
+      reflectionCiphertext: supportArtifacts.reflectionCiphertext,
+      reflectionEncryptionMeta: supportArtifacts.reflectionEncryptionMeta,
+    })
+    .from(supportArtifacts)
+    .where(eq(supportArtifacts.kind, 'daily'))
+    .orderBy(desc(supportArtifacts.createdAt))
+    .limit(1);
 
   expect(row).toBeTruthy();
-  expect(row?.body_text ?? '').not.toMatch(/felt calmer after a short walk/i);
-  expect(row?.reflection_ciphertext).toBeTruthy();
-  expect(row?.reflection_ciphertext ?? '').not.toMatch(/felt calmer after a short walk/i);
-  expect(row?.reflection_encryption_meta ?? '').toMatch(/scrypt|argon2id/i);
+  expect(row?.bodyText ?? '').not.toMatch(/felt calmer after a short walk/i);
+  expect(row?.reflectionCiphertext).toBeTruthy();
+  expect(row?.reflectionCiphertext ?? '').not.toMatch(/felt calmer after a short walk/i);
+  expect(row?.reflectionEncryptionMeta ?? '').toMatch(/scrypt|argon2id/i);
 
   expect(errors, `Console errors:\n${errors.join('\n')}`).toEqual([]);
 });

@@ -38,11 +38,11 @@ export async function POST(request: Request) {
 
   const db = getDb();
   const tokenHash = hashToken(parsed.data.token);
-  const row = db
+  const [row] = await db
     .select()
     .from(passwordResetTokens)
     .where(eq(passwordResetTokens.tokenHash, tokenHash))
-    .get();
+    .limit(1);
 
   if (!row) {
     return errorRedirect(request, 'invalid', parsed.data.token);
@@ -59,12 +59,11 @@ export async function POST(request: Request) {
   const now = new Date();
   const newHash = await hashPassword(parsed.data.password);
 
-  db.transaction((tx) => {
-    tx.update(users).set({ passwordHash: newHash }).where(eq(users.id, row.userId)).run();
-    tx.update(passwordResetTokens)
+  await db.transaction(async (tx) => {
+    await tx.update(users).set({ passwordHash: newHash }).where(eq(users.id, row.userId));
+    await tx.update(passwordResetTokens)
       .set({ usedAt: now })
-      .where(eq(passwordResetTokens.id, row.id))
-      .run();
+      .where(eq(passwordResetTokens.id, row.id));
   });
 
   return NextResponse.redirect(new URL('/login?reset=success', request.url), 303);

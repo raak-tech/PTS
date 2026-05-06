@@ -26,19 +26,15 @@ export default async function SupportPage() {
           saved records.
         </p>
         <p>
-          <Link href="/login">Sign in</Link> or <Link href="/register">create an account</Link>.
+          <Link href="/login">Sign in</Link> or <Link href="/register">Create an account</Link>.
         </p>
       </main>
     );
   }
 
   const db = getDb();
-  const consent = db.select().from(userConsents).where(eq(userConsents.userId, user.id)).get();
-  const recordCount = db
-    .select()
-    .from(supportArtifacts)
-    .where(eq(supportArtifacts.userId, user.id))
-    .all().length;
+  const [consent] = await db.select().from(userConsents).where(eq(userConsents.userId, user.id)).limit(1);
+  const records = await db.select().from(supportArtifacts).where(eq(supportArtifacts.userId, user.id));
 
   return (
     <main style={{ maxWidth: 860, margin: '0 auto', padding: '48px 24px' }}>
@@ -50,10 +46,19 @@ export default async function SupportPage() {
       </p>
 
       <p style={{ marginTop: 8, fontSize: 13, color: '#555' }}>
-        Stored records: {recordCount}
+        Stored records: {records.length}
       </p>
 
       <SupportControls initialEnabled={Boolean(consent?.dataStorageEnabled)} />
+
+      <section style={{ marginTop: 32 }}>
+        <h2>Encrypted reflections</h2>
+        <p style={{ maxWidth: 720 }}>
+          Optional reflections can be encrypted in the browser before they are
+          stored. That keeps the private note contents out of the server and
+          limits what is visible in exports.
+        </p>
+      </section>
 
       <section style={{ marginTop: 32 }}>
         <h2>Export</h2>

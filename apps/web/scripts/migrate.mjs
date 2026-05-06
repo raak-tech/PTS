@@ -1,15 +1,21 @@
-import fs from "node:fs";
+import os from "node:os";
 
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
 
-const sqlitePath = process.env.SQLITE_PATH ?? "./.data/dev.db";
-fs.mkdirSync(new URL("../.data/", import.meta.url), { recursive: true });
+function defaultDatabaseUrl() {
+  const username = encodeURIComponent(os.userInfo().username);
+  return `postgresql://${username}@127.0.0.1:5433/pts`;
+}
 
-const sqlite = new Database(sqlitePath);
-const db = drizzle(sqlite);
+const connectionString = process.env.DATABASE_URL ?? defaultDatabaseUrl();
+const client = postgres(connectionString, { max: 1 });
+const db = drizzle(client);
 
-migrate(db, { migrationsFolder: "./src/db/migrations" });
-
-console.log(`migrated sqlite db at ${sqlitePath}`);
+try {
+  await migrate(db, { migrationsFolder: "./src/db/migrations" });
+  console.log(`migrated postgres db at ${connectionString}`);
+} finally {
+  await client.end({ timeout: 5 });
+}
