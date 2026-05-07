@@ -22,8 +22,7 @@ export default async function SupportPage() {
       <main style={{ maxWidth: 860, margin: '0 auto', padding: '48px 24px' }}>
         <h1>Support storage</h1>
         <p style={{ maxWidth: 720 }}>
-          Sign in to manage consent, export stored support data, or delete your
-          saved records.
+          Sign in to manage consent, export stored support data, or delete your saved records.
         </p>
         <p>
           <Link href="/login">Sign in</Link> or <Link href="/register">Create an account</Link>.
@@ -36,28 +35,43 @@ export default async function SupportPage() {
   const [consent] = await db.select().from(userConsents).where(eq(userConsents.userId, user.id)).limit(1);
   const records = await db.select().from(supportArtifacts).where(eq(supportArtifacts.userId, user.id));
 
+  const initialConsent = {
+    providerAccessEnabled: Boolean(consent?.providerAccessEnabled),
+    reflectionsEnabled: Boolean(consent?.reflectionsEnabled),
+    redFlagsStorageEnabled: Boolean(consent?.redFlagsStorageEnabled),
+    reflectionEncryptionEnabled: Boolean(consent?.reflectionEncryptionEnabled),
+    reflectionSalt: consent?.reflectionSalt ?? null,
+  };
+
   return (
     <main style={{ maxWidth: 860, margin: '0 auto', padding: '48px 24px' }}>
       <h1>Support storage</h1>
 
       <p style={{ maxWidth: 720 }}>
-        Manage the optional storage layer for your support account. Exporting and
-        deletion are self-serve.
+        Manage the optional storage layer for your support account. Exporting and deletion are self-serve.
       </p>
 
       <p style={{ marginTop: 8, fontSize: 13, color: '#555' }}>
         Stored records: {records.length}
       </p>
 
-      <SupportControls initialEnabled={Boolean(consent?.dataStorageEnabled)} />
+      <SupportControls initialConsent={initialConsent} />
 
       <section style={{ marginTop: 32 }}>
         <h2>Encrypted reflections</h2>
         <p style={{ maxWidth: 720 }}>
-          Optional reflections can be encrypted in the browser before they are
-          stored. That keeps the private note contents out of the server and
-          limits what is visible in exports.
+          Optional reflections are encrypted in the browser before they are sent when you
+          turn that setting on.
         </p>
+      </section>
+
+      <section style={{ marginTop: 32 }}>
+        <h2>What each control does</h2>
+        <ul>
+          <li>Provider access stores intake summaries, week plans, and weekly check-in snapshots.</li>
+          <li>Reflections/free-text stores optional daily reflections and weekly notes.</li>
+          <li>Red-flags notes stores a short record when the intake flow routes to red-flags guidance.</li>
+        </ul>
       </section>
 
       <section style={{ marginTop: 32 }}>
@@ -70,8 +84,8 @@ export default async function SupportPage() {
       <section style={{ marginTop: 32 }}>
         <h2>How this works</h2>
         <ul>
-          <li>Nothing is stored until you enable consent.</li>
-          <li>Storage can be revoked at any time.</li>
+          <li>Nothing is stored until you enable a control.</li>
+          <li>Revoking consent stops future storage immediately.</li>
           <li>Deletion removes all stored support artifacts for your account.</li>
         </ul>
       </section>

@@ -36,7 +36,9 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
 
 export const userConsents = pgTable("user_consents", {
   userId: text("user_id").primaryKey(),
-  dataStorageEnabled: boolean("data_storage_enabled").notNull().default(false),
+  providerAccessEnabled: boolean("provider_access_enabled").notNull().default(false),
+  reflectionsEnabled: boolean("reflections_enabled").notNull().default(false),
+  redFlagsStorageEnabled: boolean("red_flags_storage_enabled").notNull().default(false),
   enabledAt: timestamp("enabled_at", { mode: "date", withTimezone: true }),
   revokedAt: timestamp("revoked_at", { mode: "date", withTimezone: true }),
   reflectionEncryptionEnabled: boolean("reflection_encryption_enabled").notNull().default(false),
@@ -51,6 +53,14 @@ export const supportArtifacts = pgTable("support_artifacts", {
   bodyText: text("body_text").notNull(),
   reflectionCiphertext: text("reflection_ciphertext"),
   reflectionEncryptionMeta: text("reflection_encryption_meta"),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+export const supportAuditEvents = pgTable("support_audit_events", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  kind: text("kind").notNull(),
+  detail: text("detail").notNull(),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
 

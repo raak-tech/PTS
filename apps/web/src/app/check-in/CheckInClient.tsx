@@ -97,7 +97,7 @@ export function CheckInClient() {
               }),
             });
 
-            setStatus(response.ok ? 'Weekly check-in saved.' : 'Enable support storage first.');
+            setStatus(response.ok ? 'Weekly check-in saved.' : 'Enable provider access on Support storage first.');
           }}
         >
           Save weekly check-in
