@@ -42,3 +42,17 @@ Deliverables:
 
 ## Sprint 3 - Quality + instrumentation
 **Goal:** automated QA, metrics, and operational tooling.
+
+Deliverables:
+- #142 Automated QA and accessibility smoke for core web flows
+- #143 Keyboard-navigation and strict-locator regression coverage
+- #144 Structured instrumentation for key workflow events
+
+## Sprint 4 - Production readiness + dogfood pilot
+**Goal:** lock the production-ready core, then define the internal pilot gate before broader dogfood/toolset expansion.
+
+Deliverables:
+- #145 Production-ready scope, roles, and data lifecycle docs
+- #146 Security baseline and secrets/dependency guardrails
+- #147 Deployment readiness and dogfood pilot runbook
+- #148 Toolset readiness matrix and enablement checklist

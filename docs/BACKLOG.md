@@ -21,4 +21,5 @@
 
 ## Later
 - Matching
-- Quality + instrumentation
+- Sprint 3 (quality + instrumentation): #142 #143 #144
+- Sprint 4 (production readiness + dogfood pilot): #145 #146 #147 #148
