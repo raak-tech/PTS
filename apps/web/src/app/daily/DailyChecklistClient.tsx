@@ -12,6 +12,9 @@ type ChecklistItem = {
 };
 
 type ReflectionSettings = {
+  providerAccessEnabled: boolean;
+  reflectionsEnabled: boolean;
+  redFlagsStorageEnabled: boolean;
   reflectionEncryptionEnabled: boolean;
   reflectionSalt: string | null;
 };
@@ -30,6 +33,9 @@ export function DailyChecklistClient() {
 
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [reflection, setReflection] = useState("");
+  const [providerAccessEnabled, setProviderAccessEnabled] = useState(false);
+  const [reflectionsEnabled, setReflectionsEnabled] = useState(false);
+  const [redFlagsStorageEnabled, setRedFlagsStorageEnabled] = useState(false);
   const [encryptReflections, setEncryptReflections] = useState(false);
   const [clientSecret, setClientSecret] = useState("");
   const [reflectionSalt, setReflectionSalt] = useState<string | null>(null);
@@ -40,13 +46,14 @@ export function DailyChecklistClient() {
     let cancelled = false;
 
     async function loadSettings() {
-      if (!document.cookie.includes("pts_session=")) return;
-
       try {
         const response = await fetch("/api/support/consent");
         if (!response.ok) return;
         const data = (await response.json()) as ReflectionSettings;
         if (cancelled) return;
+        setProviderAccessEnabled(Boolean(data.providerAccessEnabled));
+        setReflectionsEnabled(Boolean(data.reflectionsEnabled));
+        setRedFlagsStorageEnabled(Boolean(data.redFlagsStorageEnabled));
         setEncryptReflections(Boolean(data.reflectionEncryptionEnabled));
         setReflectionSalt(data.reflectionSalt ?? null);
       } catch {
@@ -197,6 +204,12 @@ export function DailyChecklistClient() {
               : "Encrypted reflections are not initialized yet."}
           </p>
 
+          <p style={{ margin: 0, fontSize: 13, color: "#555" }}>
+            Provider access: <strong>{providerAccessEnabled ? 'on' : 'off'}</strong> ·
+            Reflections/free-text: <strong>{reflectionsEnabled ? 'on' : 'off'}</strong> ·
+            Red-flags storage: <strong>{redFlagsStorageEnabled ? 'on' : 'off'}</strong>
+          </p>
+
           {settingsStatus ? (
             <p role="status" className="statusBanner" style={{ margin: 0 }}>
               {settingsStatus}
@@ -209,8 +222,18 @@ export function DailyChecklistClient() {
             type="button"
             onClick={async () => {
               setStatus("");
+              if (!providerAccessEnabled) {
+                setStatus("Enable provider access on Support storage first.");
+                return;
+              }
+
               const completed = items.filter((item) => checked[item.id]).map((item) => item.label);
               const trimmedReflection = reflection.trim();
+
+              let reflectionNotice = "";
+              if (trimmedReflection && !reflectionsEnabled) {
+                reflectionNotice = " Reflection not stored because reflections/free-text storage is off.";
+              }
 
               if (encryptReflections && trimmedReflection && !clientSecret.trim()) {
                 setStatus("Enter a client secret code before saving an encrypted reflection.");
@@ -220,19 +243,23 @@ export function DailyChecklistClient() {
               let reflectionCiphertext: string | undefined;
               let reflectionEncryptionMeta: string | undefined;
 
-              if (encryptReflections && trimmedReflection) {
-                if (!reflectionSalt) {
-                  setStatus("Initialize encrypted reflections before saving one.");
-                  return;
-                }
+              if (trimmedReflection) {
+                if (encryptReflections) {
+                  if (!reflectionSalt) {
+                    setStatus("Initialize encrypted reflections before saving one.");
+                    return;
+                  }
 
-                const encrypted = await encryptReflection(
-                  trimmedReflection,
-                  clientSecret.trim(),
-                  reflectionSalt
-                );
-                reflectionCiphertext = encrypted.ciphertext;
-                reflectionEncryptionMeta = encrypted.meta;
+                  const encrypted = await encryptReflection(
+                    trimmedReflection,
+                    clientSecret.trim(),
+                    reflectionSalt
+                  );
+                  reflectionCiphertext = encrypted.ciphertext;
+                  reflectionEncryptionMeta = encrypted.meta;
+                } else if (reflectionsEnabled) {
+                  reflectionCiphertext = trimmedReflection;
+                }
               }
 
               const response = await fetch("/api/support/artifacts", {
@@ -241,13 +268,13 @@ export function DailyChecklistClient() {
                 body: JSON.stringify({
                   kind: "daily",
                   title: "Daily completion",
-                  bodyText: `Completed items:\n${completed.join("\n") || "None"}`,
+                  bodyText: `Completed items:\n${completed.join("\n") || "None"}${!encryptReflections && reflectionsEnabled && trimmedReflection ? `\n\nReflection:\n${trimmedReflection}` : ""}`,
                   reflectionCiphertext,
                   reflectionEncryptionMeta,
                 }),
               });
 
-              setStatus(response.ok ? "Daily completion saved." : "Enable support storage first.");
+              setStatus(response.ok ? `Daily completion saved.${reflectionNotice}` : "Enable provider access on Support storage first.");
             }}
           >
             Save daily completion

@@ -8,6 +8,13 @@
       "when": 1777914772343,
       "tag": "0000_spotty_lady_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777916600000,
+      "tag": "0003_granular_consent_audit",
+      "breakpoints": true
     }
   ]
 }

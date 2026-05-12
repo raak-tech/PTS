@@ -33,12 +33,26 @@ Artifacts (Sprint 1):
 **Goal:** let providers review assigned clients, make conservative weekly plan updates, and tighten consented storage.
 
 Deliverables:
-- #125 Provider dashboard with assigned clients and review status
-- #126 Client detail review panel with conservative weekly plan updates
-- #127 Provider-client linking via invite code or admin assignment
-- #128 Granular consent controls and revocation behavior
-- #129 Retention, export, and deletion audit trail for support data
-- #130 Playwright coverage for provider workflow and consent controls
+- #135 Provider dashboard with assigned clients and review status
+- #136 Client detail review panel with conservative weekly plan updates
+- #137 Provider-client linking via invite code or admin assignment
+- #138 Granular consent controls and revocation behavior
+- #139 Retention, export, and deletion audit trail for support data
+- #140 Playwright coverage for provider workflow and consent controls
 
 ## Sprint 3 - Quality + instrumentation
 **Goal:** automated QA, metrics, and operational tooling.
+
+Deliverables:
+- #142 Automated QA and accessibility smoke for core web flows
+- #143 Keyboard-navigation and strict-locator regression coverage
+- #144 Structured instrumentation for key workflow events
+
+## Sprint 4 - Production readiness + dogfood pilot
+**Goal:** lock the production-ready core, then define the internal pilot gate before broader dogfood/toolset expansion.
+
+Deliverables:
+- #145 Production-ready scope, roles, and data lifecycle docs
+- #146 Security baseline and secrets/dependency guardrails
+- #147 Deployment readiness and dogfood pilot runbook
+- #148 Toolset readiness matrix and enablement checklist

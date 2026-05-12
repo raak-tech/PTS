@@ -4,8 +4,9 @@ import { headers } from 'next/headers';
 import { desc, eq } from 'drizzle-orm';
 
 import { getDb } from '../../../db';
-import { supportArtifacts } from '../../../db/schema';
+import { supportArtifacts, supportAuditEvents } from '../../../db/schema';
 import { getUserFromCookieHeader } from '../../../lib/session';
+import { recordSupportAuditEvent } from '../../../lib/support-audit';
 
 export const metadata: Metadata = {
   title: 'Support export',
@@ -36,11 +37,17 @@ export default async function SupportExportPage() {
   }
 
   const db = getDb();
+  await recordSupportAuditEvent(db, user.id, 'export-viewed', 'User opened the human-readable support export');
   const records = await db
     .select()
     .from(supportArtifacts)
     .where(eq(supportArtifacts.userId, user.id))
     .orderBy(desc(supportArtifacts.createdAt));
+  const auditTrail = await db
+    .select()
+    .from(supportAuditEvents)
+    .where(eq(supportAuditEvents.userId, user.id))
+    .orderBy(desc(supportAuditEvents.createdAt));
 
   return (
     <main style={{ maxWidth: 860, margin: '0 auto', padding: '48px 24px' }}>
@@ -51,9 +58,22 @@ export default async function SupportExportPage() {
       <h1>Support export</h1>
 
       <p style={{ maxWidth: 720 }}>
-        Human-readable export of the support artifacts saved for your account.
-        Encrypted reflections remain ciphertext-only here.
+        Human-readable export of the support artifacts saved for your account. Audit events are retained separately so consent, export, and delete actions stay reviewable.
       </p>
+
+      <section style={{ marginTop: 24 }}>
+        <h2>Retention</h2>
+        <p style={{ maxWidth: 720 }}>
+          Stored support artifacts are removed when you delete them. Audit entries are kept as a compact trail of support actions.
+        </p>
+      </section>
+
+      <section style={{ marginTop: 24 }}>
+        <h2>Encrypted reflections</h2>
+        <p style={{ maxWidth: 720 }}>
+          When encrypted reflections are enabled, the export shows ciphertext-only here.
+        </p>
+      </section>
 
       {records.length === 0 ? (
         <p>No saved support data yet.</p>
@@ -82,6 +102,17 @@ export default async function SupportExportPage() {
           ))}
         </div>
       )}
+
+      <section style={{ marginTop: 32 }}>
+        <h2>Audit trail</h2>
+        <ul style={{ display: 'grid', gap: 10, paddingLeft: 20 }}>
+          {auditTrail.map((event) => (
+            <li key={event.id}>
+              <strong>{event.kind}</strong> · {formatTimestamp(event.createdAt)} · {event.detail}
+            </li>
+          ))}
+        </ul>
+      </section>
     </main>
   );
 }

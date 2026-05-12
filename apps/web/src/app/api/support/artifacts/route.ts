@@ -7,9 +7,10 @@ import { z } from 'zod';
 import { getDb } from '../../../../db';
 import { supportArtifacts, userConsents } from '../../../../db/schema';
 import { getUserFromCookieHeader } from '../../../../lib/session';
+import { recordSupportAuditEvent } from '../../../../lib/support-audit';
 
 const artifactSchema = z.object({
-  kind: z.enum(['intake', 'plan', 'daily', 'check-in']),
+  kind: z.enum(['intake', 'plan', 'daily', 'check-in', 'red-flags']),
   title: z.string().trim().min(1).max(120),
   bodyText: z.string().trim().min(1).max(5000),
   reflectionCiphertext: z.string().trim().min(1).max(12000).optional(),
@@ -32,8 +33,21 @@ export async function POST(request: Request) {
   const db = getDb();
   const [consent] = await db.select().from(userConsents).where(eq(userConsents.userId, user.id)).limit(1);
 
-  if (!consent?.dataStorageEnabled) {
-    return NextResponse.json({ error: 'consent-required' }, { status: 403 });
+  const requiresProviderAccess = parsed.data.kind === 'intake' || parsed.data.kind === 'plan' || parsed.data.kind === 'check-in';
+  const hasEncryptedReflection = Boolean(parsed.data.reflectionCiphertext && parsed.data.reflectionEncryptionMeta);
+  const requiresReflections = parsed.data.kind === 'daily' && Boolean(parsed.data.reflectionCiphertext) && !hasEncryptedReflection;
+  const requiresRedFlags = parsed.data.kind === 'red-flags';
+
+  if (requiresProviderAccess && !consent?.providerAccessEnabled) {
+    return NextResponse.json({ error: 'provider-consent-required' }, { status: 403 });
+  }
+
+  if (requiresReflections && !consent?.reflectionsEnabled) {
+    return NextResponse.json({ error: 'reflection-consent-required' }, { status: 403 });
+  }
+
+  if (requiresRedFlags && !consent?.redFlagsStorageEnabled) {
+    return NextResponse.json({ error: 'red-flags-consent-required' }, { status: 403 });
   }
 
   const now = new Date();
@@ -49,6 +63,13 @@ export async function POST(request: Request) {
       reflectionEncryptionMeta: parsed.data.reflectionEncryptionMeta ?? null,
       createdAt: now,
     });
+
+  await recordSupportAuditEvent(
+    db,
+    user.id,
+    'artifact-saved',
+    `${parsed.data.kind} artifact saved: ${parsed.data.title}`
+  );
 
   return NextResponse.json({ ok: true });
 }

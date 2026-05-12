@@ -12,13 +12,14 @@
 - UX validation checklist + QA smoke test plan
 
 ## Next (Sprint 2)
-- #125 Provider dashboard with assigned clients and review status
-- #126 Client detail review panel with conservative weekly plan updates
-- #127 Provider-client linking via invite code or admin assignment
-- #128 Granular consent controls and revocation behavior
-- #129 Retention, export, and deletion audit trail for support data
-- #130 Playwright coverage for provider workflow and consent controls
+- #135 Provider dashboard with assigned clients and review status
+- #136 Client detail review panel with conservative weekly plan updates
+- #137 Provider-client linking via invite code or admin assignment
+- #138 Granular consent controls and revocation behavior
+- #139 Retention, export, and deletion audit trail for support data
+- #140 Playwright coverage for provider workflow and consent controls
 
 ## Later
 - Matching
-- Quality + instrumentation
+- Sprint 3 (quality + instrumentation): #142 #143 #144
+- Sprint 4 (production readiness + dogfood pilot): #145 #146 #147 #148

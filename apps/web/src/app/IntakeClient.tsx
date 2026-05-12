@@ -84,38 +84,50 @@ export function IntakeClient() {
 
             let nextPath = hasRedFlags ? "/red-flags" : "/plan";
 
-            if (saveSupportData && !hasRedFlags) {
+            if (saveSupportData) {
               const consentResponse = await fetch("/api/support/consent", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ enabled: true }),
+                body: JSON.stringify({ providerAccessEnabled: true }),
               });
 
               const intakeSummary = `Primary pain area: ${primaryPainArea}\nPrimary goal: ${primaryGoal}`;
               const planSnapshot = `Week 1 plan for ${primaryPainArea}:\n- Keep effort in a comfortable range\n- Use gentle pacing\n- Review the weekly goal: ${primaryGoal}`;
 
               if (consentResponse.ok) {
-                await fetch("/api/support/artifacts", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    kind: "intake",
-                    title: "Intake summary",
-                    bodyText: intakeSummary,
-                  }),
-                });
+                if (hasRedFlags) {
+                  await fetch("/api/support/artifacts", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      kind: "red-flags",
+                      title: "Red flags note",
+                      bodyText: `Intake routed to red-flags guidance for ${primaryPainArea}.`,
+                    }),
+                  });
+                } else {
+                  await fetch("/api/support/artifacts", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      kind: "intake",
+                      title: "Intake summary",
+                      bodyText: intakeSummary,
+                    }),
+                  });
 
-                await fetch("/api/support/artifacts", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    kind: "plan",
-                    title: "Week 1 plan",
-                    bodyText: planSnapshot,
-                  }),
-                });
+                  await fetch("/api/support/artifacts", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      kind: "plan",
+                      title: "Week 1 plan",
+                      bodyText: planSnapshot,
+                    }),
+                  });
 
-                nextPath = "/plan?saved=support";
+                  nextPath = "/plan?saved=support";
+                }
               }
             }
 
