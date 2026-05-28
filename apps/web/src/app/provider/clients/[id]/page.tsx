@@ -1,73 +1,101 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
+import { notFound, redirect } from 'next/navigation';
+import { eq } from 'drizzle-orm';
 
-import {
-  ProviderClientReviewClient,
-  type ClientReviewData,
-} from './ProviderClientReviewClient';
+import { getDb } from '../../../../db';
+import { supportArtifacts, userConsents, users } from '../../../../db/schema';
+import { getUserFromCookieHeader } from '../../../../lib/session';
 
-const clientSummaries: Record<string, ClientReviewData> = {
-  'client-001': {
-    name: 'A. Client',
-    program: 'Week 1 pilot',
-    status: 'On track',
-    adherence: '4 of 5 daily items completed this week',
-    summary: 'Small, steady progress. No escalation signals in this mock view.',
-    safety: 'No red flags recorded in sample data.',
-    intakeSummary: 'New intake shows steady follow-through and no urgent concerns.',
-    currentPlan: 'Keep the current weekly plan unchanged and maintain gentle follow-up.',
-    weeklyCheckIn: 'The weekly check-in shows routine notes only, with no red-flag escalation.',
-    dailyAdherence: '4 of 5 daily items completed this week.',
-    redFlagStatus: 'No red flags recorded in sample data.',
-  },
-  'client-002': {
-    name: 'B. Client',
-    program: 'Week 2 pilot',
-    status: 'Needs review',
-    adherence: '2 of 5 daily items completed this week',
-    summary: 'A gentle follow-up would make sense in a real workflow.',
-    safety: 'Mock caution note only, nothing urgent.',
-    intakeSummary: 'Intake notes mention a slow week and the need for a careful check-in.',
-    currentPlan: 'Current plan is a light weekly structure with simple daily prompts.',
-    weeklyCheckIn: 'The latest weekly check-in suggests a short provider review is enough.',
-    dailyAdherence: '2 of 5 daily items completed this week.',
-    redFlagStatus: 'No red flags recorded, but the case is marked for review.',
-  },
-  'client-003': {
-    name: 'C. Client',
-    program: 'Week 1 pilot',
-    status: 'Stable',
-    adherence: '3 of 5 daily items completed this week',
-    summary: 'Stable sample case with routine follow-up only.',
-    safety: 'No safety concerns in sample data.',
-    intakeSummary: 'Baseline intake looks stable with no urgent concerns to escalate.',
-    currentPlan: 'Maintain the current weekly plan and review again next week.',
-    weeklyCheckIn: 'Weekly check-in reports are routine and do not show a spike in concern.',
-    dailyAdherence: '3 of 5 daily items completed this week.',
-    redFlagStatus: 'No red flags recorded in sample data.',
-  },
-};
+type Props = { params: Promise<{ id: string }> };
 
-type Props = {
-  params: Promise<{ id: string }>;
-};
-
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const client = clientSummaries[id as keyof typeof clientSummaries];
-
-  return {
-    title: client ? `${client.name} | Provider console` : 'Provider client',
-  };
+  const db = getDb();
+  const [client] = await db.select({ email: users.email }).from(users).where(eq(users.id, id)).limit(1);
+  return { title: client ? `Client detail | Provider console` : 'Client not found' };
 }
 
 export default async function ProviderClientDetailPage({ params }: Props) {
-  const { id } = await params;
-  const client = clientSummaries[id as keyof typeof clientSummaries];
+  const headersList = await headers();
+  const user = await getUserFromCookieHeader(headersList.get('cookie'));
+  if (!user) redirect('/login');
 
-  if (!client) {
-    notFound();
+  const { id } = await params;
+  const db = getDb();
+
+  const [client] = await db
+    .select({ id: users.id, email: users.email, role: users.role, createdAt: users.createdAt })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+
+  if (!client || client.role !== 'client') notFound();
+
+  const [consent] = await db
+    .select()
+    .from(userConsents)
+    .where(eq(userConsents.userId, id))
+    .limit(1);
+
+  const artifacts = consent?.dataStorageEnabled
+    ? await db
+        .select({ id: supportArtifacts.id, kind: supportArtifacts.kind, title: supportArtifacts.title, createdAt: supportArtifacts.createdAt })
+        .from(supportArtifacts)
+        .where(eq(supportArtifacts.userId, id))
+        .orderBy(supportArtifacts.createdAt)
+    : [];
+
+  const kindCounts: Record<string, number> = {};
+  for (const a of artifacts) {
+    kindCounts[a.kind] = (kindCounts[a.kind] ?? 0) + 1;
   }
 
-  return <ProviderClientReviewClient client={client} />;
+  return (
+    <main className="pageShell" style={{ maxWidth: 900 }}>
+      <h1>Client detail</h1>
+
+      <section className="heroPanel" style={{ marginTop: 24 }}>
+        <h2>{anonymise(client.email)}</h2>
+        <ul>
+          <li><strong>Registered:</strong> {client.createdAt.toLocaleDateString()}</li>
+          <li><strong>Storage consent:</strong> {consent?.dataStorageEnabled ? 'Enabled' : 'Not enabled'}</li>
+          <li><strong>Saved artifacts:</strong> {artifacts.length}</li>
+          {Object.entries(kindCounts).map(([kind, count]) => (
+            <li key={kind}><strong>{kind}:</strong> {count}</li>
+          ))}
+        </ul>
+      </section>
+
+      {artifacts.length > 0 && (
+        <section className="sectionStack" style={{ marginTop: 24 }}>
+          <h2>Activity log</h2>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {(artifacts as Array<{ id: string; kind: string; title: string; createdAt: Date }>).map((a) => (
+              <div
+                key={a.id}
+                style={{ border: '1px solid var(--border)', borderRadius: 12, padding: '12px 16px', background: 'var(--surface-2)' }}
+              >
+                <strong>{a.kind}</strong> — {a.title}{' '}
+                <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
+                  {a.createdAt.toLocaleDateString()}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!consent?.dataStorageEnabled && (
+        <section className="sectionStack" style={{ marginTop: 24 }}>
+          <p>This client has not enabled data storage. No artifacts are available for review.</p>
+        </section>
+      )}
+    </main>
+  );
+}
+
+function anonymise(email: string) {
+  const [local] = email.split('@');
+  return `${local[0]}***@${email.split('@')[1]}`;
 }

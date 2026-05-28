@@ -35,12 +35,13 @@ export default async function SupportExportPage() {
     );
   }
 
+  type ArtifactRow = { id: string; kind: string; title: string; bodyText: string; createdAt: Date; reflectionCiphertext: string | null; reflectionEncryptionMeta: string | null };
   const db = getDb();
-  const records = await db
+  const records = (await db
     .select()
     .from(supportArtifacts)
     .where(eq(supportArtifacts.userId, user.id))
-    .orderBy(desc(supportArtifacts.createdAt));
+    .orderBy(desc(supportArtifacts.createdAt))) as ArtifactRow[];
 
   return (
     <main style={{ maxWidth: 860, margin: '0 auto', padding: '48px 24px' }}>
@@ -59,7 +60,7 @@ export default async function SupportExportPage() {
         <p>No saved support data yet.</p>
       ) : (
         <div style={{ display: 'grid', gap: 18 }}>
-          {records.map((record) => (
+          {records.map((record: ArtifactRow) => (
             <section key={record.id} style={{ padding: 16, border: '1px solid #ddd', borderRadius: 12 }}>
               <h2 style={{ marginTop: 0 }}>{record.title}</h2>
               <p style={{ marginTop: 0, fontSize: 13, color: '#555' }}>

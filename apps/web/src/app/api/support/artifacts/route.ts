@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { getDb } from '../../../../db';
 import { supportArtifacts, userConsents } from '../../../../db/schema';
+import { logError } from '../../../../lib/logger';
 import { getUserFromCookieHeader } from '../../../../lib/session';
 
 const artifactSchema = z.object({
@@ -21,25 +22,23 @@ function unauthorized() {
 }
 
 export async function POST(request: Request) {
-  const user = await getUserFromCookieHeader(request.headers.get('cookie'));
-  if (!user) return unauthorized();
+  try {
+    const user = await getUserFromCookieHeader(request.headers.get('cookie'));
+    if (!user) return unauthorized();
 
-  const parsed = artifactSchema.safeParse(await request.json());
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'invalid' }, { status: 400 });
-  }
+    const parsed = artifactSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'invalid' }, { status: 400 });
+    }
 
-  const db = getDb();
-  const [consent] = await db.select().from(userConsents).where(eq(userConsents.userId, user.id)).limit(1);
+    const db = getDb();
+    const [consent] = await db.select().from(userConsents).where(eq(userConsents.userId, user.id)).limit(1);
 
-  if (!consent?.dataStorageEnabled) {
-    return NextResponse.json({ error: 'consent-required' }, { status: 403 });
-  }
+    if (!consent?.dataStorageEnabled) {
+      return NextResponse.json({ error: 'consent-required' }, { status: 403 });
+    }
 
-  const now = new Date();
-  await db
-    .insert(supportArtifacts)
-    .values({
+    await db.insert(supportArtifacts).values({
       id: randomUUID(),
       userId: user.id,
       kind: parsed.data.kind,
@@ -47,8 +46,12 @@ export async function POST(request: Request) {
       bodyText: parsed.data.bodyText,
       reflectionCiphertext: parsed.data.reflectionCiphertext ?? null,
       reflectionEncryptionMeta: parsed.data.reflectionEncryptionMeta ?? null,
-      createdAt: now,
+      createdAt: new Date(),
     });
 
-  return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    logError('artifacts_post_error', err);
+    return NextResponse.json({ error: 'internal' }, { status: 500 });
+  }
 }

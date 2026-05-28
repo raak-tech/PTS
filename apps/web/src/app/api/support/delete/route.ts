@@ -2,7 +2,9 @@ import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 import { getDb } from '../../../../db';
-import { supportArtifacts, userConsents } from '../../../../db/schema';
+import { passwordResetTokens, sessions, supportArtifacts, userConsents, users } from '../../../../db/schema';
+import { logError } from '../../../../lib/logger';
+import { clearSessionCookie } from '../../../../lib/cookies';
 import { getUserFromCookieHeader } from '../../../../lib/session';
 
 function unauthorized() {
@@ -10,27 +12,25 @@ function unauthorized() {
 }
 
 export async function POST(request: Request) {
-  const user = await getUserFromCookieHeader(request.headers.get('cookie'));
-  if (!user) return unauthorized();
+  try {
+    const user = await getUserFromCookieHeader(request.headers.get('cookie'));
+    if (!user) return unauthorized();
 
-  const db = getDb();
-  await db.delete(supportArtifacts).where(eq(supportArtifacts.userId, user.id));
-  await db
-    .insert(userConsents)
-    .values({
-      userId: user.id,
-      dataStorageEnabled: false,
-      enabledAt: null,
-      revokedAt: new Date(),
-    })
-    .onConflictDoUpdate({
-      target: userConsents.userId,
-      set: {
-        dataStorageEnabled: false,
-        enabledAt: null,
-        revokedAt: new Date(),
-      },
+    const db = getDb();
+
+    await db.transaction(async (tx: typeof db) => {
+      await tx.delete(supportArtifacts).where(eq(supportArtifacts.userId, user.id));
+      await tx.delete(userConsents).where(eq(userConsents.userId, user.id));
+      await tx.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, user.id));
+      await tx.delete(sessions).where(eq(sessions.userId, user.id));
+      await tx.delete(users).where(eq(users.id, user.id));
     });
 
-  return NextResponse.json({ ok: true });
+    const response = NextResponse.json({ ok: true });
+    response.cookies.set(clearSessionCookie());
+    return response;
+  } catch (err) {
+    logError('delete_account_error', err);
+    return NextResponse.json({ error: 'internal' }, { status: 500 });
+  }
 }

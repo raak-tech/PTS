@@ -1,5 +1,7 @@
-import { scrypt } from 'scrypt-js';
+import { scrypt as nodeScrypt } from 'node:crypto';
+import { promisify } from 'node:util';
 
+const scryptAsync = promisify(nodeScrypt);
 const encoder = new TextEncoder();
 
 function bytesToBase64(bytes: Uint8Array) {
@@ -20,8 +22,8 @@ function base64ToBytes(value: string) {
 }
 
 async function deriveKey(secret: string, salt: Uint8Array) {
-  const keyMaterial = await scrypt(encoder.encode(secret), salt, 16384, 8, 1, 32);
-  return new Uint8Array(keyMaterial);
+  const keyBuffer = await scryptAsync(encoder.encode(secret), salt, 32);
+  return new Uint8Array(keyBuffer as Buffer);
 }
 
 export function createRandomSalt() {
