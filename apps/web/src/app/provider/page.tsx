@@ -90,6 +90,14 @@ export default async function ProviderHomePage() {
         )}
       </section>
 
+      <section className="sectionStack" style={{ marginTop: 32 }}>
+        <h2>Actions</h2>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <Link href="/provider/plans" className="actionLink">Review pending plans →</Link>
+          <Link href="/messages" className="actionLink secondary">Messages</Link>
+        </div>
+      </section>
+
       <ProviderNav className="sectionStack" style={{ marginTop: 32 }} />
     </main>
   );

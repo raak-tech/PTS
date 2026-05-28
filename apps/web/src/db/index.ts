@@ -3,7 +3,7 @@ import * as os from "node:os";
 
 import { validateEnv } from '../lib/env';
 
-const require = createRequire(`${process.cwd()}/noop.js`);
+const require = createRequire(import.meta.url);
 const { drizzle } = require('drizzle-orm/postgres-js');
 const postgres = require('postgres');
 

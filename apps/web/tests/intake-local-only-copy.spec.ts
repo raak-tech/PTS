@@ -10,7 +10,7 @@ test('intake shows explicit local-only + no-storage microcopy (Sprint 1)', async
 
   await expect(
     page.getByText(
-      /local-only:.*not saved.*no localstorage.*no sessionstorage.*not sent to a server/i
+      /local-only.*not saved.*nothing is written to storage.*nothing is sent to a server/i
     )
   ).toBeVisible();
 

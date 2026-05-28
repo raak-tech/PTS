@@ -9,7 +9,7 @@ type GuardrailsProps = {
 export function Guardrails({ style, className }: GuardrailsProps) {
   return (
     <section className={className} style={style}>
-      <h2>Safety &amp; Boundaries</h2>
+      <h2>{"Safety & Boundaries"}</h2>
       <ul>
         <li>
           <Link href="/red-flags">Red flags guidance</Link>

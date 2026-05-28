@@ -1,118 +1,127 @@
-import type { Metadata } from "next";
-import Link from "next/link";
+import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import Link from 'next/link';
+import { eq } from 'drizzle-orm';
 
-import { Guardrails } from "../../components/Guardrails";
-import { ProgramNav } from "../../components/ProgramNav";
+import { getDb } from '../../db';
+import { plans } from '../../db/schema';
+import { getUserFromCookieHeader } from '../../lib/session';
+import type { GeneratedPlan } from '../../lib/plan-generator';
 
-export const metadata: Metadata = {
-  title: "Plan",
-};
+export const metadata: Metadata = { title: 'Your plan | PTS' };
 
-type Props = {
-  searchParams?: Promise<{ saved?: string }>;
-};
+export default async function PlanPage() {
+  const headersList = await headers();
+  const user = await getUserFromCookieHeader(headersList.get('cookie'));
 
-export default async function PlanPage({ searchParams }: Props) {
-  const params = (searchParams ? await searchParams : {}) ?? {};
-  const savedMessage = params.saved === "support" ? "Saved to your support record." : "";
+  let approvedPlan: GeneratedPlan | null = null;
+  let planStatus: 'none' | 'pending' | 'approved' = 'none';
+
+  if (user) {
+    const db = getDb();
+    const [plan] = await db
+      .select()
+      .from(plans)
+      .where(eq(plans.userId, user.id))
+      .orderBy(plans.createdAt)
+      .limit(1);
+
+    if (plan) {
+      planStatus = plan.status === 'approved' ? 'approved' : 'pending';
+      if (plan.status === 'approved') {
+        try {
+          approvedPlan = JSON.parse(plan.generatedContent) as GeneratedPlan;
+        } catch { /* ignore */ }
+      }
+    }
+  }
+
+  if (!user) {
+    return (
+      <main style={{ maxWidth: 640, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
+        <h1>Your plan</h1>
+        <p style={{ color: '#666' }}>Please sign in to see your personalised program.</p>
+        <Link href="/login" style={{ display: 'inline-block', marginTop: 16, padding: '12px 28px', borderRadius: 999, background: '#111', color: 'white', textDecoration: 'none', fontWeight: 600 }}>Sign in</Link>
+      </main>
+    );
+  }
+
+  if (planStatus === 'none') {
+    return (
+      <main style={{ maxWidth: 640, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
+        <h1>Your plan</h1>
+        <p style={{ color: '#666' }}>You haven't completed your intake yet.</p>
+        <Link href="/" style={{ display: 'inline-block', marginTop: 16, padding: '12px 28px', borderRadius: 999, background: '#111', color: 'white', textDecoration: 'none', fontWeight: 600 }}>Start intake →</Link>
+      </main>
+    );
+  }
+
+  if (planStatus === 'pending') {
+    return (
+      <main style={{ maxWidth: 640, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
+        <div style={{ fontSize: 40, marginBottom: 20 }}>⏳</div>
+        <h1>Your plan is being prepared</h1>
+        <p style={{ color: '#666', lineHeight: 1.6 }}>Your counselor is reviewing the personalised program and will approve it shortly. You'll be notified when it's ready.</p>
+        <p style={{ marginTop: 24 }}>
+          <Link href="/messages" style={{ color: '#333', textDecoration: 'underline' }}>Check your messages →</Link>
+        </p>
+      </main>
+    );
+  }
+
+  if (!approvedPlan) return null;
 
   return (
-    <main className="pageShell" style={{ maxWidth: 800 }}>
-      <h1>Your Week 1 Plan</h1>
+    <main style={{ maxWidth: 720, margin: '0 auto', padding: '40px 24px 80px' }}>
+      {/* Safety disclaimer */}
+      <div style={{ background: '#fff8e1', border: '1px solid #ffe082', borderRadius: 10, padding: '10px 16px', marginBottom: 28, fontSize: 13, color: '#555' }}>
+        This program is counseling support — not medical advice. If you have an emergency, contact emergency services.{' '}
+        <Link href="/red-flags" style={{ color: '#b00020' }}>Red flags guide →</Link>
+      </div>
 
-      {savedMessage ? (
-        <p role="status" className="statusBanner" style={{ marginTop: 12 }}>
-          {savedMessage}
-        </p>
-      ) : null}
+      <h1 style={{ fontSize: 26, fontWeight: 700, margin: '0 0 8px' }}>Your recovery program</h1>
+      <p style={{ color: '#555', lineHeight: 1.6, margin: '0 0 32px' }}>{approvedPlan.overview}</p>
 
-      <p style={{ maxWidth: 680 }}>
-        This preview is for planning and reflection support only. It is not a
-        substitute for professional care.
-      </p>
+      {/* Week cards */}
+      <div style={{ display: 'grid', gap: 16 }}>
+        {approvedPlan.weeks.map((week, i) => (
+          <details key={week.week} open={i === 0} style={{ border: '1px solid #e0e0e0', borderRadius: 14, overflow: 'hidden' }}>
+            <summary style={{ padding: '16px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 16, background: '#fafafa', userSelect: 'none' }}>
+              Week {week.week} — {week.theme}
+            </summary>
+            <div style={{ padding: '16px 20px' }}>
+              <p style={{ margin: '0 0 16px', color: '#555', fontSize: 14, lineHeight: 1.6 }}>{week.focus}</p>
 
-      <section className="heroPanel" style={{ marginTop: 24 }}>
-        <h2>Next step</h2>
-        <p style={{ maxWidth: 680 }}>
-          If you want something more actionable, open a local-only daily checklist
-          (no storage) to help you track small practices.
-        </p>
-        <p style={{ marginTop: 12 }}>
-          <Link href="/daily" className="actionLink">
-            Open Daily Checklist
-          </Link>
-        </p>
-        <p style={{ marginTop: 10 }}>
-          <Link href="/check-in" className="actionLink secondary">
-            Open Weekly Check-in
-          </Link>
-        </p>
-        <p style={{ marginTop: 10 }}>
-          <Link href="/flare-up" className="actionLink secondary">
-            Open Flare-up Protocol
-          </Link>
-        </p>
-      </section>
+              <p style={{ margin: '0 0 10px', fontWeight: 600, fontSize: 14 }}>Daily practices</p>
+              <div style={{ display: 'grid', gap: 10, marginBottom: 20 }}>
+                {week.dailyPractices.map(p => (
+                  <div key={p.title} style={{ padding: '12px 16px', background: '#f9f9f9', borderRadius: 10, border: '1px solid #eee' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 600, fontSize: 14 }}>{p.title}</span>
+                      <span style={{ fontSize: 12, color: '#888', background: '#eee', padding: '2px 8px', borderRadius: 999 }}>{p.duration}</span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 14, color: '#555', lineHeight: 1.5 }}>{p.description}</p>
+                  </div>
+                ))}
+              </div>
 
-      <section style={{ marginTop: 32 }}>
-        <h2>Overview</h2>
-        <p style={{ maxWidth: 680 }}>
-          Week 1 is a conservative start: small daily practices, gentle pacing,
-          and a simple weekly check-in. This page is static in Sprint 1 (no
-          storage, no personalization).
-        </p>
-      </section>
+              <div style={{ background: '#f0f4ff', borderRadius: 10, padding: '12px 16px' }}>
+                <p style={{ margin: '0 0 4px', fontWeight: 600, fontSize: 13 }}>Weekly reflection</p>
+                <p style={{ margin: 0, fontSize: 14, color: '#333', fontStyle: 'italic' }}>"{week.weeklyReflection}"</p>
+              </div>
+            </div>
+          </details>
+        ))}
+      </div>
 
-      <section style={{ marginTop: 32 }}>
-        <h2>Weekly focus</h2>
-        <p style={{ maxWidth: 680 }}>
-          Aim for consistency over intensity. Keep effort in a comfortable range.
-          If symptoms spike, scale down and consider pausing anything that feels
-          unsafe.
-        </p>
-      </section>
-
-      <section style={{ marginTop: 32 }}>
-        <h2>Reflection prompt</h2>
-        <ul>
-          <li>What felt a little easier this week?</li>
-          <li>What felt harder (and what might have contributed)?</li>
-          <li>What is one small adjustment you will try tomorrow?</li>
-        </ul>
-      </section>
-
-      <section style={{ marginTop: 32 }}>
-        <h2>Daily Micro-practices</h2>
-        <ul>
-          <li>2 minutes: breathing / grounding</li>
-          <li>5 minutes: gentle movement (comfortable range only)</li>
-          <li>2 minutes: values-based action (one small step)</li>
-        </ul>
-      </section>
-
-      <section style={{ marginTop: 32 }}>
-        <h2>Weekly check-in (preview)</h2>
-        <ul>
-          <li>What did you try most days this week?</li>
-          <li>What felt easier vs harder?</li>
-          <li>What is one small adjustment you will try next week?</li>
-        </ul>
-      </section>
-
-      <section style={{ marginTop: 32 }}>
-        <h2>Red flags: when to seek care</h2>
-        <p style={{ maxWidth: 680 }}>
-          If you have symptoms that worry you (new severe weakness, loss of
-          bladder/bowel control, fever with severe back pain, major trauma, or
-          unexplained weight loss), pause this program and seek in-person medical
-          evaluation.
-        </p>
-      </section>
-
-      <Guardrails className="sectionStack" style={{ marginTop: 32 }} />
-
-      <ProgramNav className="sectionStack" style={{ marginTop: 24 }} />
+      <div style={{ marginTop: 32, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <Link href="/daily" style={{ padding: '12px 24px', borderRadius: 999, background: '#111', color: 'white', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>
+          Today's practice
+        </Link>
+        <Link href="/messages" style={{ padding: '12px 24px', borderRadius: 999, border: '1px solid #ddd', color: '#333', textDecoration: 'none', fontSize: 14 }}>
+          Message your counselor
+        </Link>
+      </div>
     </main>
   );
 }
-

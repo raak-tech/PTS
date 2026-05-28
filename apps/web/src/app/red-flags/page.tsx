@@ -1,14 +1,14 @@
-import type { Metadata } from 'next';
+import type { Metadata } from "next";
 
-import { ProgramNav } from '../../components/ProgramNav';
+import { Sprint1PageFooter } from "../../components/Sprint1PageFooter";
 
 export const metadata: Metadata = {
-  title: 'Red flags',
+  title: "Red flags",
 };
 
 export default function RedFlagsPage() {
   return (
-    <main style={{ maxWidth: 800, margin: '0 auto', padding: '48px 24px' }}>
+    <main style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px" }}>
       <h1>Red flags: when to seek care</h1>
 
       <p style={{ maxWidth: 680 }}>
@@ -42,7 +42,7 @@ export default function RedFlagsPage() {
         </ul>
       </section>
 
-      <ProgramNav style={{ marginTop: 24 }} />
+      <Sprint1PageFooter variant="red-flags" style={{ marginTop: 24 }} />
     </main>
   );
 }

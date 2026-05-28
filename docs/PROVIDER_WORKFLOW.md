@@ -3,7 +3,10 @@
 ## Goal
 Define the therapist/provider weekly review loop for PTS so the product works as a therapist support platform, not only a client self-help flow.
 
-This is a conservative v0: no marketplace, no matching logic, no persistence beyond what the current slice already supports.
+This is a conservative v0:
+- no marketplace / matching
+- no persistence by default (Sprint 1)
+- storage only after explicit consent (see `docs/CONSENT_AND_RETENTION.md`)
 
 ## Weekly loop
 
@@ -15,6 +18,10 @@ A provider opens the client record and reviews:
 - weekly check-in responses
 - red-flags status
 - any recent notes or missing activity markers
+
+Data handling reminder:
+- Red flags are high sensitivity and are **not stored by default**.
+- Free-text reflections are **not stored by default**.
 
 ### 2) Triage the week
 The provider decides one of three paths:
@@ -43,6 +50,9 @@ The workflow should capture a simple review artifact:
 - review status
 - plan changed or unchanged
 - red-flags escalation if any
+
+Sprint 1 note:
+- These artifacts are conceptual only (no persistence). The UI can simulate the workflow in local-only state.
 
 ## Inputs
 - intake summary
@@ -129,6 +139,12 @@ This workflow should stay compatible with `docs/CONSENT_AND_RETENTION.md`:
 - no persistence by default
 - storage only after explicit consent
 - red-flags data treated as highly sensitive
+
+## Minimal acceptance criteria (for Sprint 2 provider console)
+- Provider can only see assigned clients.
+- Provider dashboard shows (at minimum): review status + last check-in time.
+- Provider can mark review complete without editing health claims or promising outcomes.
+- Consent gates must be respected for any stored artifacts.
 
 ## Open questions
 - What exact summary fields are required on the provider dashboard?

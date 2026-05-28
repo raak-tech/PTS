@@ -200,6 +200,9 @@ Product posture reminders (must be consistent across routes):
 
 ## 4) UX validation checklist (build-ready)
 
+This checklist is also available as a standalone QA artifact:
+- `docs/qa/sprint-1-ux-validation-checklist.md`
+
 ### Content + scope
 - [ ] “Not medical advice” + “Not for emergencies” shown on `/` and `/red-flags`.
 - [ ] Guardrails are visible on `/plan`, `/daily`, `/check-in`.

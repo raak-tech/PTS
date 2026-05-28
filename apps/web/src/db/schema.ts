@@ -70,3 +70,50 @@ export const emailOutbox = pgTable("email_outbox", {
   bodyText: text("body_text").notNull(),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
+
+// Stores a client's completed intake assessment. One per user.
+export const intakeResponses = pgTable("intake_responses", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().unique(),
+  painSource: text("pain_source").notNull(),
+  painSourceOther: text("pain_source_other"),
+  painDescription: text("pain_description").notNull(),
+  painDuration: text("pain_duration").notNull(),
+  activitiesAffected: text("activities_affected").notNull(),
+  biggestChange: text("biggest_change").notNull(),
+  recoveryGoal: text("recovery_goal").notNull(),
+  recoveryTimeline: text("recovery_timeline"),
+  currentTreatment: text("current_treatment"),
+  socialSupport: text("social_support"),
+  structurePreference: text("structure_preference"),
+  engagementTime: text("engagement_time"),
+  hasRedFlags: boolean("has_red_flags").notNull().default(false),
+  isSafe: boolean("is_safe").notNull().default(true),
+  consentGiven: boolean("consent_given").notNull().default(false),
+  completedAt: timestamp("completed_at", { mode: "date", withTimezone: true }),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+// Async two-way messages between a client and their counselor.
+export const messages = pgTable("messages", {
+  id: text("id").primaryKey(),
+  fromUserId: text("from_user_id").notNull(),
+  toUserId: text("to_user_id").notNull(),
+  body: text("body").notNull(),
+  readAt: timestamp("read_at", { mode: "date", withTimezone: true }),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+// LLM-generated + counselor-approved program plans.
+export const plans = pgTable("plans", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  intakeResponseId: text("intake_response_id").notNull(),
+  generatedContent: text("generated_content").notNull(),
+  counselorNotes: text("counselor_notes"),
+  status: text("status").notNull().default("draft"),
+  approvedAt: timestamp("approved_at", { mode: "date", withTimezone: true }),
+  approvedBy: text("approved_by"),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+});

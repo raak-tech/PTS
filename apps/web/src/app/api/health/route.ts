@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 import { getDb } from '@/db';
@@ -7,10 +8,9 @@ export async function GET() {
   const start = Date.now();
 
   try {
-    // Lightweight connectivity check — no full table scan.
+    // Lightweight connectivity check via a real Drizzle query.
     const db = getDb();
-    await (db as unknown as { execute: (q: unknown) => Promise<unknown> })
-      .execute('SELECT 1');
+    await db.select({ one: sql<number>`1` }).from(sql`(select 1) as t`).limit(1);
 
     const ms = Date.now() - start;
     log('health_check', { status: 'ok', db_ms: ms });

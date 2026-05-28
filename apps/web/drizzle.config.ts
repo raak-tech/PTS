@@ -3,8 +3,10 @@ import * as os from "node:os";
 import { defineConfig } from "drizzle-kit";
 
 function defaultDatabaseUrl() {
+  // Prefer local unix socket to avoid TCP port/auth mismatches in dev/e2e.
   const username = encodeURIComponent(os.userInfo().username);
-  return `postgresql://${username}@127.0.0.1:5433/pts`;
+  const socketDir = encodeURIComponent("/var/run/postgresql");
+  return `postgresql://${username}@localhost/pts?host=${socketDir}`;
 }
 
 export default defineConfig({

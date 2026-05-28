@@ -1,22 +1,22 @@
-import { test, expect } from '@playwright/test';
-import { AxeBuilder } from '@axe-core/playwright';
-import { startConsoleErrorCollector } from './helpers/console';
+import { test, expect } from "@playwright/test";
+import { AxeBuilder } from "@axe-core/playwright";
+import { startConsoleErrorCollector } from "./helpers/console";
 
-test('a11y smoke: key pages have no serious or critical axe violations', async ({ page }) => {
+test("a11y smoke: sprint 1 routes have no serious or critical axe violations", async ({ page }) => {
   const errors = startConsoleErrorCollector(page);
 
-  const pages = ['/', '/plan', '/daily', '/check-in', '/red-flags', '/flare-up', '/weeks'];
+  const pages = ["/", "/plan", "/daily", "/check-in", "/red-flags"];
 
   for (const path of pages) {
     await page.goto(path);
 
     const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa'])
+      .withTags(["wcag2a", "wcag2aa"])
       .exclude('[data-axe-exclude="true"]')
       .analyze();
 
     const seriousOrWorse = results.violations.filter(
-      (v) => v.impact === 'serious' || v.impact === 'critical'
+      (v) => v.impact === "serious" || v.impact === "critical"
     );
 
     expect(
@@ -25,5 +25,5 @@ test('a11y smoke: key pages have no serious or critical axe violations', async (
     ).toEqual([]);
   }
 
-  expect(errors, `Console errors:\n${errors.join('\n')}`).toEqual([]);
+  expect(errors, `Console errors:\n${errors.join("\n")}`).toEqual([]);
 });

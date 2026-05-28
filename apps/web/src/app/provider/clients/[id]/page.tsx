@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
+import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { eq } from 'drizzle-orm';
 
@@ -65,6 +66,11 @@ export default async function ProviderClientDetailPage({ params }: Props) {
             <li key={kind}><strong>{kind}:</strong> {count}</li>
           ))}
         </ul>
+        <div style={{ marginTop: 16 }}>
+          <Link href={`/messages?with=${client.id}`} className="actionLink">
+            Message this client →
+          </Link>
+        </div>
       </section>
 
       {artifacts.length > 0 && (
