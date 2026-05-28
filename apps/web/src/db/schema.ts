@@ -13,6 +13,21 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   role: text("role").notNull(), // 'client' | 'provider'
+  displayName: text("display_name"),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+// Extended profile for counselors/providers
+export const counselorProfiles = pgTable("counselor_profiles", {
+  userId: text("user_id").primaryKey(),
+  fullName: text("full_name").notNull(),
+  title: text("title").notNull(),
+  credentials: text("credentials"),
+  specialisations: text("specialisations").notNull(), // JSON array
+  languages: text("languages").notNull(),             // JSON array
+  yearsExperience: text("years_experience"),
+  bio: text("bio").notNull(),
+  verifiedAt: timestamp("verified_at", { mode: "date", withTimezone: true }),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
 

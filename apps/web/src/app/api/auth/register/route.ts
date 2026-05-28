@@ -19,6 +19,8 @@ import { sessions, users } from '@/db/schema';
 const registerSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   password: z.string().min(8).max(128),
+  displayName: z.string().trim().min(1).max(80).optional(),
+  next: z.string().optional(),
 });
 
 function errorRedirect(request: Request, message: string) {
@@ -42,6 +44,8 @@ export async function POST(request: Request) {
     const parsed = registerSchema.safeParse({
       email: formData.get('email'),
       password: formData.get('password'),
+      displayName: formData.get('displayName') ?? undefined,
+      next: formData.get('next') ?? undefined,
     });
 
     if (!parsed.success) {
@@ -65,6 +69,7 @@ export async function POST(request: Request) {
       email: parsed.data.email,
       passwordHash: await hashPassword(parsed.data.password),
       role: 'client',
+      displayName: parsed.data.displayName ?? null,
       createdAt: now,
     });
 
@@ -76,7 +81,8 @@ export async function POST(request: Request) {
       expiresAt,
     });
 
-    const response = NextResponse.redirect(new URL('/', request.url), 303);
+    const redirectTo = parsed.data.next ?? '/';
+    const response = NextResponse.redirect(new URL(redirectTo, request.url), 303);
     response.cookies.set(createSessionCookie(sessionToken));
     return response;
   } catch (err) {
