@@ -80,24 +80,26 @@ export async function POST(request: Request) {
       .where(eq(intakeResponses.userId, user.id))
       .limit(1);
 
-    // Fire plan generation asynchronously — don't block the response
+    // Generate the plan synchronously before responding.
+    // Serverless functions on Vercel terminate after the response is sent,
+    // so fire-and-forget is unreliable here.
     if (saved) {
-      void (async () => {
-        try {
-          const generated = await generatePlan(saved);
-          await db.insert(plans).values({
-            id: randomUUID(),
-            userId: user.id,
-            intakeResponseId: saved.id,
-            generatedContent: JSON.stringify(generated),
-            status: 'draft',
-            createdAt: new Date(),
-          }).onConflictDoNothing();
-          log('plan_saved', { userId: user.id });
-        } catch (planErr) {
-          logError('plan_generation_failed', planErr, { userId: user.id });
-        }
-      })();
+      try {
+        const generated = await generatePlan(saved);
+        await db.insert(plans).values({
+          id: randomUUID(),
+          userId: user.id,
+          intakeResponseId: saved.id,
+          generatedContent: JSON.stringify(generated),
+          status: 'draft',
+          createdAt: new Date(),
+        }).onConflictDoNothing();
+        log('plan_saved', { userId: user.id });
+      } catch (planErr) {
+        // Plan generation failing should not block the intake submission.
+        // The counselor can trigger regeneration manually.
+        logError('plan_generation_failed', planErr, { userId: user.id });
+      }
     }
 
     return NextResponse.json({ ok: true });

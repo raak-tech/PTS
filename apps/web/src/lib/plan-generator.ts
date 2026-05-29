@@ -118,7 +118,7 @@ export async function generatePlan(intake: IntakeData): Promise<GeneratedPlan> {
       'X-Title': 'PTS Plan Generator',
     },
     body: JSON.stringify({
-      model: 'anthropic/claude-3.5-sonnet',
+      model: 'anthropic/claude-sonnet-4.6',
       messages: [{ role: 'user', content: buildPrompt(intake) }],
       temperature: 0.7,
       max_tokens: 4000,
@@ -137,10 +137,13 @@ export async function generatePlan(intake: IntakeData): Promise<GeneratedPlan> {
 
   log('plan_generation_complete');
 
+  // Strip markdown code fences if the model wrapped the JSON
+  const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+
   try {
-    return JSON.parse(raw) as GeneratedPlan;
+    return JSON.parse(cleaned) as GeneratedPlan;
   } catch {
-    logError('plan_generation_parse_error', new Error('Invalid JSON from LLM'), { raw: raw.slice(0, 200) });
+    logError('plan_generation_parse_error', new Error('Invalid JSON from LLM'), { raw: cleaned.slice(0, 200) });
     throw new Error('Plan generation returned invalid JSON');
   }
 }
