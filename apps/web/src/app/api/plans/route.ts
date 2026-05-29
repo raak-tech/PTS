@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getDb } from '@/db';
-import { plans } from '@/db/schema';
+import { clientCounselor, plans } from '@/db/schema';
 import { logError } from '@/lib/logger';
 import { getUserFromCookieHeader } from '@/lib/session';
 
@@ -59,15 +59,25 @@ export async function POST(request: Request) {
     const now = new Date();
 
     if (parsed.data.action === 'approve') {
-      await db
+      const [updated] = await db
         .update(plans)
         .set({
           status: 'approved',
+          counselorId: user.id,
           counselorNotes: parsed.data.counselorNotes ?? null,
           approvedAt: now,
           approvedBy: user.id,
         })
-        .where(eq(plans.id, parsed.data.planId));
+        .where(eq(plans.id, parsed.data.planId))
+        .returning({ userId: plans.userId });
+
+      // Create client-counselor assignment so messaging works immediately
+      if (updated) {
+        await db
+          .insert(clientCounselor)
+          .values({ clientId: updated.userId, counselorId: user.id, assignedAt: now })
+          .onConflictDoUpdate({ target: clientCounselor.clientId, set: { counselorId: user.id, assignedAt: now } });
+      }
 
       return NextResponse.json({ ok: true });
     }

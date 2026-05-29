@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { and, eq, ne, or } from 'drizzle-orm';
 
 import { getDb } from '../../db';
-import { messages, users } from '../../db/schema';
+import { clientCounselor, messages, users } from '../../db/schema';
 import { getUserFromCookieHeader } from '../../lib/session';
 import { MessagesClient } from './MessagesClient';
 
@@ -19,11 +19,11 @@ export default async function MessagesPage({ searchParams }: { searchParams?: Pr
   const preselectedId = params['with'];
 
   const db = getDb();
+  type ContactRow = { id: string; email: string; role: string; displayName: string | null };
 
-  // Find all users this person has exchanged messages with
-  type ContactRow = { id: string; email: string; role: string };
-  const contacts = (await db
-    .selectDistinct({ id: users.id, email: users.email, role: users.role })
+  // Find all users this person has already exchanged messages with
+  const messaged = (await db
+    .selectDistinct({ id: users.id, email: users.email, role: users.role, displayName: users.displayName })
     .from(users)
     .innerJoin(
       messages,
@@ -34,18 +34,52 @@ export default async function MessagesPage({ searchParams }: { searchParams?: Pr
     )
     .where(ne(users.id, user.id))) as ContactRow[];
 
-  // For clients with no contacts yet, show a counselor placeholder so the UI isn't blank
-  const hasContacts = contacts.length > 0;
+  const messagedIds = new Set(messaged.map(c => c.id));
+  let allContacts: ContactRow[] = [...messaged];
 
-  // If ?with=userId is in the URL and not already in contacts, fetch that user and add them
-  let allContacts = contacts;
-  if (preselectedId && !contacts.find(c => c.id === preselectedId)) {
+  if (user.role === 'client') {
+    // Always surface the assigned counselor even if no messages yet
+    const [assignment] = await db
+      .select({ counselorId: clientCounselor.counselorId })
+      .from(clientCounselor)
+      .where(eq(clientCounselor.clientId, user.id))
+      .limit(1);
+
+    if (assignment && !messagedIds.has(assignment.counselorId)) {
+      const [counselor] = (await db
+        .select({ id: users.id, email: users.email, role: users.role, displayName: users.displayName })
+        .from(users)
+        .where(eq(users.id, assignment.counselorId))
+        .limit(1)) as ContactRow[];
+      if (counselor) allContacts = [counselor, ...allContacts];
+    }
+  } else {
+    // Counselor: surface all clients assigned to them
+    const assignments = await db
+      .select({ clientId: clientCounselor.clientId })
+      .from(clientCounselor)
+      .where(eq(clientCounselor.counselorId, user.id));
+
+    for (const a of assignments) {
+      if (!messagedIds.has(a.clientId)) {
+        const [client] = (await db
+          .select({ id: users.id, email: users.email, role: users.role, displayName: users.displayName })
+          .from(users)
+          .where(eq(users.id, a.clientId))
+          .limit(1)) as ContactRow[];
+        if (client) allContacts = [...allContacts, client];
+      }
+    }
+  }
+
+  // If ?with= in URL adds someone not yet in the list
+  if (preselectedId && !allContacts.find(c => c.id === preselectedId)) {
     const [extra] = (await db
-      .select({ id: users.id, email: users.email, role: users.role })
+      .select({ id: users.id, email: users.email, role: users.role, displayName: users.displayName })
       .from(users)
       .where(eq(users.id, preselectedId))
       .limit(1)) as ContactRow[];
-    if (extra) allContacts = [extra, ...contacts];
+    if (extra) allContacts = [extra, ...allContacts];
   }
 
   return (
