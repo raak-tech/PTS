@@ -14,7 +14,7 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   role: text("role").notNull(), // 'client' | 'provider'
   displayName: text("display_name"),
-  notificationsEnabled: boolean("notifications_enabled").notNull().default(false),
+  // notificationsEnabled moved to Phase 1 (will add after pilot validation)
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
 
