@@ -27,6 +27,7 @@ export const counselorProfiles = pgTable("counselor_profiles", {
   languages: text("languages").notNull(),             // JSON array
   yearsExperience: text("years_experience"),
   bio: text("bio").notNull(),
+  calendlyUrl: text("calendly_url"),
   verifiedAt: timestamp("verified_at", { mode: "date", withTimezone: true }),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });

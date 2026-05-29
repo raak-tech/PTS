@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { and, eq, ne, or } from 'drizzle-orm';
 
 import { getDb } from '../../db';
-import { clientCounselor, messages, users } from '../../db/schema';
+import { clientCounselor, counselorProfiles, messages, users } from '../../db/schema';
 import { getUserFromCookieHeader } from '../../lib/session';
 import { MessagesClient } from './MessagesClient';
 
@@ -19,7 +19,7 @@ export default async function MessagesPage({ searchParams }: { searchParams?: Pr
   const preselectedId = params['with'];
 
   const db = getDb();
-  type ContactRow = { id: string; email: string; role: string; displayName: string | null };
+  type ContactRow = { id: string; email: string; role: string; displayName: string | null; calendlyUrl?: string | null };
 
   // Find all users this person has already exchanged messages with
   const messaged = (await db
@@ -33,6 +33,18 @@ export default async function MessagesPage({ searchParams }: { searchParams?: Pr
       ),
     )
     .where(ne(users.id, user.id))) as ContactRow[];
+
+  // Enrich provider contacts with calendly URL
+  for (let i = 0; i < messaged.length; i++) {
+    if (messaged[i].role === 'provider') {
+      const [profile] = await db
+        .select({ calendlyUrl: counselorProfiles.calendlyUrl })
+        .from(counselorProfiles)
+        .where(eq(counselorProfiles.userId, messaged[i].id))
+        .limit(1);
+      if (profile) messaged[i].calendlyUrl = profile.calendlyUrl;
+    }
+  }
 
   const messagedIds = new Set(messaged.map(c => c.id));
   let allContacts: ContactRow[] = [...messaged];
@@ -51,7 +63,15 @@ export default async function MessagesPage({ searchParams }: { searchParams?: Pr
         .from(users)
         .where(eq(users.id, assignment.counselorId))
         .limit(1)) as ContactRow[];
-      if (counselor) allContacts = [counselor, ...allContacts];
+      if (counselor) {
+        const [profile] = await db
+          .select({ calendlyUrl: counselorProfiles.calendlyUrl })
+          .from(counselorProfiles)
+          .where(eq(counselorProfiles.userId, assignment.counselorId))
+          .limit(1);
+        if (profile) counselor.calendlyUrl = profile.calendlyUrl;
+        allContacts = [counselor, ...allContacts];
+      }
     }
   } else {
     // Counselor: surface all clients assigned to them
@@ -79,7 +99,17 @@ export default async function MessagesPage({ searchParams }: { searchParams?: Pr
       .from(users)
       .where(eq(users.id, preselectedId))
       .limit(1)) as ContactRow[];
-    if (extra) allContacts = [extra, ...allContacts];
+    if (extra) {
+      if (extra.role === 'provider') {
+        const [profile] = await db
+          .select({ calendlyUrl: counselorProfiles.calendlyUrl })
+          .from(counselorProfiles)
+          .where(eq(counselorProfiles.userId, preselectedId))
+          .limit(1);
+        if (profile) extra.calendlyUrl = profile.calendlyUrl;
+      }
+      allContacts = [extra, ...allContacts];
+    }
   }
 
   return (

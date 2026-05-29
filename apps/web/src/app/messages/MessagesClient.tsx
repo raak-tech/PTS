@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { BookingButton } from "../BookingButton";
 
-type Contact = { id: string; email: string; role: string };
+type Contact = { id: string; email: string; role: string; displayName?: string | null; calendlyUrl?: string | null };
 
 type Message = {
   id: string;
@@ -131,8 +132,13 @@ export function MessagesClient({
           <>
             {/* Thread header */}
             <div style={{ padding: "16px 20px", borderBottom: "1px solid #eee", background: "white" }}>
-              <p style={{ margin: 0, fontWeight: 600 }}>{anonymise(activeContact.email, activeContact.role)}</p>
-              <p style={{ margin: 0, fontSize: 12, color: "#999" }}>{activeContact.role === "provider" ? "Your counselor" : "Client"}</p>
+              <p style={{ margin: 0, fontWeight: 600 }}>{activeContact.displayName || anonymise(activeContact.email, activeContact.role)}</p>
+              <p style={{ margin: "4px 0 0", fontSize: 12, color: "#999" }}>{activeContact.role === "provider" ? "Your counselor" : "Client"}</p>
+              {activeContact.role === "provider" && (
+                <div style={{ marginTop: 12 }}>
+                  <BookingButton calendlyUrl={activeContact.calendlyUrl} counselorName={activeContact.displayName || "your counselor"} />
+                </div>
+              )}
             </div>
 
             {/* Messages */}

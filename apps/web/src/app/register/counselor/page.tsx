@@ -165,6 +165,24 @@ export default async function CounselorRegisterPage({
             </div>
           </fieldset>
 
+          {/* Section: Booking */}
+          <fieldset style={sectionStyle}>
+            <legend style={legendStyle}>Your availability</legend>
+            <div style={fieldStyle}>
+              <label htmlFor="calendlyUrl" style={labelStyle}>Calendly booking link</label>
+              <p style={hintStyle}>
+                Paste your public Calendly URL (e.g. calendly.com/yourname). Clients will use this to book sessions with you. Optional for pilot.
+              </p>
+              <input
+                id="calendlyUrl"
+                name="calendlyUrl"
+                type="url"
+                placeholder="https://calendly.com/yourname"
+                style={inputStyle}
+              />
+            </div>
+          </fieldset>
+
           {/* Submit */}
           <div style={{ padding: '20px 24px', borderTop: '1px solid #f0f0f0' }}>
             <button type="submit" style={{ ...btnStyle, width: '100%' }}>

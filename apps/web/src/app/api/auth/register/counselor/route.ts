@@ -26,6 +26,7 @@ const schema = z.object({
     Array.isArray(v) ? v : [v]
   ),
   bio: z.string().trim().min(20).max(1500),
+  calendlyUrl: z.string().trim().url().optional(),
 });
 
 function errorRedirect(request: Request, code: string) {
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
       specialisations: specialisations.length > 0 ? specialisations : [],
       languages: languages.length > 0 ? languages : [],
       bio: formData.get('bio'),
+      calendlyUrl: formData.get('calendlyUrl') || undefined,
     });
 
     if (!parsed.success) {
@@ -100,6 +102,7 @@ export async function POST(request: Request) {
       languages: JSON.stringify(parsed.data.languages),
       yearsExperience: parsed.data.yearsExperience,
       bio: parsed.data.bio,
+      calendlyUrl: parsed.data.calendlyUrl ?? null,
       createdAt: now,
     });
 
