@@ -9,6 +9,30 @@ import { intakeResponses, plans } from '@/db/schema';
 import { logError, log } from '@/lib/logger';
 import { generatePlan } from '@/lib/plan-generator';
 import { getUserFromCookieHeader } from '@/lib/session';
+import { sendEmail } from '@/lib/mailer';
+
+async function sendCrisisAlert({ userId, hasRedFlags, isSafe, alertEmail }: any) {
+  const message = `
+CRISIS ALERT — PTS Intake
+
+A client has completed intake with safety concerns:
+- Red flags detected: ${hasRedFlags}
+- Client reported unsafe: ${!isSafe}
+- User ID: ${userId}
+
+This client's plan has been marked "CRISIS" and requires immediate review before delivery.
+
+Action: Log in to PTS provider console → /provider/metrics → Review flagged clients.
+
+Do not delay. Contact the client immediately.
+  `.trim();
+
+  await sendEmail({
+    to: alertEmail,
+    subject: '🚨 PTS: Crisis Alert — Client Safety Concern',
+    text: message,
+  });
+}
 
 const schema = z.object({
   painSource: z.string().min(1),
@@ -93,15 +117,38 @@ export async function POST(request: Request) {
     if (saved) {
       try {
         const generated = await generatePlan(saved);
+
+        // Check for crisis conditions
+        const isCrisis = parsed.data.hasRedFlags || !parsed.data.isSafe;
+        const crisisNote = isCrisis ? '🚨 CRISIS: RED FLAGS OR SAFETY CONCERN — REQUIRES IMMEDIATE REVIEW' : null;
+
         await db.insert(plans).values({
           id: randomUUID(),
           userId: user.id,
           intakeResponseId: saved.id,
           generatedContent: JSON.stringify(generated),
           status: 'draft',
+          counselorNotes: crisisNote,
           createdAt: new Date(),
         }).onConflictDoNothing();
-        log('plan_saved', { userId: user.id });
+
+        log('plan_saved', { userId: user.id, isCrisis });
+
+        // Alert counselor if crisis
+        if (isCrisis) {
+          try {
+            // Send alert email to clinical lead (placeholder)
+            const alertEmail = process.env.CRISIS_ALERT_EMAIL || 'support@pts.local';
+            await sendCrisisAlert({
+              userId: user.id,
+              hasRedFlags: parsed.data.hasRedFlags,
+              isSafe: parsed.data.isSafe,
+              alertEmail,
+            });
+          } catch (emailErr) {
+            logError('crisis_alert_email_failed', emailErr, { userId: user.id });
+          }
+        }
       } catch (planErr) {
         // Plan generation failing should not block the intake submission.
         // The counselor can trigger regeneration manually.
