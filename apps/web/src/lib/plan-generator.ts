@@ -22,7 +22,14 @@ type IntakeData = {
   painSourceOther?: string | null;
   painDescription: string;
   painDuration: string;
-  activitiesAffected: string; // JSON array string
+  ageRange?: string | null;
+  gender?: string | null;
+  occupation?: string | null;
+  affectsWork?: string | null;
+  hasDependents?: string | null;
+  priorTherapy?: string | null;
+  countryRegion?: string | null;
+  activitiesAffected: string;
   biggestChange: string;
   recoveryGoal: string;
   recoveryTimeline?: string | null;
@@ -60,6 +67,15 @@ The plan uses counseling principles (acceptance-based, values-focused, practical
 This is NOT a medical or physiotherapy plan. It is psychological and practical support.
 
 CLIENT INTAKE SUMMARY:
+- Age: ${intake.ageRange ?? 'not specified'}
+- Gender: ${intake.gender ?? 'not specified'}
+- Occupation: ${intake.occupation ?? 'not specified'}
+- Pain affecting work: ${intake.affectsWork ?? 'not specified'}
+- Has dependents: ${intake.hasDependents ?? 'not specified'}
+- Prior therapy experience: ${intake.priorTherapy ?? 'not specified'}
+- Location: ${intake.countryRegion ?? 'not specified'}
+
+PAIN & SITUATION:
 - Pain source: ${source}
 - Situation: ${intake.painDescription}
 - Duration: ${duration}

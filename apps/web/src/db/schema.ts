@@ -90,18 +90,32 @@ export const emailOutbox = pgTable("email_outbox", {
 export const intakeResponses = pgTable("intake_responses", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().unique(),
+  // Situation
   painSource: text("pain_source").notNull(),
   painSourceOther: text("pain_source_other"),
   painDescription: text("pain_description").notNull(),
   painDuration: text("pain_duration").notNull(),
+  // Demographics
+  ageRange: text("age_range"),
+  gender: text("gender"),
+  occupation: text("occupation"),
+  affectsWork: text("affects_work"),
+  hasDependents: boolean("has_dependents"),
+  priorTherapy: text("prior_therapy"),
+  countryRegion: text("country_region"),
+  // Life impact
   activitiesAffected: text("activities_affected").notNull(),
   biggestChange: text("biggest_change").notNull(),
+  // Goals
   recoveryGoal: text("recovery_goal").notNull(),
   recoveryTimeline: text("recovery_timeline"),
+  // Support
   currentTreatment: text("current_treatment"),
   socialSupport: text("social_support"),
+  // Preferences
   structurePreference: text("structure_preference"),
   engagementTime: text("engagement_time"),
+  // Safety
   hasRedFlags: boolean("has_red_flags").notNull().default(false),
   isSafe: boolean("is_safe").notNull().default(true),
   consentGiven: boolean("consent_given").notNull().default(false),
