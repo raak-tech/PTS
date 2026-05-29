@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { BookingButton } from "../BookingButton";
+import { NotificationButton } from "../NotificationButton";
 
 type Contact = { id: string; email: string; role: string; displayName?: string | null; calendlyUrl?: string | null };
 
@@ -97,8 +98,11 @@ export function MessagesClient({
 
       {/* Sidebar */}
       <div style={{ width: 260, borderRight: "1px solid #eee", display: "flex", flexDirection: "column", background: "white" }}>
-        <div style={{ padding: "20px 16px 12px", borderBottom: "1px solid #eee" }}>
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Messages</h2>
+        <div style={{ padding: "16px", borderBottom: "1px solid #eee" }}>
+          <h2 style={{ margin: "0 0 10px", fontSize: 16, fontWeight: 700 }}>Messages</h2>
+          <div style={{ fontSize: 12 }}>
+            <NotificationButton />
+          </div>
         </div>
         <div style={{ flex: 1, overflowY: "auto" }}>
           {!hasContacts && (

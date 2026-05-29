@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   role: text("role").notNull(), // 'client' | 'provider'
   displayName: text("display_name"),
+  notificationsEnabled: boolean("notifications_enabled").notNull().default(false),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
 
@@ -154,4 +155,14 @@ export const clientCounselor = pgTable("client_counselor", {
   clientId: text("client_id").primaryKey(),
   counselorId: text("counselor_id").notNull(),
   assignedAt: timestamp("assigned_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+// Web Push notification subscriptions (for Web Push Protocol)
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  endpoint: text("endpoint").notNull(),
+  auth: text("auth").notNull(),
+  p256dh: text("p256dh").notNull(),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
