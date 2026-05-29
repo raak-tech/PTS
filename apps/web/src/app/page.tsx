@@ -21,7 +21,10 @@ export default async function HomePage() {
   // Not logged in — show the landing page
   if (!user) return <LandingPage />;
 
-  // Logged in — check if they've already completed intake
+  // Counselors go straight to their console
+  if (user.role === 'provider') redirect('/provider');
+
+  // Logged in client — check if they've already completed intake
   const db = getDb();
   const [existing] = await db
     .select({ completedAt: intakeResponses.completedAt })
@@ -29,10 +32,8 @@ export default async function HomePage() {
     .where(eq(intakeResponses.userId, user.id))
     .limit(1);
 
-  if (existing?.completedAt) {
-    redirect('/plan');
-  }
+  if (existing?.completedAt) redirect('/plan');
 
-  // Logged in, no intake yet — show the intake form
+  // Logged in client, no intake yet — show the intake form
   return <IntakeClient />;
 }

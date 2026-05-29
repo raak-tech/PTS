@@ -72,7 +72,8 @@ export async function POST(request: Request) {
       expiresAt,
     });
 
-    const response = NextResponse.redirect(new URL('/', request.url), 303);
+    const dest = user.role === 'provider' ? '/provider' : '/';
+    const response = NextResponse.redirect(new URL(dest, request.url), 303);
     response.cookies.set(createSessionCookie(sessionToken));
     return response;
   } catch (err) {
