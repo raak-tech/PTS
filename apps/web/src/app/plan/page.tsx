@@ -82,10 +82,10 @@ export default async function PlanPage() {
       <h1 style={{ fontSize: 26, fontWeight: 700, margin: '0 0 8px' }}>Your recovery program</h1>
       <p style={{ color: '#555', lineHeight: 1.6, margin: '0 0 32px' }}>{approvedPlan.overview}</p>
 
-      {/* Week cards */}
+      {/* Week cards — show only Week 1 to clients (Phase 1: add counselor-controlled week release) */}
       <div style={{ display: 'grid', gap: 16 }}>
-        {approvedPlan.weeks.map((week, i) => (
-          <details key={week.week} open={i === 0} style={{ border: '1px solid #e0e0e0', borderRadius: 14, overflow: 'hidden' }}>
+        {approvedPlan.weeks.slice(0, 1).map((week, i) => (
+          <details key={week.week} open={true} style={{ border: '1px solid #e0e0e0', borderRadius: 14, overflow: 'hidden' }}>
             <summary style={{ padding: '16px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 16, background: '#fafafa', userSelect: 'none' }}>
               Week {week.week} — {week.theme}
             </summary>
@@ -95,23 +95,29 @@ export default async function PlanPage() {
               <p style={{ margin: '0 0 10px', fontWeight: 600, fontSize: 14 }}>Daily practices</p>
               <div style={{ display: 'grid', gap: 10, marginBottom: 20 }}>
                 {week.dailyPractices.map(p => (
-                  <div key={p.title} style={{ padding: '12px 16px', background: '#f9f9f9', borderRadius: 10, border: '1px solid #eee' }}>
+                  <div key={p.title} style={{ padding: '12px 16px', background: '#f9f9f9', borderRadius: 10, border: '1px solid #ddd' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontWeight: 600, fontSize: 14 }}>{p.title}</span>
-                      <span style={{ fontSize: 12, color: '#888', background: '#eee', padding: '2px 8px', borderRadius: 999 }}>{p.duration}</span>
+                      <span style={{ fontWeight: 600, fontSize: 14, color: '#111' }}>{p.title}</span>
+                      <span style={{ fontSize: 12, color: '#555', background: '#eee', padding: '2px 8px', borderRadius: 999, fontWeight: 500 }}>{p.duration}</span>
                     </div>
-                    <p style={{ margin: 0, fontSize: 14, color: '#555', lineHeight: 1.5 }}>{p.description}</p>
+                    <p style={{ margin: 0, fontSize: 14, color: '#444', lineHeight: 1.5 }}>{p.description}</p>
                   </div>
                 ))}
               </div>
 
-              <div style={{ background: '#f0f4ff', borderRadius: 10, padding: '12px 16px' }}>
-                <p style={{ margin: '0 0 4px', fontWeight: 600, fontSize: 13 }}>Weekly reflection</p>
-                <p style={{ margin: 0, fontSize: 14, color: '#333', fontStyle: 'italic' }}>"{week.weeklyReflection}"</p>
+              <div style={{ background: '#e3f2fd', border: '1px solid #64b5f6', borderRadius: 10, padding: '12px 16px' }}>
+                <p style={{ margin: '0 0 4px', fontWeight: 600, fontSize: 13, color: '#1976d2' }}>This week's reflection</p>
+                <p style={{ margin: 0, fontSize: 14, color: '#0d47a1', fontStyle: 'italic' }}>"{week.weeklyReflection}"</p>
               </div>
             </div>
           </details>
         ))}
+      </div>
+
+      <div style={{ background: '#f5f5f5', border: '1px solid #ccc', borderRadius: 10, padding: '16px', marginTop: 20, marginBottom: 20 }}>
+        <p style={{ margin: 0, fontSize: 13, color: '#555', lineHeight: 1.6 }}>
+          <strong>📅 More weeks coming</strong><br/>Your counselor will unlock the next weeks of your program as you progress. This keeps your focus on one week at a time and allows your counselor to adjust your plan based on how things are going.
+        </p>
       </div>
 
       <div style={{ marginTop: 32, display: 'flex', gap: 12, flexWrap: 'wrap' }}>

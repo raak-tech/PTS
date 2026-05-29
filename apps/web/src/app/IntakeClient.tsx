@@ -51,8 +51,14 @@ const STEPS = [
 
 function Radio({ name, value, checked, onChange, label }: any) {
   return (
-    <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "10px 12px", borderRadius: 10, border: "1px solid #eee", fontSize: "clamp(13px, 2vw, 15px)", transition: "all 0.15s" }}>
-      <input type="radio" name={name} value={value} checked={checked} onChange={onChange} style={{ accentColor: "#111", width: 16, height: 16, flexShrink: 0 }} />
+    <label style={{
+      display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
+      padding: "10px 12px", borderRadius: 10,
+      border: checked ? "2px solid #111" : "2px solid #ddd",
+      backgroundColor: checked ? "#f0f0f0" : "transparent",
+      fontSize: "clamp(13px, 2vw, 15px)", transition: "all 0.15s", fontWeight: checked ? 600 : 400
+    }}>
+      <input type="radio" name={name} value={value} checked={checked} onChange={onChange} style={{ accentColor: "#111", width: 18, height: 18, flexShrink: 0 }} />
       <span>{label}</span>
     </label>
   );
@@ -60,8 +66,14 @@ function Radio({ name, value, checked, onChange, label }: any) {
 
 function Checkbox({ checked, onChange, label }: any) {
   return (
-    <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", padding: "8px 12px", borderRadius: 10, border: "1px solid #eee", fontSize: "clamp(13px, 2vw, 15px)" }}>
-      <input type="checkbox" checked={checked} onChange={onChange} style={{ accentColor: "#111", width: 16, height: 16, flexShrink: 0, marginTop: 2 }} />
+    <label style={{
+      display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer",
+      padding: "10px 12px", borderRadius: 10,
+      border: checked ? "2px solid #111" : "2px solid #ddd",
+      backgroundColor: checked ? "#f0f0f0" : "transparent",
+      fontSize: "clamp(13px, 2vw, 15px)", fontWeight: checked ? 600 : 400
+    }}>
+      <input type="checkbox" checked={checked} onChange={onChange} style={{ accentColor: "#111", width: 18, height: 18, flexShrink: 0, marginTop: 2 }} />
       <span>{label}</span>
     </label>
   );

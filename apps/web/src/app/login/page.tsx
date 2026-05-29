@@ -52,7 +52,12 @@ export default async function LoginPage({
               type="email"
               autoComplete="email"
               required
-              style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '2px solid #999', fontSize: 16, fontFamily: 'inherit', boxSizing: 'border-box', color: '#111' }}
+              style={{
+                width: '100%', padding: '12px 14px', borderRadius: 10, border: '2px solid #333',
+                fontSize: 16, fontFamily: 'inherit', boxSizing: 'border-box',
+                color: '#111', backgroundColor: '#fff',
+                WebkitTextFillColor: '#111 !important',
+              } as any}
             />
           </div>
 
@@ -64,7 +69,11 @@ export default async function LoginPage({
               type="password"
               autoComplete="current-password"
               required
-              style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '2px solid #999', fontSize: 16, fontFamily: 'inherit', boxSizing: 'border-box', color: '#111' }}
+              style={{
+                width: '100%', padding: '12px 14px', borderRadius: 10, border: '2px solid #333',
+                fontSize: 16, fontFamily: 'inherit', boxSizing: 'border-box',
+                color: '#111', backgroundColor: '#fff',
+              }}
             />
           </div>
 
