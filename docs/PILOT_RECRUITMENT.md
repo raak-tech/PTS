@@ -157,14 +157,11 @@ Interested?
 ## What we need from you before Phase 0
 
 ### 1. Counselor invite codes
-Generate a few codes for Ramya and any other pilot counselors.
+**Phase 0 (Internal Testing):** Use `CNSL-32223077` (hardcoded in COUNSELOR_INVITE_CODE env)
 
-**How:** 
-- We have `CNSL-32223077` hardcoded in env
-- For pilot, that's fine — same code for all counselors
-- Or generate unique codes via `/admin/invite` endpoint (not yet built)
-
-**Action:** Confirm the code or ask me to build invite management.
+**Phase 1 (Closed Recruitment):** Generate unique codes via Neon (not yet UI-automated)
+- Create new codes in database: `INSERT INTO invite_codes (code, provider_user_id, ...) VALUES (...)`
+- Or ask Cursor to build `/api/admin/invite-codes` endpoint if needed
 
 ---
 
