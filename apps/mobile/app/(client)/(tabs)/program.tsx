@@ -9,6 +9,7 @@ import { useCounselorContact } from '@/hooks/useClientData';
 import { useProgramTime } from '@/hooks/useProgramTime';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { PROGRAM_WEEK_THEMES } from '@/lib/appTime';
+import { API_URL } from '@/config';
 
 export default function ProgramScreen() {
   const router = useRouter();
@@ -16,6 +17,8 @@ export default function ProgramScreen() {
   const { calendlyUrl, counselorName } = useCounselorContact();
   const styles = useThemedStyles((c) => ({
     status: { fontSize: 13, color: c.muted },
+    body: { fontSize: 14, color: c.muted, lineHeight: 22 },
+    label: { fontSize: 12, fontWeight: '700' as const, color: c.faint, textTransform: 'uppercase' as const, letterSpacing: 0.6, marginBottom: 8, marginTop: 16 },
   }));
 
   const weeks = programTime?.weeks ?? PROGRAM_WEEK_THEMES.map((entry, index) => ({
@@ -25,15 +28,56 @@ export default function ProgramScreen() {
     status: index === 0 ? ('current' as const) : ('locked' as const),
   }));
 
+  if (programTime?.programComplete) {
+    const lastWeek = weeks[weeks.length - 1];
+    return (
+      <Screen
+        layout="tab"
+        title="Your 6-week program"
+        subtitle="Program complete — maintenance mode"
+      >
+        {lastWeek && (
+          <Card title={`Last week: ${lastWeek.theme}`}>
+            <Text style={styles.body}>{lastWeek.focus}</Text>
+            <Button
+              label={`Review Week ${lastWeek.id}`}
+              variant="secondary"
+              onPress={() => router.push(`/(client)/program/week/${lastWeek.id}`)}
+            />
+          </Card>
+        )}
+
+        <Text style={styles.label}>Monthly check-in</Text>
+        <Button
+          label="Schedule next monthly session"
+          onPress={() => {
+            if (calendlyUrl) {
+              void Linking.openURL(calendlyUrl);
+            } else {
+              router.push('/(client)/(tabs)/messages');
+            }
+          }}
+        />
+
+        <Card title="Your maintenance plan">
+          <Text style={styles.body}>
+            Continue your daily practices at a comfortable pace. Your counselor has tailored this maintenance plan specifically for you.
+          </Text>
+          <Button
+            label="View full maintenance plan on web"
+            variant="secondary"
+            onPress={() => void Linking.openURL(`${API_URL}/plan`)}
+          />
+        </Card>
+      </Screen>
+    );
+  }
+
   return (
     <Screen
       layout="tab"
       title="Your 6-week program"
-      subtitle={
-        programTime?.programComplete
-          ? 'Program complete — review your weeks anytime'
-          : 'Personalised recovery plan'
-      }
+      subtitle="Personalised recovery plan"
     >
       {weeks.map((week) => (
         <Card
