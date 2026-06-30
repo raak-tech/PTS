@@ -5,10 +5,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getDb } from '@/db';
-import { intakeResponses } from '@/db/schema';
-import { runInBackground } from '@/lib/background-task';
+import { intakeResponses, plans } from '@/db/schema';
 import { logError } from '@/lib/logger';
-import { regeneratePlanDraftForUser } from '@/lib/regenerate-plan-for-user';
 import { getUserFromRequest } from '@/lib/session';
 
 export const maxDuration = 300;
@@ -88,14 +86,19 @@ export async function POST(request: Request) {
         },
       });
 
-    // Generate the plan in the background so the client isn't stuck waiting on the LLM.
-    runInBackground(
-      regeneratePlanDraftForUser(user.id).catch((err) => {
-        logError('intake_plan_background_failed', err, { userId: user.id });
-      }),
-    );
+    // Idempotency check: if a plan already exists, don't attempt generation
+    const [existingPlan] = await db
+      .select({ id: plans.id })
+      .from(plans)
+      .where(eq(plans.userId, user.id))
+      .limit(1);
 
-    return NextResponse.json({ ok: true });
+    if (existingPlan) {
+      return NextResponse.json({ ok: true, planGenTriggered: false });
+    }
+
+    // Plan generation is now counselor-initiated only, not automatic
+    return NextResponse.json({ ok: true, planGenTriggered: false });
   } catch (err) {
     logError('intake_post_error', err);
     return NextResponse.json({ error: 'internal' }, { status: 500 });
