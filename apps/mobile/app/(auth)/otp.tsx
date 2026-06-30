@@ -1,10 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Pressable, Text } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
-import { TextField } from '@/components/TextField';
 import { useAuth } from '@/context/AuthContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { formatPhoneDisplay } from '@/lib/phone';
@@ -14,21 +13,26 @@ export default function OtpScreen() {
   const router = useRouter();
   const { phone } = useLocalSearchParams<{ phone: string }>();
   const { verifyOtp, sendOtp } = useAuth();
-  const [code, setCode] = useState('');
+  const [digits, setDigits] = useState(['', '', '', '', '', '']);
+  const inputRefs = useRef<(TextInput | null)[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [countdown, setCountdown] = useState(15);
   const styles = useThemedStyles((c) => ({
-    otp: {
-      fontSize: 28,
-      letterSpacing: 8,
-      textAlign: 'center' as const,
-      borderWidth: 1.5,
+    boxContainer: { flexDirection: 'row' as const, justifyContent: 'center' as const, gap: 8, marginVertical: 20 },
+    box: {
+      width: 50,
+      height: 50,
+      borderWidth: 2,
       borderColor: c.border,
       borderRadius: 12,
-      padding: 16,
+      fontSize: 24,
+      fontWeight: '600' as const,
+      textAlign: 'center' as const,
+      color: c.text,
       backgroundColor: c.surface,
     },
+    boxFocused: { borderColor: c.primary },
     error: { color: c.danger, fontSize: 14 },
     hint: { fontSize: 13, color: c.faint, textAlign: 'center' as const },
     link: { textAlign: 'center' as const, color: c.text, fontSize: 15, fontWeight: '600' as const },
@@ -40,6 +44,38 @@ export default function OtpScreen() {
     const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [countdown]);
+
+  const handleDigitChange = (index: number, value: string) => {
+    const numOnly = value.replace(/\D/g, '');
+    if (numOnly.length > 1) {
+      // User pasted content — distribute digits
+      const chars = numOnly.slice(0, 6).split('');
+      const newDigits = [...digits];
+      for (let i = 0; i < chars.length && index + i < 6; i++) {
+        newDigits[index + i] = chars[i];
+      }
+      setDigits(newDigits);
+      // Focus next empty or last
+      const nextEmpty = newDigits.findIndex((d, i) => i >= index && d === '');
+      if (nextEmpty !== -1) inputRefs.current[nextEmpty]?.focus();
+      else inputRefs.current[5]?.focus();
+    } else {
+      const newDigits = [...digits];
+      newDigits[index] = numOnly;
+      setDigits(newDigits);
+      if (numOnly && index < 5) {
+        inputRefs.current[index + 1]?.focus();
+      }
+    }
+  };
+
+  const handleKeyPress = (index: number, key: string) => {
+    if (key === 'Backspace' && !digits[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const code = digits.join('');
 
   const onVerify = async () => {
     if (!phone) return;
@@ -67,17 +103,25 @@ export default function OtpScreen() {
       subtitle={`Code sent to ${formatPhoneDisplay(phone ?? '')}`}
       scroll={false}
     >
-      <TextField
-        style={styles.otp}
-        value={code}
-        onChangeText={(t) => setCode(t.replace(/\D/g, '').slice(0, 6))}
-        keyboardType="number-pad"
-        textContentType="oneTimeCode"
-        autoComplete="one-time-code"
-        maxLength={6}
-        placeholder="123456"
-        autoFocus
-      />
+      <View style={styles.boxContainer}>
+        {digits.map((digit, i) => (
+          <TextInput
+            key={i}
+            ref={(ref) => {
+              if (ref) inputRefs.current[i] = ref;
+            }}
+            style={[styles.box]}
+            value={digit}
+            onChangeText={(t) => handleDigitChange(i, t)}
+            onKeyPress={({ nativeEvent }) => handleKeyPress(i, nativeEvent.key)}
+            keyboardType="number-pad"
+            maxLength={1}
+            autoComplete="one-time-code"
+            textContentType="oneTimeCode"
+            autoFocus={i === 0}
+          />
+        ))}
+      </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Text style={styles.hint}>Prototype OTP: {MOCK_OTP}</Text>
