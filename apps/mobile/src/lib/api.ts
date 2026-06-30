@@ -640,3 +640,35 @@ export async function apiSubmitDailyCheckIn(
     }),
   );
 }
+
+export async function apiGetMonthlyCheckIn(token: string) {
+  return parseJson<{
+    ok: boolean;
+    checkIn: {
+      yearMonth: string;
+      painLevel: number;
+      sleepQuality: string;
+      intention: string;
+      submittedAt: string;
+    } | null;
+  }>(
+    await fetchWithTimeout(`${API_URL}/api/check-ins/monthly`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
+}
+
+export async function apiSubmitMonthlyCheckIn(
+  token: string,
+  painLevel: number,
+  sleepQuality: 'poor' | 'ok' | 'good',
+  intention: string,
+) {
+  return parseJson<{ ok: boolean }>(
+    await fetchWithTimeout(`${API_URL}/api/check-ins/monthly`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ painLevel, sleepQuality, intention }),
+    }),
+  );
+}

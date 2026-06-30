@@ -29,6 +29,7 @@ export default function ClientLayout() {
       <Stack.Screen name="waiting-plan" options={{ title: 'Your plan' }} />
       <Stack.Screen name="program/week/[id]" options={{ title: 'Week' }} />
       <Stack.Screen name="program/check-in" options={{ title: 'Weekly check-in' }} />
+      <Stack.Screen name="program/monthly-check-in" options={{ title: 'Monthly check-in' }} />
       <Stack.Screen name="messages/[id]" options={{ title: 'Conversation' }} />
       <Stack.Screen name="profile/safety" options={{ title: 'Safety' }} />
       <Stack.Screen name="profile/data" options={{ title: 'Your data' }} />
