@@ -25,7 +25,7 @@ const config: ExpoConfig = {
       monochromeImage: './assets/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: false,
-    permissions: ['INTERNET', 'RECORD_AUDIO'],
+    permissions: ['INTERNET', 'RECORD_AUDIO', 'RECEIVE_BOOT_COMPLETED'],
   },
   web: {
     favicon: './assets/favicon.png',
@@ -35,6 +35,15 @@ const config: ExpoConfig = {
     'expo-router',
     'expo-secure-store',
     'expo-av',
+    [
+      'expo-notifications',
+      {
+        icon: './assets/icon.png',
+        color: '#3D4F44',
+        defaultChannel: 'default',
+        sounds: [],
+      },
+    ],
     [
       'expo-splash-screen',
       {

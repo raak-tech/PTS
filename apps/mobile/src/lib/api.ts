@@ -641,6 +641,16 @@ export async function apiSubmitDailyCheckIn(
   );
 }
 
+export async function apiRegisterPushToken(token: string, expoPushToken: string) {
+  return parseJson<{ ok: boolean }>(
+    await fetchWithTimeout(`${API_URL}/api/notifications/register-token`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ expoPushToken }),
+    }),
+  );
+}
+
 export async function apiGetMonthlyCheckIn(token: string) {
   return parseJson<{
     ok: boolean;

@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getDb } from '@/db';
-import { clientCounselor, plans } from '@/db/schema';
+import { clientCounselor, plans, users } from '@/db/schema';
+import { sendPushToUser } from '@/lib/expo-push';
 import { logError } from '@/lib/logger';
 import {
   applyHolisticVisibility,
@@ -144,6 +145,20 @@ export async function POST(request: Request) {
         counselorId: user.id,
         planContent,
       });
+
+      // Push notification: plan is live
+      const [clientUser] = await db
+        .select({ expoPushToken: users.expoPushToken })
+        .from(users)
+        .where(eq(users.id, planRow.userId))
+        .limit(1);
+
+      void sendPushToUser(
+        clientUser?.expoPushToken,
+        'Your personalized plan is ready 🎯',
+        'Your counselor has approved your 6-week recovery program. Open the app to start.',
+        { action: 'plan_approved', planId: planRow.id },
+      );
 
       return NextResponse.json({ ok: true });
     }

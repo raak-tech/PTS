@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getDb } from '@/db';
-import { planWeeks, plans } from '@/db/schema';
+import { planWeeks, plans, users } from '@/db/schema';
+import { sendPushToUser } from '@/lib/expo-push';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
 
@@ -144,6 +145,33 @@ export async function POST(
       .select({ weekNumber: planWeeks.weekNumber })
       .from(planWeeks)
       .where(and(eq(planWeeks.planId, planId), eq(planWeeks.status, 'approved')));
+
+    // Push notification to client
+    const [planRecord] = await db
+      .select({ userId: plans.userId })
+      .from(plans)
+      .where(eq(plans.id, planId))
+      .limit(1);
+
+    if (planRecord) {
+      const [clientUser] = await db
+        .select({ expoPushToken: users.expoPushToken })
+        .from(users)
+        .where(eq(users.id, planRecord.userId))
+        .limit(1);
+
+      const isFirstWeek = weekNum === 1;
+      const title = isFirstWeek ? 'Your program starts now! 🎉' : `Week ${weekNum} unlocked`;
+      const body = isFirstWeek
+        ? 'Week 1 is live. Start your recovery program today.'
+        : `Your counselor approved Week ${weekNum}. Open the app to continue.`;
+
+      void sendPushToUser(clientUser?.expoPushToken, title, body, {
+        action: 'week_approved',
+        planId,
+        weekNumber: weekNum,
+      });
+    }
 
     return NextResponse.json({ ok: true, approvedWeeks: approvedWeeks.length });
   } catch (err) {

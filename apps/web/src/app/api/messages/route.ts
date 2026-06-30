@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { getDb } from '@/db';
 import { messages, users } from '@/db/schema';
+import { sendPushToUser } from '@/lib/expo-push';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
 
@@ -81,6 +82,21 @@ export async function POST(request: Request) {
       body: parsed.data.body,
       createdAt: now,
     });
+
+    // Push notification to recipient
+    const [recipientRecord] = await db
+      .select({ expoPushToken: users.expoPushToken, displayName: users.displayName })
+      .from(users)
+      .where(eq(users.id, parsed.data.toUserId))
+      .limit(1);
+
+    const senderName = user.displayName ?? 'Someone';
+    void sendPushToUser(
+      recipientRecord?.expoPushToken,
+      `New message from ${senderName}`,
+      parsed.data.body.slice(0, 120),
+      { action: 'new_message', fromUserId: user.id },
+    );
 
     return NextResponse.json({ ok: true });
   } catch (err) {
