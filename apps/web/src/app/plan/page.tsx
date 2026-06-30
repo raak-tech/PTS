@@ -1,37 +1,67 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import Link from 'next/link';
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 
 import { getDb } from '../../db';
-import { plans } from '../../db/schema';
+import { planWeeks, plans } from '../../db/schema';
 import { getUserFromCookieHeader } from '../../lib/session';
-import type { GeneratedPlan } from '../../lib/plan-generator';
+import type { GeneratedPlan, WeekPlan } from '../../lib/plan-generator';
 
-export const metadata: Metadata = { title: 'Your plan | PTS' };
+export const metadata: Metadata = { title: 'Your plan | Pain to Strength' };
 
 export default async function PlanPage() {
   const headersList = await headers();
   const user = await getUserFromCookieHeader(headersList.get('cookie'));
 
-  let approvedPlan: GeneratedPlan | null = null;
   let planStatus: 'none' | 'pending' | 'approved' = 'none';
+  let overview = '';
+  let approvedWeeks: WeekPlan[] = [];
 
   if (user) {
     const db = getDb();
+
+    // Find the latest plan for this client
     const [plan] = await db
       .select()
       .from(plans)
       .where(eq(plans.userId, user.id))
-      .orderBy(plans.createdAt)
+      .orderBy(desc(plans.createdAt))
       .limit(1);
 
     if (plan) {
-      planStatus = plan.status === 'approved' ? 'approved' : 'pending';
-      if (plan.status === 'approved') {
+      // Fetch approved weeks only — client sees a week only after counselor approves it
+      const weekRows = await db
+        .select({ weekNumber: planWeeks.weekNumber, content: planWeeks.content, status: planWeeks.status })
+        .from(planWeeks)
+        .where(eq(planWeeks.planId, plan.id))
+        .orderBy(planWeeks.weekNumber);
+
+      const approvedWeekRows2 = weekRows.filter((r: { weekNumber: number; content: string; status: string }) => r.status === 'approved');
+
+      if (approvedWeekRows2.length > 0) {
+        // New model: show only approved weeks from planWeeks table
+        planStatus = 'approved';
+        for (const row of approvedWeekRows2) {
+          try {
+            approvedWeeks.push(JSON.parse(row.content) as WeekPlan);
+          } catch { /* skip malformed */ }
+        }
+        // Try to get the overview from the plan's generatedContent
         try {
-          approvedPlan = JSON.parse(plan.generatedContent) as GeneratedPlan;
+          const full = JSON.parse(plan.generatedContent) as GeneratedPlan;
+          overview = full.overview ?? '';
         } catch { /* ignore */ }
+      } else if (plan.status === 'approved') {
+        // Legacy model: plan was approved atomically before planWeeks existed
+        planStatus = 'approved';
+        try {
+          const full = JSON.parse(plan.generatedContent) as GeneratedPlan;
+          overview = full.overview ?? '';
+          approvedWeeks = full.weeks ?? [];
+        } catch { /* ignore */ }
+      } else {
+        planStatus = 'pending';
       }
     }
   }
@@ -50,7 +80,7 @@ export default async function PlanPage() {
     return (
       <main style={{ maxWidth: 640, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
         <h1>Your plan</h1>
-        <p style={{ color: '#666' }}>You haven't completed your intake yet.</p>
+        <p style={{ color: '#666' }}>You haven&apos;t completed your intake yet.</p>
         <Link href="/" style={{ display: 'inline-block', marginTop: 16, padding: '12px 28px', borderRadius: 999, background: '#111', color: 'white', textDecoration: 'none', fontWeight: 600 }}>Start intake →</Link>
       </main>
     );
@@ -61,7 +91,7 @@ export default async function PlanPage() {
       <main style={{ maxWidth: 640, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
         <div style={{ fontSize: 40, marginBottom: 20 }}>⏳</div>
         <h1>Your plan is being prepared</h1>
-        <p style={{ color: '#666', lineHeight: 1.6 }}>Your counselor is reviewing the personalised program and will approve it shortly. You'll be notified when it's ready.</p>
+        <p style={{ color: '#666', lineHeight: 1.6 }}>Your counselor is reviewing the personalised program and will approve it shortly. You&apos;ll be notified when it&apos;s ready.</p>
         <p style={{ marginTop: 24 }}>
           <Link href="/messages" style={{ color: '#333', textDecoration: 'underline' }}>Check your messages →</Link>
         </p>
@@ -69,7 +99,7 @@ export default async function PlanPage() {
     );
   }
 
-  if (!approvedPlan) return null;
+  if (approvedWeeks.length === 0) return null;
 
   return (
     <main style={{ maxWidth: 720, margin: '0 auto', padding: '40px 24px 80px' }}>
@@ -80,12 +110,12 @@ export default async function PlanPage() {
       </div>
 
       <h1 style={{ fontSize: 26, fontWeight: 700, margin: '0 0 8px' }}>Your recovery program</h1>
-      <p style={{ color: '#555', lineHeight: 1.6, margin: '0 0 32px' }}>{approvedPlan.overview}</p>
+      {overview && <p style={{ color: '#555', lineHeight: 1.6, margin: '0 0 32px' }}>{overview}</p>}
 
-      {/* Week cards — show only Week 1 to clients (Phase 1: add counselor-controlled week release) */}
+      {/* Approved weeks — shown in order, only what counselor has released */}
       <div style={{ display: 'grid', gap: 16 }}>
-        {approvedPlan.weeks.slice(0, 1).map((week, i) => (
-          <details key={week.week} open={true} style={{ border: '1px solid #e0e0e0', borderRadius: 14, overflow: 'hidden' }}>
+        {approvedWeeks.map((week) => (
+          <details key={week.week} open={week.week === approvedWeeks[0]?.week} style={{ border: '1px solid #e0e0e0', borderRadius: 14, overflow: 'hidden' }}>
             <summary style={{ padding: '16px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 16, background: '#fafafa', userSelect: 'none' }}>
               Week {week.week} — {week.theme}
             </summary>
@@ -106,8 +136,8 @@ export default async function PlanPage() {
               </div>
 
               <div style={{ background: '#e3f2fd', border: '1px solid #64b5f6', borderRadius: 10, padding: '12px 16px' }}>
-                <p style={{ margin: '0 0 4px', fontWeight: 600, fontSize: 13, color: '#1976d2' }}>This week's reflection</p>
-                <p style={{ margin: 0, fontSize: 14, color: '#0d47a1', fontStyle: 'italic' }}>"{week.weeklyReflection}"</p>
+                <p style={{ margin: '0 0 4px', fontWeight: 600, fontSize: 13, color: '#1976d2' }}>This week&apos;s reflection</p>
+                <p style={{ margin: 0, fontSize: 14, color: '#0d47a1', fontStyle: 'italic' }}>&quot;{week.weeklyReflection}&quot;</p>
               </div>
             </div>
           </details>
@@ -122,7 +152,7 @@ export default async function PlanPage() {
 
       <div style={{ marginTop: 32, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <Link href="/daily" style={{ padding: '12px 24px', borderRadius: 999, background: '#111', color: 'white', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}>
-          Today's practice
+          Today&apos;s practice
         </Link>
         <Link href="/messages" style={{ padding: '12px 24px', borderRadius: 999, border: '1px solid #ddd', color: '#333', textDecoration: 'none', fontSize: 14 }}>
           Message your counselor

@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 
 import { getDb } from '../../../../db';
-import { supportArtifacts, userConsents, users } from '../../../../db/schema';
+import { planWeeks, plans, supportArtifacts, userConsents, users } from '../../../../db/schema';
 import { getUserFromCookieHeader } from '../../../../lib/session';
+import { ProviderClientWorkspaceClient } from './ProviderClientWorkspaceClient';
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -52,6 +52,26 @@ export default async function ProviderClientDetailPage({ params }: Props) {
     kindCounts[a.kind] = (kindCounts[a.kind] ?? 0) + 1;
   }
 
+  // Fetch plan and week statuses for the workspace approval panel
+  const [latestPlan] = await db
+    .select({ id: plans.id })
+    .from(plans)
+    .where(eq(plans.userId, id))
+    .orderBy(desc(plans.createdAt))
+    .limit(1);
+
+  type WeekStatusRow = { weekNumber: number; status: string };
+  const weekStatusRows: WeekStatusRow[] = latestPlan
+    ? (await db
+        .select({ weekNumber: planWeeks.weekNumber, status: planWeeks.status })
+        .from(planWeeks)
+        .where(eq(planWeeks.planId, latestPlan.id))) as WeekStatusRow[]
+    : [];
+
+  const weekStatuses = Object.fromEntries(
+    weekStatusRows.map(r => [r.weekNumber, r.status as 'draft' | 'edited' | 'approved'])
+  );
+
   return (
     <main className="pageShell" style={{ maxWidth: 900 }}>
       <h1>Client detail</h1>
@@ -66,12 +86,15 @@ export default async function ProviderClientDetailPage({ params }: Props) {
             <li key={kind}><strong>{kind}:</strong> {count}</li>
           ))}
         </ul>
-        <div style={{ marginTop: 16 }}>
-          <Link href={`/messages?with=${client.id}`} className="actionLink">
-            Message this client →
-          </Link>
-        </div>
       </section>
+
+      <ProviderClientWorkspaceClient
+        clientId={client.id}
+        clientLabel={anonymise(client.email)}
+        planId={latestPlan?.id}
+        initialWeekStatuses={weekStatuses}
+        totalWeeks={weekStatusRows.length > 0 ? Math.max(...weekStatusRows.map(r => r.weekNumber)) : 6}
+      />
 
       {artifacts.length > 0 && (
         <section className="sectionStack" style={{ marginTop: 24 }}>
