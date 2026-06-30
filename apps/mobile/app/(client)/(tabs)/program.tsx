@@ -1,6 +1,6 @@
 import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -41,9 +41,18 @@ export default function ProgramScreen() {
           title={`Week ${week.id}: ${week.theme}`}
           onPress={week.status !== 'locked' ? () => router.push(`/(client)/program/week/${week.id}`) : undefined}
         >
-          <Text style={styles.status}>
-            {week.status === 'current' ? 'Current week' : week.status === 'locked' ? 'Locked' : 'Complete'}
-          </Text>
+          {week.status === 'locked' ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={{ fontSize: 20 }}>🔒</Text>
+              <Text style={[styles.status, { flex: 1 }]}>
+                Week {Number(week.id) - 1} unlocks when your counselor marks Week {Number(week.id) - 1} complete.
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.status}>
+              {week.status === 'current' ? 'Current week' : 'Complete'}
+            </Text>
+          )}
         </Card>
       ))}
       <Button label="Weekly check-in" variant="secondary" onPress={() => router.push('/(client)/program/check-in')} />
