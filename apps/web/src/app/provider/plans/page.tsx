@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { eq, inArray } from 'drizzle-orm';
 
 import { getDb } from '../../../db';
-import { intakeResponses, plans, users } from '../../../db/schema';
+import { intakeResponses, planWeeks, plans, users } from '../../../db/schema';
 import { getUserFromCookieHeader } from '../../../lib/session';
 import { PlanReviewClient } from './PlanReviewClient';
 import type { GeneratedPlan } from '../../../lib/plan-generator';
@@ -52,6 +52,22 @@ export default async function ProviderPlansPage() {
 
   const intakeByUserId = Object.fromEntries(intakes.map(i => [i.userId, i]));
 
+  // Fetch planWeeks statuses for all draft plans so the editor shows current state
+  const draftPlanIds = draftPlans.map(p => p.id);
+  type WeekStatusRow = { planId: string; weekNumber: number; status: string };
+  const allWeekStatuses: WeekStatusRow[] = draftPlanIds.length > 0
+    ? (await db
+        .select({ planId: planWeeks.planId, weekNumber: planWeeks.weekNumber, status: planWeeks.status })
+        .from(planWeeks)
+        .where(inArray(planWeeks.planId, draftPlanIds))) as WeekStatusRow[]
+    : [];
+
+  const weekStatusByPlan: Record<string, Record<number, 'draft' | 'edited' | 'approved'>> = {};
+  for (const row of allWeekStatuses) {
+    if (!weekStatusByPlan[row.planId]) weekStatusByPlan[row.planId] = {};
+    weekStatusByPlan[row.planId][row.weekNumber] = row.status as 'draft' | 'edited' | 'approved';
+  }
+
   function anon(email: string) {
     const [local] = email.split('@');
     return `${local[0]}***@${email.split('@')[1]}`;
@@ -62,6 +78,7 @@ export default async function ProviderPlansPage() {
     clientEmail: anon(emailById[p.userId] ?? 'unknown@unknown.com'),
     intake: intakeByUserId[p.userId] ?? null,
     parsed: JSON.parse(p.generatedContent) as GeneratedPlan,
+    weekStatuses: weekStatusByPlan[p.id] ?? {},
   }));
 
   return (
@@ -87,6 +104,7 @@ export default async function ProviderPlansPage() {
           intake={plan.intake}
           plan={plan.parsed}
           createdAt={plan.createdAt.toLocaleDateString()}
+          initialWeekStatuses={plan.weekStatuses}
         />
       ))}
 
