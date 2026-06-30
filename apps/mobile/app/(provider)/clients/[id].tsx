@@ -1,5 +1,6 @@
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
+import * as Linking from 'expo-linking';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Text } from 'react-native';
@@ -10,6 +11,7 @@ import { CounselorReadOutEditor } from '@/components/daily/CounselorReadOutEdito
 import { Screen } from '@/components/Screen';
 import { useAuth } from '@/context/AuthContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
+import { API_URL } from '@/config';
 import {
   apiApplyWeek,
   apiCreateReinforcement,
@@ -201,6 +203,11 @@ export default function ProviderClientScreen() {
       <Card title="Summary">
         <Text style={styles.body}>{summary || 'No plan content yet.'}</Text>
       </Card>
+
+      <Button
+        label="Record read-out & plan next week on web workspace"
+        onPress={() => void Linking.openURL(`${API_URL}/provider/clients/${id}`)}
+      />
 
       {engagement ? (
         <Card title="Today's engagement">

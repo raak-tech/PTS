@@ -94,6 +94,8 @@ export default function TodayScreen() {
   const [holisticSaving, setHolisticSaving] = useState<HolisticActivityType | null>(null);
   const router = useRouter();
   const [practiceDone, setPracticeDone] = useState(false);
+  const [practiceFeelingShown, setPracticeFeelingShown] = useState(false);
+  const [practiceFeeling, setPracticeFeeling] = useState('');
   const [readOutText, setReadOutText] = useState('');
   const [workedText, setWorkedText] = useState('');
   const [didntWorkText, setDidntWorkText] = useState('');
@@ -346,9 +348,30 @@ export default function TodayScreen() {
             {practiceDone ? (
               <Text style={styles.done}>✓ Marked done for today</Text>
             ) : (
-              <Button label="Mark practice done" onPress={() => setPracticeDone(true)} />
+              <Button label="Mark practice done" onPress={() => {
+                setPracticeDone(true);
+                setPracticeFeelingShown(true);
+              }} />
             )}
           </Card>
+
+          {practiceFeelingShown && practiceDone && (
+            <Card title="How did this feel?">
+              <Text style={styles.meta}>Share a quick thought (optional — helps your counselor)</Text>
+              <TextField
+                style={styles.input}
+                multiline
+                placeholder="Easy, challenging, refreshing, powerful…"
+                value={practiceFeeling}
+                onChangeText={setPracticeFeeling}
+              />
+              <Button
+                label="Done"
+                variant="secondary"
+                onPress={() => setPracticeFeelingShown(false)}
+              />
+            </Card>
+          )}
         </>
       ) : (
         <>
