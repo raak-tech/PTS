@@ -79,6 +79,7 @@ export default async function ProviderPlansPage() {
     intake: intakeByUserId[p.userId] ?? null,
     parsed: JSON.parse(p.generatedContent) as GeneratedPlan,
     weekStatuses: weekStatusByPlan[p.id] ?? {},
+    hasCrisisNotes: (p.counselorNotes ?? '').includes('CRISIS'),
   }));
 
   return (
@@ -105,6 +106,7 @@ export default async function ProviderPlansPage() {
           plan={plan.parsed}
           createdAt={plan.createdAt.toLocaleDateString()}
           initialWeekStatuses={plan.weekStatuses}
+          hasCrisisNotes={plan.hasCrisisNotes}
         />
       ))}
 

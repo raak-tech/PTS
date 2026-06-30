@@ -116,12 +116,14 @@ function WeekEditor({
   week,
   planId,
   weekStatus,
+  crisisBlocked,
   onSaved,
   onApproved,
 }: {
   week: WeekPlan;
   planId: string;
   weekStatus: 'draft' | 'edited' | 'approved';
+  crisisBlocked: boolean;
   onSaved: (updated: WeekPlan, status: 'edited') => void;
   onApproved: (weekNumber: number) => void;
 }) {
@@ -272,17 +274,24 @@ function WeekEditor({
         )}
 
         {localStatus !== 'approved' && (
-          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #eee', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={() => void approveWeek()}
-              disabled={approving}
-              style={{ ...btnApprove, opacity: approving ? 0.7 : 1 }}
-            >
-              {approving ? 'Approving…' : `Approve Week ${data.week}`}
-            </button>
-            <span style={{ fontSize: 13, color: '#888' }}>Client sees this week immediately on approval.</span>
-            {approveError && <p style={{ margin: 0, fontSize: 13, color: '#c62828' }}>{approveError}</p>}
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #eee' }}>
+            {crisisBlocked && (
+              <p style={{ margin: '0 0 10px', fontSize: 13, color: '#b71c1c', fontWeight: 600 }}>
+                Acknowledge the crisis notes above before approving any week.
+              </p>
+            )}
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => void approveWeek()}
+                disabled={approving || crisisBlocked}
+                style={{ ...btnApprove, opacity: (approving || crisisBlocked) ? 0.4 : 1, cursor: crisisBlocked ? 'not-allowed' : 'pointer' }}
+              >
+                {approving ? 'Approving…' : `Approve Week ${data.week}`}
+              </button>
+              <span style={{ fontSize: 13, color: '#888' }}>Client sees this week immediately on approval.</span>
+              {approveError && <p style={{ margin: 0, fontSize: 13, color: '#c62828' }}>{approveError}</p>}
+            </div>
           </div>
         )}
       </div>
@@ -298,6 +307,7 @@ export function PlanReviewClient({
   plan,
   createdAt,
   initialWeekStatuses = {},
+  hasCrisisNotes = false,
 }: {
   planId: string;
   clientEmail: string;
@@ -306,9 +316,11 @@ export function PlanReviewClient({
   plan: GeneratedPlan;
   createdAt: string;
   initialWeekStatuses?: Record<number, 'draft' | 'edited' | 'approved'>;
+  hasCrisisNotes?: boolean;
 }) {
   const [notes, setNotes] = useState('');
   const [expanded, setExpanded] = useState(false);
+  const [crisisAcknowledged, setCrisisAcknowledged] = useState(false);
   const [planStatus, setPlanStatus] = useState<'idle' | 'saving' | 'approved'>('idle');
   const [regenStatus, setRegenStatus] = useState<'idle' | 'generating'>('idle');
   const [holisticVisibility, setHolisticVisibility] = useState<HolisticVisibility>(DEFAULT_HOLISTIC_VISIBILITY);
@@ -472,6 +484,27 @@ export function PlanReviewClient({
               ))}
             </div>
 
+            {/* Crisis acknowledgment gate */}
+            {hasCrisisNotes && (
+              <div style={{ marginBottom: 20, padding: '16px', background: '#ffebee', border: '2px solid #ef9a9a', borderRadius: 12 }}>
+                <p style={{ margin: '0 0 8px', fontWeight: 700, color: '#b71c1c', fontSize: 15 }}>
+                  🚨 This plan has crisis-level notes
+                </p>
+                <p style={{ margin: '0 0 12px', fontSize: 14, color: '#c62828', lineHeight: 1.6 }}>
+                  This client reported red flags or a safety concern in their intake. Read the notes carefully before approving any week.
+                </p>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', fontSize: 14, color: '#b71c1c', fontWeight: 600 }}>
+                  <input
+                    type="checkbox"
+                    checked={crisisAcknowledged}
+                    onChange={e => setCrisisAcknowledged(e.target.checked)}
+                    style={{ marginTop: 2, width: 18, height: 18, cursor: 'pointer', accentColor: '#b71c1c' }}
+                  />
+                  I have read the crisis notes and am proceeding with full awareness of this client's safety status.
+                </label>
+              </div>
+            )}
+
             {/* Per-week editors */}
             <p style={{ margin: '0 0 12px', fontWeight: 600 }}>
               6-week plan — click any field to edit
@@ -483,6 +516,7 @@ export function PlanReviewClient({
                 week={w}
                 planId={planId}
                 weekStatus={weekStatuses[w.week] ?? 'draft'}
+                crisisBlocked={hasCrisisNotes && !crisisAcknowledged}
                 onSaved={handleWeekSaved}
                 onApproved={handleWeekApproved}
               />
@@ -507,8 +541,9 @@ export function PlanReviewClient({
                 <button
                   type="button"
                   onClick={() => void approveAll()}
-                  disabled={planStatus === 'saving'}
-                  style={{ ...btnPrimary, opacity: planStatus === 'saving' ? 0.7 : 1 }}
+                  disabled={planStatus === 'saving' || (hasCrisisNotes && !crisisAcknowledged)}
+                  title={hasCrisisNotes && !crisisAcknowledged ? 'Acknowledge crisis notes above first' : undefined}
+                  style={{ ...btnPrimary, opacity: (planStatus === 'saving' || (hasCrisisNotes && !crisisAcknowledged)) ? 0.4 : 1, cursor: (hasCrisisNotes && !crisisAcknowledged) ? 'not-allowed' : 'pointer' }}
                 >
                   {planStatus === 'saving' ? 'Approving…' : 'Approve all weeks & send to client'}
                 </button>

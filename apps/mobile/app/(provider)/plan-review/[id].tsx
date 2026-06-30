@@ -5,6 +5,7 @@ import { ActivityIndicator, ScrollView, Switch, Text, View } from 'react-native'
 
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { HitTarget } from '@/components/HitTarget';
 import { PlanGenerationOverlay } from '@/components/PlanGenerationOverlay';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
@@ -98,6 +99,8 @@ export default function PlanReviewScreen() {
   const [approving, setApproving] = useState(false);
   const [approvingWeek1, setApprovingWeek1] = useState(false);
   const [week1Approved, setWeek1Approved] = useState(false);
+  const [hasCrisisNotes, setHasCrisisNotes] = useState(false);
+  const [crisisAcknowledged, setCrisisAcknowledged] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [regenError, setRegenError] = useState('');
   const [approveError, setApproveError] = useState('');
@@ -141,6 +144,10 @@ export default function PlanReviewScreen() {
       if (parsed) {
         setAllWeeks(parsed.weeks);
         setContext(parsed.clientSummary ?? '');
+      }
+      // Crisis gate: counselorNotes contains 'CRISIS' when hasRedFlags or !isSafe
+      if ((plan.counselorNotes ?? '').includes('CRISIS')) {
+        setHasCrisisNotes(true);
       }
     } finally {
       setLoading(false);
@@ -266,6 +273,36 @@ export default function PlanReviewScreen() {
           </Card>
         )}
 
+        {/* Crisis acknowledgment gate */}
+        {hasCrisisNotes && (
+          <Card alert>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: '#b71c1c', marginBottom: 6 }}>
+              🚨 Crisis-level notes on this plan
+            </Text>
+            <Text style={{ fontSize: 14, color: '#c62828', lineHeight: 22, marginBottom: 12 }}>
+              This client reported red flags or a safety concern in their intake. Read their intake carefully before approving any week.
+            </Text>
+            <HitTarget
+              onPress={() => setCrisisAcknowledged(a => !a)}
+              style={{ flexDirection: 'row' as const, alignItems: 'flex-start' as const, gap: 10 }}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: crisisAcknowledged }}
+            >
+              <View style={{
+                width: 22, height: 22, borderRadius: 4,
+                borderWidth: 2, borderColor: crisisAcknowledged ? '#2e7d32' : '#b71c1c',
+                backgroundColor: crisisAcknowledged ? '#2e7d32' : 'transparent',
+                alignItems: 'center', justifyContent: 'center', marginTop: 1,
+              }}>
+                {crisisAcknowledged && <Text style={{ color: 'white', fontSize: 14, fontWeight: '700' }}>✓</Text>}
+              </View>
+              <Text style={{ flex: 1, fontSize: 14, color: '#b71c1c', fontWeight: '600', lineHeight: 20 }}>
+                I have read the crisis notes and am proceeding with full awareness of this client's safety status.
+              </Text>
+            </HitTarget>
+          </Card>
+        )}
+
         {/* ── WEEK 1 — full review + approve ── */}
         {week1 && (
           <>
@@ -314,11 +351,16 @@ export default function PlanReviewScreen() {
             </Text>
 
             {approveError ? <Text style={styles.errorText}>{approveError}</Text> : null}
-
+            {hasCrisisNotes && !crisisAcknowledged && (
+              <Text style={[styles.errorText, { marginBottom: 4 }]}>
+                Acknowledge the crisis notes above before approving.
+              </Text>
+            )}
             <Button
               label={approvingWeek1 ? 'Approving Week 1…' : 'Approve Week 1'}
               onPress={() => void onApproveWeek1()}
               loading={approvingWeek1}
+              disabled={hasCrisisNotes && !crisisAcknowledged}
             />
           </>
         )}
@@ -356,6 +398,7 @@ export default function PlanReviewScreen() {
           variant="ghost"
           onPress={() => void onApproveLegacy()}
           loading={approving}
+          disabled={hasCrisisNotes && !crisisAcknowledged}
         />
         <Text style={[styles.body, { marginTop: 4 }]}>
           "Approve all" releases all weeks simultaneously — use only if you have reviewed the full plan.
