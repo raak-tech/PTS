@@ -459,6 +459,37 @@ export async function apiGetClientReinforcements(token: string, clientId: string
   );
 }
 
+export async function apiGetPendingIntakes(token: string) {
+  return parseJson<{
+    ok: boolean;
+    pendingIntakes: {
+      userId: string;
+      anonEmail: string;
+      painSource: string;
+      submittedAt: string;
+      hasRedFlags: boolean;
+      isSafe: boolean;
+    }[];
+  }>(await fetchWithTimeout(`${API_URL}/api/provider/pending-intakes`, { headers: { Authorization: `Bearer ${token}` } }));
+}
+
+export async function apiGeneratePlan(token: string, userId: string) {
+  return parseJson<{
+    ok: boolean;
+    reason?: string;
+    planId?: string;
+  }>(
+    await fetchWithTimeout(`${API_URL}/api/provider/generate-plan`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId }),
+    }),
+  );
+}
+
 export async function apiGetProviderEngagement(token: string) {
   return parseJson<{
     ok: boolean;
