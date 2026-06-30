@@ -14,6 +14,7 @@ export function ProviderNav({ style, className }: Props) {
 
   const links = [
     { href: '/provider', label: 'Console home' },
+    { href: '/provider/profile', label: 'My profile' },
     { href: '/provider/assignments', label: 'Assignments' },
     { href: '/provider/join', label: 'Join flow' },
     { href: '/provider/clients', label: 'Clients' },
