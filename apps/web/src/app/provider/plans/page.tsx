@@ -2,12 +2,13 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 import { getDb } from '../../../db';
 import { intakeResponses, planWeeks, plans, users } from '../../../db/schema';
 import { getUserFromCookieHeader } from '../../../lib/session';
 import { PlanReviewClient } from './PlanReviewClient';
+import { PendingIntakesClient } from './PendingIntakesClient';
 import type { GeneratedPlan } from '../../../lib/plan-generator';
 
 export const metadata: Metadata = { title: 'Plan review | Provider' };
@@ -18,6 +19,21 @@ export default async function ProviderPlansPage() {
   if (!user || user.role !== 'provider') redirect('/login');
 
   const db = getDb();
+
+  // Pending intakes (no plan yet)
+  type PendingIntakeRow = { userId: string; painSource: string; hasRedFlags: boolean; isSafe: boolean; createdAt: Date };
+  const pendingIntakes = (await db
+    .select({
+      userId: intakeResponses.userId,
+      painSource: intakeResponses.painSource,
+      hasRedFlags: intakeResponses.hasRedFlags,
+      isSafe: intakeResponses.isSafe,
+      createdAt: intakeResponses.createdAt,
+    })
+    .from(intakeResponses)
+    .leftJoin(plans, eq(intakeResponses.userId, plans.userId))
+    .where(isNull(plans.id))
+    .orderBy(intakeResponses.createdAt)) as PendingIntakeRow[];
 
   // All draft plans awaiting review
   type PlanRow = { id: string; userId: string; generatedContent: string; counselorNotes: string | null; status: string; createdAt: Date };
@@ -33,8 +49,8 @@ export default async function ProviderPlansPage() {
     .where(eq(plans.status, 'approved'))
     .orderBy(plans.createdAt)) as PlanRow[];
 
-  // Fetch client emails for display
-  const allUserIds = [...new Set([...draftPlans, ...approvedPlans].map(p => p.userId))];
+  // Fetch client emails for display (for both draft/approved plans AND pending intakes)
+  const allUserIds = [...new Set([...draftPlans, ...approvedPlans, ...pendingIntakes].map(p => p.userId))];
   type UserRow = { id: string; email: string };
   const clientUsers = allUserIds.length > 0
     ? (await db.select({ id: users.id, email: users.email }).from(users).where(inArray(users.id, allUserIds))) as UserRow[]
@@ -42,12 +58,13 @@ export default async function ProviderPlansPage() {
 
   const emailById = Object.fromEntries(clientUsers.map(u => [u.id, u.email]));
 
-  // Fetch intake responses for context
-  type IntakeRow = { userId: string; painSource: string; painDescription: string; recoveryGoal: string };
-  const intakes = allUserIds.length > 0
+  // Fetch intake responses for context (draft/approved plans)
+  const planUserIds = [...new Set([...draftPlans, ...approvedPlans].map(p => p.userId))];
+  type IntakeContextRow = { userId: string; painSource: string; painDescription: string; recoveryGoal: string };
+  const intakes = planUserIds.length > 0
     ? (await db.select({ userId: intakeResponses.userId, painSource: intakeResponses.painSource, painDescription: intakeResponses.painDescription, recoveryGoal: intakeResponses.recoveryGoal })
         .from(intakeResponses)
-        .where(inArray(intakeResponses.userId, allUserIds))) as IntakeRow[]
+        .where(inArray(intakeResponses.userId, planUserIds))) as IntakeContextRow[]
     : [];
 
   const intakeByUserId = Object.fromEntries(intakes.map(i => [i.userId, i]));
@@ -89,10 +106,25 @@ export default async function ProviderPlansPage() {
         <Link href="/provider" className="actionLink secondary">← Console</Link>
       </div>
 
+      {/* Pending intakes section */}
+      <PendingIntakesClient
+        intakes={pendingIntakes.map(intake => ({
+          userId: intake.userId,
+          painSource: intake.painSource,
+          hasRedFlags: intake.hasRedFlags,
+          isSafe: intake.isSafe,
+          createdAt: intake.createdAt,
+          email: emailById[intake.userId] ?? 'unknown@unknown.com',
+        }))}
+        onIntakeGenerated={() => {
+          // Handled by the client component's page reload
+        }}
+      />
+
       {enriched.length === 0 && (
         <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted)', border: '1px dashed var(--border)', borderRadius: 18 }}>
-          <p style={{ margin: 0 }}>No plans awaiting review.</p>
-          <p style={{ margin: '8px 0 0', fontSize: 14 }}>Plans appear here automatically when a client completes their intake.</p>
+          <p style={{ margin: 0 }}>No draft plans awaiting review.</p>
+          <p style={{ margin: '8px 0 0', fontSize: 14 }}>Check pending intakes above to generate new plans.</p>
         </div>
       )}
 

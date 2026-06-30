@@ -322,24 +322,75 @@ Commit each step separately.
 
 ---
 
-## Phase 9 — Plan generation trigger (SCOPE-H)
+## Phase 9 — Counselor-initiated plan generation (SCOPE-H) ✏️ REVISED
 
-**Model: Sonnet**  
-**Why:** Touches the plan generation flow, API, and intake completion screen copy. Small but consequential — wrong implementation here affects every client's post-intake experience.
+> **Decision (2026-06-30):** Auto-generation on intake submit was removed. Plan generation is counselor-initiated only — counselors may message the client for clarifications before generating. This preserves the counselor-led model. Original Phase 9 (auto-trigger) is superseded.
 
-**Depends on:** Phase 0 decision on trigger timing (must be agreed before this batch).
+**Model: Haiku**  
+**Why:** Three self-contained additions — a new section on an existing page, a new API endpoint, and a mobile queue update. Each touches 1–2 files.
 
-### Batch 9A
+**Depends on:** Phase 1 (auth, plans table), Phase 8 (push notifications for admin alert).
+
+### Batch 9A — Intake queue on web
 ```
-/model sonnet
+/model haiku
 +150k
-Implement SCOPE-H: Decide and implement plan generation trigger (BACKLOG Track 3).
-[Replace this line with: "Trigger is IMMEDIATE on intake submit" or "Trigger is COUNSELOR SIGNAL"]
-Update /api/intake/route.ts accordingly.
-Update Screen C8 copy in apps/mobile/app/(client)/intake-complete.tsx to match real behaviour.
+Implement Phase 9A: Intake queue on the provider plans page.
+In apps/web/src/app/provider/plans/page.tsx, add a new "Pending intakes" section
+ABOVE the existing draft plans list. Query: clients who have an intakeResponse row
+but NO plan row at all (not even a draft). For each, show:
+- Client display name (anonymised, same anon() function already in the file)
+- Pain source from intakeResponses
+- Date submitted
+- Red flag badge if hasRedFlags=true or isSafe=false
+- "Message client" link → /messages?with=[userId]
+- "Generate plan draft" button → POST /api/provider/generate-plan { userId }
+If the section is empty, show nothing (no empty state needed).
 Commit.
 ```
-**Rough cost:** ~$0.60
+**Rough cost:** ~$0.10
+
+### Batch 9B — Generate-plan endpoint + intake hardening
+```
+/model haiku
++120k
+Implement Phase 9B: Two items:
+1. New API endpoint apps/web/src/app/api/provider/generate-plan/route.ts
+   POST, provider-auth only. Body: { userId: string }.
+   Guard: if a plan with status='draft' or status='approved' already exists for userId,
+   return { ok: false, reason: 'plan_exists' } with status 200 (not an error).
+   Otherwise call regeneratePlanDraftForUser(userId) from apps/web/src/lib/regenerate-plan-for-user.ts.
+   On success send push notification to all admin users ("New plan draft ready — [client anon email]")
+   using sendPushToUser from apps/web/src/lib/expo-push.ts.
+   Return { ok: true, planId }.
+2. Intake hardening in apps/web/src/app/api/intake/route.ts:
+   after saving intake, add idempotency check — if plan already exists for this user
+   return { ok: true, planGenTriggered: false } without calling any generation.
+   Return { ok: true, planGenTriggered: false } always (generation is now counselor-triggered).
+Commit each separately.
+```
+**Rough cost:** ~$0.10
+
+### Batch 9C — Mobile queue intake section
+```
+/model haiku
++150k
+Implement Phase 9C: Pending intakes section in the provider mobile Queue tab.
+In apps/mobile/app/(provider)/(tabs)/index.tsx, add a "Pending intakes" section
+above the existing pending plans list. Use apiGetProviderQueue (already fetches
+pendingPlans) — add pendingIntakes to that API response, OR make a separate
+call to a new GET /api/provider/pending-intakes endpoint that returns the same
+data as the web intake queue (userId, anonEmail, painSource, submittedAt, hasRedFlags, isSafe).
+For each pending intake show a Card with:
+- Anon name, pain source, date, red flag badge
+- "Message" button → router.push to messages/[userId]
+- "Generate plan" button → POST /api/provider/generate-plan { userId }, on success
+  show a brief "Draft generating…" toast then refresh the queue
+If section is empty, show nothing.
+Build the GET /api/provider/pending-intakes endpoint if needed.
+Commit.
+```
+**Rough cost:** ~$0.10
 
 ---
 
@@ -399,7 +450,7 @@ Report findings and fix any issues found. Commit fixes.
 | 6 — Track 12 UX items (5 batches) | Haiku | ~$0.70 |
 | 7 — Post-program state | Haiku | ~$0.25 |
 | 8 — Push notifications | Sonnet | ~$2.50 |
-| 9 — Plan generation trigger | Sonnet | ~$0.60 |
+| 9 — Counselor-initiated plan gen (3 batches) | Haiku | ~$0.30 |
 | 10 — Counselor profile editor | Haiku | ~$0.10 |
 | 11 — QA pass | Sonnet | ~$1.50 |
 | **Total** | | **~$15** |
