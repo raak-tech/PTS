@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { getDb } from '@/db';
 import { pushSubscriptions, users } from '@/db/schema';
-import { getUserFromCookieHeader } from '@/lib/session';
+import { getUserFromRequest } from '@/lib/session';
 import { logError, log } from '@/lib/logger';
 
 const schema = z.object({
@@ -16,7 +16,7 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const user = await getUserFromCookieHeader(request.headers.get('cookie'));
+    const user = await getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
     const parsed = schema.safeParse(await request.json());
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const user = await getUserFromCookieHeader(request.headers.get('cookie'));
+    const user = await getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
     const { endpoint } = await request.json() as { endpoint?: string };

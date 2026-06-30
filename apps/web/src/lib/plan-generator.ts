@@ -1,5 +1,19 @@
 import { logError, log } from './logger';
 
+export type YogaTrial = {
+  principle: string;
+  applicability: string;
+  microMovement: { title: string; description: string; duration: string };
+  disclaimer: string;
+};
+
+export type MusicPlaylist = {
+  title: string;
+  description: string;
+  tracks: { title: string; artist: string; note: string }[];
+  spotifySearchQuery: string;
+};
+
 export type WeekPlan = {
   week: number;
   theme: string;
@@ -7,6 +21,14 @@ export type WeekPlan = {
   dailyPractices: { title: string; description: string; duration: string }[];
   weeklyReflection: string;
   counselorNote: string;
+  ayurvedaBlock?: { practices: string[]; rhythmNote: string; disclaimer?: string };
+  yogaTrial?: YogaTrial;
+  reinforcementTemplate?: { title: string; bodyText: string };
+  musicMoment?: {
+    purpose: string;
+    suggestion: string;
+    playlist: MusicPlaylist;
+  };
 };
 
 export type GeneratedPlan = {
@@ -37,6 +59,7 @@ type IntakeData = {
   socialSupport?: string | null;
   structurePreference?: string | null;
   engagementTime?: string | null;
+  ayurvedaPreferences?: string | null;
 };
 
 const PAIN_SOURCE_LABELS: Record<string, string> = {
@@ -61,6 +84,22 @@ function buildPrompt(intake: IntakeData): string {
 
   let activities: string[] = [];
   try { activities = JSON.parse(intake.activitiesAffected) as string[]; } catch { /* ignore */ }
+
+  let ayurvedaContext = '';
+  if (intake.ayurvedaPreferences) {
+    try {
+      const prefs = JSON.parse(intake.ayurvedaPreferences) as Record<string, string>;
+      ayurvedaContext = `
+AYURVEDA-INFORMED PREFERENCES (adjunct only — not medical treatment):
+- Energy pattern: ${prefs.energyPattern ?? 'not specified'}
+- Openness to daily rhythm (dinacharya): ${prefs.dinacharyaOpenness ?? 'not specified'}
+- Openness to breath/stillness practices: ${prefs.breathStillnessOpenness ?? 'not specified'}
+- Openness to yoga principles (not physio): ${prefs.yogaOpenness ?? 'not specified'}
+- Movement vs stillness preference: ${prefs.movementPreference ?? 'not specified'}`;
+    } catch {
+      /* ignore */
+    }
+  }
 
   return `You are an experienced counseling program designer creating a personalised 6-week recovery support plan.
 The plan uses counseling principles (acceptance-based, values-focused, practically oriented) to help someone recover their quality of life after pain from injury.
@@ -87,6 +126,7 @@ PAIN & SITUATION:
 - Social support: ${intake.socialSupport ?? 'not specified'}
 - Prefers structure: ${intake.structurePreference ?? 'not specified'}
 - Best engagement time: ${intake.engagementTime ?? 'not specified'}
+${ayurvedaContext}
 
 Generate a JSON object (only JSON, no markdown, no explanation) with this exact structure:
 {
@@ -105,7 +145,42 @@ Generate a JSON object (only JSON, no markdown, no explanation) with this exact 
         { "title": "practice name", "description": "...", "duration": "X min" }
       ],
       "weeklyReflection": "The weekly reflection question or prompt for the client — one focused question",
-      "counselorNote": "What the counselor should look for or discuss this week — 1-2 sentences"
+      "counselorNote": "What the counselor should look for or discuss this week — 1-2 sentences",
+      "ayurvedaBlock": {
+        "practices": ["1-2 gentle non-movement practices suited to this person"],
+        "rhythmNote": "One sentence on daily rhythm that may help",
+        "disclaimer": "Supportive wellness only — not medical Ayurvedic treatment. Stop if pain increases."
+      },
+      "yogaTrial": {
+        "principle": "One yoga principle (e.g. ahimsa, breath awareness, acceptance) explained in plain language",
+        "applicability": "2-3 sentences on how this principle applies to THIS person's pain situation and confidence",
+        "microMovement": {
+          "title": "Very small optional movement (confidence-building, not exercise prescription)",
+          "description": "What to do, slowly, with stop-if-pain-increases guardrail",
+          "duration": "2-5 min"
+        },
+        "disclaimer": "Yoga-inspired support — not physiotherapy or medical advice. Skip movement if unsure."
+      },
+      "reinforcementTemplate": {
+        "title": "Short title for daily read-out",
+        "bodyText": "2-4 sentences the client reads aloud or internalizes each morning — specific to this week's theme"
+      },
+      "musicMoment": {
+        "purpose": "grounding | activation | flare | reflection",
+        "suggestion": "1-2 sentences on how to listen and why this helps this week",
+        "playlist": {
+          "title": "Curated playlist title for this week",
+          "description": "One sentence on the mood and intent",
+          "tracks": [
+            { "title": "realistic track name", "artist": "artist name", "note": "why this track fits" },
+            { "title": "track 2", "artist": "artist", "note": "why" },
+            { "title": "track 3", "artist": "artist", "note": "why" },
+            { "title": "track 4", "artist": "artist", "note": "why" },
+            { "title": "track 5", "artist": "artist", "note": "why" }
+          ],
+          "spotifySearchQuery": "search phrase to find similar music on Spotify"
+        }
+      }
     }
   ]
 }
@@ -115,6 +190,8 @@ Weeks 3-4: building (reconnecting with values, gentle re-engagement)
 Weeks 5-6: consolidation (sustainable habits, preparing for continuation)
 
 Make the daily practices specific to this person's situation and goal.
+Yoga trial is SEPARATE from dailyPractices — focus on principles and tiny confidence-building movement, not a workout plan.
+Music playlist tracks should be real, well-known songs where possible (instrumental or gentle vocals for pain support).
 Keep language warm, non-clinical, and empowering. Avoid jargon.
 Return only valid JSON.`;
 }
@@ -125,21 +202,30 @@ export async function generatePlan(intake: IntakeData): Promise<GeneratedPlan> {
 
   log('plan_generation_start', { painSource: intake.painSource });
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://pts-web-pied.vercel.app',
-      'X-Title': 'PTS Plan Generator',
-    },
-    body: JSON.stringify({
-      model: 'anthropic/claude-sonnet-4.6',
-      messages: [{ role: 'user', content: buildPrompt(intake) }],
-      temperature: 0.7,
-      max_tokens: 4000,
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 270_000);
+
+  let response: Response;
+  try {
+    response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://pts-web-pied.vercel.app',
+        'X-Title': 'PTS Plan Generator',
+      },
+      body: JSON.stringify({
+        model: 'anthropic/claude-sonnet-4.6',
+        messages: [{ role: 'user', content: buildPrompt(intake) }],
+        temperature: 0.7,
+        max_tokens: 16000,
+      }),
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     const err = await response.text();
@@ -147,11 +233,18 @@ export async function generatePlan(intake: IntakeData): Promise<GeneratedPlan> {
     throw new Error(`LLM API error ${response.status}: ${err}`);
   }
 
-  type OpenRouterResponse = { choices: { message: { content: string } }[] };
+  type OpenRouterResponse = {
+    choices: { message: { content: string }; finish_reason?: string }[];
+    usage?: { completion_tokens?: number; prompt_tokens?: number };
+  };
   const data = await response.json() as OpenRouterResponse;
   const raw = data.choices[0]?.message?.content ?? '';
+  const finishReason = data.choices[0]?.finish_reason;
 
-  log('plan_generation_complete');
+  log('plan_generation_complete', {
+    finishReason,
+    completionTokens: data.usage?.completion_tokens,
+  });
 
   // Strip markdown code fences if the model wrapped the JSON
   const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
@@ -159,7 +252,15 @@ export async function generatePlan(intake: IntakeData): Promise<GeneratedPlan> {
   try {
     return JSON.parse(cleaned) as GeneratedPlan;
   } catch {
-    logError('plan_generation_parse_error', new Error('Invalid JSON from LLM'), { raw: cleaned.slice(0, 200) });
+    logError('plan_generation_parse_error', new Error('Invalid JSON from LLM'), {
+      finishReason,
+      rawLength: cleaned.length,
+      raw: cleaned.slice(0, 200),
+      rawTail: cleaned.slice(-120),
+    });
+    if (finishReason === 'length') {
+      throw new Error('Plan generation truncated — increase max_tokens or simplify plan schema');
+    }
     throw new Error('Plan generation returned invalid JSON');
   }
 }

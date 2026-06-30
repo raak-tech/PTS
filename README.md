@@ -39,6 +39,16 @@ npm run db:migrate
 npm test
 ```
 
+### Mobile app (Expo prototype)
+
+```bash
+cd apps/mobile
+npm install
+npm run web    # http://localhost:8081
+```
+
+See `apps/mobile/README.md` and `docs/MOBILE_APP_UX.md`.
+
 Notes:
 - `npm test` runs eslint + Playwright end-to-end tests.
 - The web app now defaults to PostgreSQL with consent-gated storage for support artifacts.

@@ -1,0 +1,14 @@
+{
+  "regions": ["sin1"],
+  "functions": {
+    "src/app/api/plans/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/intake/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/provider/clients/[id]/regenerate-week/route.ts": {
+      "maxDuration": 300
+    }
+  }
+}

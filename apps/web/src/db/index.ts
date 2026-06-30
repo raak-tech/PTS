@@ -11,19 +11,23 @@ export type Db = ReturnType<typeof getDb>;
 
 let cached: ReturnType<typeof drizzle> | null = null;
 
-function defaultDatabaseUrl() {
-  // Prefer local unix socket to avoid TCP port/auth mismatches in dev/e2e.
-  const username = encodeURIComponent(os.userInfo().username);
-  const socketDir = encodeURIComponent("/var/run/postgresql");
-  return `postgresql://${username}@localhost/pts?host=${socketDir}`;
+function createPostgresClient() {
+  if (process.env.DATABASE_URL) {
+    return postgres(process.env.DATABASE_URL, { max: 1 });
+  }
+  // Local dev: unix socket (psql-style peer auth). Avoids TCP password prompts.
+  return postgres({
+    database: 'pts',
+    user: os.userInfo().username,
+    host: '/var/run/postgresql',
+    max: 1,
+  });
 }
 
 export function getDb() {
   if (cached) return cached;
 
   validateEnv();
-  const connectionString = process.env.DATABASE_URL ?? defaultDatabaseUrl();
-  const client = postgres(connectionString, { max: 1 });
-  cached = drizzle(client);
+  cached = drizzle(createPostgresClient());
   return cached;
 }

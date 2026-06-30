@@ -1,6 +1,6 @@
 # PTS Backlog
 
-**Last updated:** 2026-05-28
+**Last updated:** 2026-06-30
 **Format:** Track → Item. Priority: 🔴 Pilot-critical · 🟠 Pre-launch · 🟡 Post-pilot
 
 See `PROJECT_BRIEF.md` for full product context.
@@ -17,6 +17,8 @@ See `PROJECT_BRIEF.md` for full product context.
 - 🔴 Define platform liability boundaries in writing — what it is and is not responsible for
 - 🔴 Agree LLM provider and data handling policy for user content sent to LLM (consent language, data minimisation, retention)
 - 🔴 Define pilot success metrics: activation, engagement, retention, counselor utilisation, user-reported outcome
+- 🔴 **[SCOPE-B] Complete Track 0 decision sprint** — all 8 decisions in `TRACK0_DECISIONS.md` (#17–#24) are open and blocking pilot-critical build items. Run the 1-week alignment session described in that doc. Record all outcomes in `DECISIONS.md`. Acceptance criteria: `DECISIONS.md` has entries for all 8 decisions; no Track 0 item remains unresolved before pilot recruitment begins. *Must precede: credentialing build, consent copy, regulatory infra decisions, LLM data policy, pilot metrics dashboard.* See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding B.
+- 🔴 **[SCOPE-C] Define and implement auth surface boundaries for pilot** — web uses email/password; mobile uses OTP. A mobile-authenticated client cannot log into the web app. Decide: (a) pilot is mobile-only — no web client access, or (b) add OTP login to web app, or (c) allow phone-verified users to set a password after OTP. Implement the decision. Acceptance criteria: a client who registers via mobile OTP can access their plan on whichever surfaces are supported; no dead-end auth states. See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding C.
 - 🟠 Agree business model: direct-to-consumer, B2B (employer/insurer), or both
 - 🟠 Define pricing and access model
 
@@ -63,7 +65,14 @@ See `PROJECT_BRIEF.md` for full product context.
 - 🔴 Write base program content for each week type — clinical lead owns this
 - 🔴 Design LLM prompt architecture: what inputs (intake data, pain archetype, goals, preferences) → what outputs (personalised plan draft)
 - 🔴 Build LLM batch job: triggered on intake completion → generates personalised plan draft
-- 🔴 Build counselor plan review interface: view generated draft, edit sections, add notes, approve
+- 🔴 **[SCOPE-A] Add `planWeeks` DB table and per-week approval model** — schema migration adding `planWeeks` table (planId, weekNumber, content JSON, status: draft/edited/approved, approvedAt, editedAt, counselorId); update `plans.status` logic so client-facing plan view reads only `approved` weeks; migrate existing approved plans to seed all 6 weeks as approved. Acceptance criteria: a client with an approved plan sees only counselor-approved weeks; weeks not yet approved are not visible. *Blocks all counselor plan-editing work.* See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding A.
+- 🔴 **[SCOPE-A] Build counselor inline plan editing on web** — in `PlanReviewClient` and `ProviderClientWorkspaceClient`, replace read-only plan display with editable fields per week: theme, focus, daily practices (title/description/duration each), weekly reflection prompt, read-out title/body, holistic block text. Click-to-edit inline (no modal, no separate page). Edited state stored in `planWeeks.content`; `status` set to `edited` on any change. Acceptance criteria: counselor can change any text field in any week, save the edit, and approve that week independently. See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding A.
+- 🔴 **[SCOPE-A] Per-week approval CTA on web and mobile** — replace single "Approve plan" with per-week "Approve Week N" action. Mobile plan review: scope approval to Week 1 on initial review; Weeks 2–6 show read-only with "Edit and approve on web" link. Web workspace: sticky per-week approve button with progress indicator (e.g. "3 of 6 weeks approved"). Acceptance criteria: approving Week 1 releases only Week 1 to client; client sees Week 2 only after counselor approves it. See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding A, Finding D.
+- 🔴 **[SCOPE-G] Resolve and document the weekly planning model** — decision required before building counselor workspace: (a) LLM-first with counselor inline editing (recommended — matches product brief and PTS's scalability thesis), or (b) counselor authors each week from scratch. Update `PROVIDER_WORKFLOW.md` to match the agreed model. Acceptance criteria: `PROVIDER_WORKFLOW.md` updated, decision recorded in `DECISIONS.md`. See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding G.
+- 🔴 Build counselor plan review interface: view generated draft, edit sections, add notes, approve *(now superseded by SCOPE-A items above — retire once those are complete)*
+- 🟠 **Counselor full plan regenerate:** from plan review (web + mobile), re-run LLM on latest intake → new draft; client keeps current approved plan until counselor approves replacement (see `regeneratePlanDraftForUser`, `POST /api/plans` action `regenerate`)
+- 🟠 **Counselor week-N regenerate:** extend weekly summary + `regenerate-week` into LLM-authored Week N+1 draft with Ayurveda / yoga trial / music playlist blocks
+- 🔴 **[SCOPE-H] Decide and implement plan generation trigger** — promote from 🟠: decide whether plan is generated immediately on intake submit or on counselor signal. Update Screen C8 copy in mobile app to match. Acceptance criteria: trigger is defined, implemented, and C8 copy reflects real behaviour. See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding H.
 - 🔴 Build plan delivery to client: "Your plan is ready" notification + plan view in app
 - 🟠 Define plan adaptation logic: how does the plan update based on weekly check-in data?
 - 🟠 Build plan version history: counselor and client can see plan evolution
@@ -73,6 +82,8 @@ See `PROJECT_BRIEF.md` for full product context.
 
 ## TRACK 4 — Daily Engagement & Program Delivery
 
+- 🔴 **[SCOPE-F] Add `dailyCheckIns` DB table** — schema migration: `dailyCheckIns` (userId, date, painLevel 0–10, sleepQuality enum, intention text, createdAt). Acceptance criteria: morning check-in data persists per user per day; counselor engagement dashboard can query pain level trend for a client over the current week. See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding F.
+- 🔴 **[SCOPE-F] Build morning check-in card on mobile Today tab** — first card shown above fold each morning (before holistic and read-out cards). Fields: pain level (NRS face scale, not a slider — per MOBILE_UX_REVIEW.md), sleep quality (Poor/OK/Good), one intention (short text). Submits to `dailyCheckIns`. Acceptance criteria: client sees the card each morning before other content; data appears in counselor engagement view as a pain trend. See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding F.
 - 🔴 Design daily engagement rhythm: morning check-in, midday resource/practice, evening reflection — define default cadence and user controls
 - 🔴 Write morning check-in prompts (pain level, mood, sleep, intention) — varies by week and individual progress
 - 🔴 Write midday resource/practice library: breathing, grounding, values exercises, movement prompts — each 2–3 minutes
@@ -116,6 +127,7 @@ See `PROJECT_BRIEF.md` for full product context.
 
 ## TRACK 7 — Counselor Platform
 
+- 🔴 **[SCOPE-D] Show all 6 weeks in mobile plan review** — `MOBILE_APP_UX.md` specifies Weeks 1–6 accordion on the mobile plan review screen; the actual build shows only Week 1. Add collapsed accordion for Weeks 2–6 (read-only on mobile; per-week approve scoped to Week 1 for initial review; Weeks 2–6 show "Edit on web" link). Acceptance criteria: counselor on mobile can see all 6 week themes and practices before approving. See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding D. *(Patient-safety relevant — counselors currently approving blind on 5 weeks.)*
 - 🔴 Build counselor registration flow: credentials, specialisations, languages, bio, photo
 - 🔴 Build credential verification workflow: admin reviews and approves applications
 - 🔴 Build counselor profile page: visible to clients on assignment or selection
@@ -148,6 +160,7 @@ See `PROJECT_BRIEF.md` for full product context.
 
 ## TRACK 9 — Infrastructure & Technical
 
+- 🔴 **[SCOPE-B-DEPENDENCY] Hold `sin1` region decision pending regulatory posture** — BACKLOG marks Singapore region as 🔴 pilot-critical, but this decision depends on Track 0 Decision #20 (regulatory posture / data residency). Do not implement until `DECISIONS.md` records a resolution on #20. See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding B.
 - 🔴 Set Vercel function region to `sin1` (Singapore) to match Neon `ap-southeast-1` — eliminates cross-region latency
 - 🔴 Set up email delivery (Resend or SendGrid) — needed for verification, plan-ready, session confirmations
 - 🔴 Set up error monitoring (Sentry)
@@ -181,12 +194,46 @@ The following exist and are production-deployed at https://pts-web-pied.vercel.a
 
 ---
 
-## Pilot Sprint Focus (next 2–3 weeks of build)
+## TRACK 11 — Post-Program & Continuation
 
-The minimum to run a meaningful pilot with real users and counselors:
+- 🟠 **[SCOPE-E] Build graduation screen at Week 6 completion** — when `computeProgramTime()` returns `programComplete: true`, show a graduation screen instead of empty Today/Program tabs. Content: acknowledgement of completion, summary of journey, transition to maintenance mode framing. Acceptance criteria: client who finishes Week 6 sees a meaningful end state, not a blank screen. See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding E.
+- 🟠 **[SCOPE-E] Build maintenance mode post-Week-6** — Program tab after graduation shows: last completed week, next monthly session booking prompt, and a "maintenance plan" lightweight card (per `PROGRAM_TEMPLATE.md` Week 6 which specifies a 4-week maintenance plan). Acceptance criteria: client has a clear next step after Week 6 rather than a retention cliff. See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding E.
+- 🟠 **[SCOPE-E] Monthly check-in cadence** — replace weekly check-in trigger with monthly after program completion. API: monthly check-in endpoint; mobile: prompt appears on program completion day +30. Acceptance criteria: clients in maintenance mode receive monthly check-in prompts, not weekly.
 
-1. Rewrite intake as multi-step conversational flow (Track 2)
-2. Build client-counselor messaging thread (Track 6)
-3. Build counselor calendar + session booking — Calendly embed acceptable for pilot (Track 7)
-4. Connect Claude API for plan generation in draft mode — counselor reviews before delivery (Track 3)
-5. Build Web Push notifications for daily check-in reminders (Track 5)
+---
+
+## TRACK 12 — Mobile UX Items (from MOBILE_UX_REVIEW.md)
+
+*These UX review recommendations have no backlog items. Converting all 12 — two are patient-safety critical. See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding I and `MOBILE_UX_REVIEW.md` section 9.*
+
+- 🔴 **[SCOPE-I] C7 safety check — split into 2 screens with rewritten copy** *(patient safety)* — currently a dense checkbox list on one screen. Split to: (a) red flag list displayed one at a time, not all at once; (b) consent + confirmation. Rewrite copy tone: "We ask this so your counselor can make sure your program is right for you." Acceptance criteria: no single-screen red flag checklist exists in the intake flow; copy is warm, not clinical.
+- 🔴 **[SCOPE-I] Crisis notes acknowledgment gate before plan approve** *(patient safety)* — if a plan has crisis-level notes auto-applied, the Approve CTA must be blocked behind an explicit acknowledgment step. Counselor must check "I have read the crisis notes" before Approve is enabled. Acceptance criteria: a plan with crisis notes cannot be approved in one tap; the crisis content is surfaced and acknowledged.
+- 🔴 **[SCOPE-I] Define `theme.ts` design tokens before any mobile screen development** — create `apps/mobile/src/theme.ts` with exported `colors`, `spacing`, `typography`, `radii` tokens mirroring the web app values before any new screen is built. Acceptance criteria: no hardcoded colour or spacing values in any new mobile screen component.
+- 🟠 **[SCOPE-I] 6-box OTP split input** — replace single OTP text field with 6 individual digit boxes; auto-advance on entry; `autoComplete="one-time-code"` on each. Acceptance criteria: OTP screen uses split-box input on Android and iOS.
+- 🟠 **[SCOPE-I] Pain input: NRS face scale instead of slider** — replace 0–10 slider in morning check-in with a visual face scale (faces mapped to numbers 0–10) showing previous day's value as a reference point. Acceptance criteria: no slider component used for pain level capture.
+- 🟠 **[SCOPE-I] Mark practice done — full-width button, not checkbox** — practice completion uses a large full-width "Mark done" button followed by a "How did this feel?" prompt. No checkbox component. Acceptance criteria: practice completion is a milestone interaction, not a form element tap.
+- 🟠 **[SCOPE-I] Remove message list screen (C19) for pilot** — single-counselor pilot does not need a conversation list. Tap Messages tab → go directly to thread with assigned counselor. Display counselor name and initials in thread header. Acceptance criteria: no intermediate list screen in client Messages tab for pilot.
+- 🟠 **[SCOPE-I] Tab badge lifecycle defined** — specify when counselor Home tab badge clears (after viewing queue items), when Messages badge clears (after opening thread), and what triggers re-badge. Acceptance criteria: badge state documented and implemented consistently across both roles.
+- 🟠 **[SCOPE-I] Locked week teaser cards** — locked weeks on Program tab show week theme and a silhouette of practices with a subtle lock icon and copy: "Week 2 unlocks when your counselor marks Week 1 complete." Acceptance criteria: no greyed-out empty cards; locked weeks have intentional teaser content.
+- 🟠 **[SCOPE-I] Weekly check-in one-question-at-a-time flow** — present 4 weekly check-in prompts as sequential full-screen steps (same pattern as intake), not a wall of text inputs. Acceptance criteria: each check-in question is on its own screen with a thin progress bar.
+- 🟠 **[SCOPE-I] Counselor "go to web workspace" bridge** — in the mobile counselor client detail screen, add a prominent link: "Record read-out and plan Week 2 on the web workspace" linking to `/provider/clients/[id]`. Acceptance criteria: counselor on mobile has a visible path to the web workspace for deep work.
+- 🟠 **[SCOPE-I] Intake abandonment re-entry screen** — when a client re-opens the app mid-intake, show an explicit "Resume your assessment" screen with: step they left on, days since they started, "Continue" and "Start over" options. Acceptance criteria: no silent local state restoration; user is always told where they are in intake.
+
+---
+
+## Pilot Sprint Focus (updated 2026-06-30)
+
+**Pre-code decision sprint (1 week — do first):**
+1. Complete Track 0 decisions (#17–#24) → `DECISIONS.md` — unblocks copy, credentialing, regulatory infra
+2. Resolve auth surface boundaries for pilot (mobile-only vs OTP-on-web)
+3. Agree weekly planning model (LLM-first with counselor editing) → update `PROVIDER_WORKFLOW.md`
+
+**Minimum to run a meaningful pilot with real users and counselors:**
+1. `planWeeks` DB migration + per-week approval model (SCOPE-A) — foundational, blocks everything counselor-related
+2. Counselor inline plan editing on web (SCOPE-A)
+3. `dailyCheckIns` DB migration + morning check-in card on mobile (SCOPE-F)
+4. All 6 weeks visible in mobile plan review (SCOPE-D)
+5. Crisis notes acknowledgment gate (SCOPE-I patient safety)
+6. C7 safety screen split into 2 screens (SCOPE-I patient safety)
+7. Push notifications — at minimum: plan approved, counselor replied, morning check-in reminder
+8. Graduation screen + maintenance mode (SCOPE-E) — needed before any pilot client hits Week 6

@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { CrisisResourcesBanner } from "@/components/CrisisResourcesBanner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,10 +15,21 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "PTS",
+    default: "PTS — Pain to Strength",
     template: "%s | PTS",
   },
-  description: "PTS web preview with pilot auth.",
+  description:
+    "Counseling-led recovery for anyone whose pain has changed how they live.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "PTS",
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#111111",
 };
 
 export default function RootLayout({
@@ -31,6 +43,7 @@ export default function RootLayout({
         <a className="skipLink" href="#main-content">
           Skip to content
         </a>
+        <CrisisResourcesBanner />
         <main id="main-content" tabIndex={-1}>
           {children}
         </main>

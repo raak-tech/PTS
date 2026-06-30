@@ -607,3 +607,36 @@ export async function apiSubmitEveningReflection(token: string, bodyText: string
     }),
   );
 }
+
+export async function apiGetDailyCheckIn(token: string, date?: string) {
+  const q = date ? `?date=${encodeURIComponent(date)}` : '';
+  return parseJson<{
+    ok: boolean;
+    checkIn: {
+      painLevel: number;
+      sleepQuality: string;
+      intention: string;
+      submittedAt: string;
+    } | null;
+  }>(
+    await fetchWithTimeout(`${API_URL}/api/check-ins/daily${q}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
+}
+
+export async function apiSubmitDailyCheckIn(
+  token: string,
+  painLevel: number,
+  sleepQuality: 'poor' | 'ok' | 'good',
+  intention: string,
+  date?: string,
+) {
+  return parseJson<{ ok: boolean }>(
+    await fetchWithTimeout(`${API_URL}/api/check-ins/daily`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ painLevel, sleepQuality, intention, date: date ?? localDateIso() }),
+    }),
+  );
+}

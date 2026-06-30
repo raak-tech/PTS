@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { getDb } from '../../../../db';
 import { userConsents } from '../../../../db/schema';
 import { logError } from '../../../../lib/logger';
-import { getUserFromCookieHeader } from '../../../../lib/session';
+import { getUserFromRequest } from '../../../../lib/session';
 
 const consentSchema = z.object({
   enabled: z.boolean().optional(),
@@ -28,7 +28,7 @@ function emptyConsent() {
 
 export async function GET(request: Request) {
   try {
-    const user = await getUserFromCookieHeader(request.headers.get('cookie'));
+    const user = await getUserFromRequest(request);
     if (!user) return unauthorized();
 
     const db = getDb();
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const user = await getUserFromCookieHeader(request.headers.get('cookie'));
+    const user = await getUserFromRequest(request);
     if (!user) return unauthorized();
 
     const parsed = consentSchema.safeParse(await request.json());

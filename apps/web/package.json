@@ -4,16 +4,20 @@
   "private": true,
   "scripts": {
     "dev": "node ./scripts/migrate.mjs && next dev",
-    "build": "next build",
+    "build": "node ./scripts/migrate.mjs && next build",
     "start": "node ./scripts/migrate.mjs && next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node ./scripts/migrate.mjs",
+    "db:seed-dev": "node ./scripts/seed-dev-users.mjs",
+    "pilot:regen-plan": "node ./scripts/regenerate-client-plan.mjs",
+    "pilot:regen-api": "node ./scripts/regenerate-plan-api.mjs",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "eslint .",
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@vercel/functions": "^3.7.4",
     "argon2": "^0.44.0",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",

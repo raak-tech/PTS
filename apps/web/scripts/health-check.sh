@@ -16,7 +16,7 @@ echo ""
 
 # 3. Check landing page
 echo "3. Landing page..."
-LANDING=$(curl -s https://pts-web-pied.vercel.app | grep -c "Pain changed your life" || echo "0")
+LANDING=$(curl -s https://pts-web-pied.vercel.app | grep -c "Get back to living after pain" || echo "0")
 if [ "$LANDING" -gt 0 ]; then
   echo "   ✅ Landing page loads"
 else

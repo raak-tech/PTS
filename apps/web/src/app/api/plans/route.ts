@@ -1,11 +1,20 @@
-import { eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getDb } from '@/db';
 import { clientCounselor, plans } from '@/db/schema';
 import { logError } from '@/lib/logger';
-import { getUserFromCookieHeader } from '@/lib/session';
+import {
+  applyHolisticVisibility,
+  DEFAULT_HOLISTIC_VISIBILITY,
+} from '@/lib/plan-holistic-edits';
+import type { GeneratedPlan } from '@/lib/plan-generator';
+import { regeneratePlanDraftForUser } from '@/lib/regenerate-plan-for-user';
+import { seedDailyFromApprovedPlan } from '@/lib/seed-daily-from-plan';
+import { getUserFromRequest } from '@/lib/session';
+
+export const maxDuration = 300;
 
 function unauthorized() {
   return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
@@ -15,7 +24,7 @@ function unauthorized() {
 // GET /api/plans               — client fetches their own plan
 export async function GET(request: Request) {
   try {
-    const user = await getUserFromCookieHeader(request.headers.get('cookie'));
+    const user = await getUserFromRequest(request);
     if (!user) return unauthorized();
 
     const { searchParams } = new URL(request.url);
@@ -24,14 +33,37 @@ export async function GET(request: Request) {
       : user.id;
 
     const db = getDb();
-    const [plan] = await db
-      .select()
-      .from(plans)
-      .where(eq(plans.userId, targetUserId))
-      .orderBy(plans.createdAt)
-      .limit(1);
 
-    return NextResponse.json({ ok: true, plan: plan ?? null });
+    let plan = null;
+    if (user.role === 'client') {
+      const [approved] = await db
+        .select()
+        .from(plans)
+        .where(and(eq(plans.userId, targetUserId), eq(plans.status, 'approved')))
+        .orderBy(desc(plans.createdAt))
+        .limit(1);
+      if (approved) {
+        plan = approved;
+      } else {
+        const [draft] = await db
+          .select()
+          .from(plans)
+          .where(eq(plans.userId, targetUserId))
+          .orderBy(desc(plans.createdAt))
+          .limit(1);
+        plan = draft ?? null;
+      }
+    } else {
+      const [latest] = await db
+        .select()
+        .from(plans)
+        .where(eq(plans.userId, targetUserId))
+        .orderBy(desc(plans.createdAt))
+        .limit(1);
+      plan = latest ?? null;
+    }
+
+    return NextResponse.json({ ok: true, plan });
   } catch (err) {
     logError('plans_get_error', err);
     return NextResponse.json({ error: 'internal' }, { status: 500 });
@@ -42,12 +74,19 @@ const approveSchema = z.object({
   planId: z.string().min(1),
   counselorNotes: z.string().max(2000).optional(),
   action: z.enum(['approve', 'regenerate']),
+  holisticVisibility: z
+    .object({
+      ayurveda: z.boolean(),
+      yoga: z.boolean(),
+      music: z.boolean(),
+    })
+    .optional(),
 });
 
 // POST /api/plans  — counselor approves or requests regeneration
 export async function POST(request: Request) {
   try {
-    const user = await getUserFromCookieHeader(request.headers.get('cookie'));
+    const user = await getUserFromRequest(request);
     if (!user || user.role !== 'provider') {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
@@ -59,7 +98,31 @@ export async function POST(request: Request) {
     const now = new Date();
 
     if (parsed.data.action === 'approve') {
-      const [updated] = await db
+      const [planRow] = await db
+        .select({
+          id: plans.id,
+          userId: plans.userId,
+          generatedContent: plans.generatedContent,
+        })
+        .from(plans)
+        .where(eq(plans.id, parsed.data.planId))
+        .limit(1);
+
+      if (!planRow) {
+        return NextResponse.json({ error: 'not_found' }, { status: 404 });
+      }
+
+      let planContent = planRow.generatedContent;
+      try {
+        const generated = JSON.parse(planRow.generatedContent) as GeneratedPlan;
+        const visibility = parsed.data.holisticVisibility ?? DEFAULT_HOLISTIC_VISIBILITY;
+        const adjusted = applyHolisticVisibility(generated, visibility);
+        planContent = JSON.stringify(adjusted);
+      } catch {
+        /* keep original content if parse fails */
+      }
+
+      await db
         .update(plans)
         .set({
           status: 'approved',
@@ -67,24 +130,47 @@ export async function POST(request: Request) {
           counselorNotes: parsed.data.counselorNotes ?? null,
           approvedAt: now,
           approvedBy: user.id,
+          generatedContent: planContent,
         })
-        .where(eq(plans.id, parsed.data.planId))
-        .returning({ userId: plans.userId });
+        .where(eq(plans.id, parsed.data.planId));
 
-      // Create client-counselor assignment so messaging works immediately
-      if (updated) {
-        await db
-          .insert(clientCounselor)
-          .values({ clientId: updated.userId, counselorId: user.id, assignedAt: now })
-          .onConflictDoUpdate({ target: clientCounselor.clientId, set: { counselorId: user.id, assignedAt: now } });
-      }
+      await db
+        .insert(clientCounselor)
+        .values({ clientId: planRow.userId, counselorId: user.id, assignedAt: now })
+        .onConflictDoUpdate({ target: clientCounselor.clientId, set: { counselorId: user.id, assignedAt: now } });
+
+      await seedDailyFromApprovedPlan(db, {
+        clientId: planRow.userId,
+        counselorId: user.id,
+        planContent,
+      });
 
       return NextResponse.json({ ok: true });
+    }
+
+    if (parsed.data.action === 'regenerate') {
+      const [planRow] = await db
+        .select({ userId: plans.userId })
+        .from(plans)
+        .where(eq(plans.id, parsed.data.planId))
+        .limit(1);
+
+      if (!planRow) {
+        return NextResponse.json({ error: 'not_found' }, { status: 404 });
+      }
+
+      const planId = await regeneratePlanDraftForUser(planRow.userId);
+      if (!planId) {
+        return NextResponse.json({ error: 'intake_missing' }, { status: 400 });
+      }
+
+      return NextResponse.json({ ok: true, status: 'draft', planId });
     }
 
     return NextResponse.json({ error: 'unsupported action' }, { status: 400 });
   } catch (err) {
     logError('plans_post_error', err);
-    return NextResponse.json({ error: 'internal' }, { status: 500 });
+    const message = err instanceof Error ? err.message : 'internal';
+    return NextResponse.json({ error: 'internal', detail: message }, { status: 500 });
   }
 }

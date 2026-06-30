@@ -23,18 +23,15 @@ export function LandingPage() {
           <div style={{ display: 'inline-block', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', padding: '6px 16px', borderRadius: 999, fontSize: 13, marginBottom: 28, color: '#ccc' }}>
             Counseling-led recovery · India-based · Global reach
           </div>
-          <h1 style={{ fontSize: 'clamp(36px, 6vw, 60px)', fontWeight: 800, lineHeight: 1.1, margin: '0 0 24px', letterSpacing: '-1px' }}>
-            Pain changed your life.<br />
-            <span style={{ background: 'linear-gradient(90deg, #fbbf24, #f97316)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              Let's help you get it back.
-            </span>
+          <h1 style={{ fontSize: 'clamp(32px, 8vw, 52px)', fontWeight: 800, lineHeight: 1.2, margin: '0 0 24px', letterSpacing: '-0.5px' }}>
+            Get back to living after pain
           </h1>
-          <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, margin: '0 0 36px', maxWidth: 560, marginLeft: 'auto', marginRight: 'auto' }}>
-            A structured 6-week counseling program — with a human counselor, daily support, and a personalised plan — to help you recover the quality of life you had before.
+          <p style={{ fontSize: 'clamp(16px, 3vw, 20px)', color: 'rgba(255,255,255,0.75)', lineHeight: 1.6, margin: '0 0 36px', maxWidth: 560, marginLeft: 'auto', marginRight: 'auto' }}>
+            Personalized counseling + daily support + a counselor who knows your story
           </p>
           <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link href="/register" style={{ padding: '15px 36px', borderRadius: 999, background: 'linear-gradient(135deg, #fbbf24, #f97316)', color: '#111', fontWeight: 800, fontSize: 16, textDecoration: 'none' }}>
-              Start your journey — free →
+              Start your recovery →
             </Link>
             <a href="#how" style={{ padding: '15px 28px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontSize: 15, textDecoration: 'none' }}>
               See how it works ↓
@@ -44,18 +41,17 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── FOR YOU IF ── */}
+      {/* ── WHO THIS IS FOR ── */}
       <section style={{ background: '#f9f9f9', padding: '72px 24px' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
-          <h2 style={{ textAlign: 'center', fontSize: 28, fontWeight: 700, margin: '0 0 12px' }}>This program is for you if…</h2>
-          <p style={{ textAlign: 'center', color: '#666', margin: '0 0 48px', fontSize: 16 }}>Pain from any cause can upend a life. We support all of these — and more.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+          <h2 style={{ textAlign: 'center', fontSize: 28, fontWeight: 700, margin: '0 0 12px' }}>Who this is for</h2>
+          <p style={{ textAlign: 'center', color: '#666', margin: '0 0 48px', fontSize: 16 }}>Pain from any cause can upend a life. We support people like you.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
             {[
-              { icon: '🏢', title: 'Workplace injury', text: 'An injury at work has affected your ability to function, your income, and your sense of self.' },
-              { icon: '🚗', title: 'Road accident', text: 'An accident left you with physical pain and the psychological weight that follows trauma.' },
-              { icon: '⚽', title: 'Sports injury', text: 'A sporting injury took away your outlet, your identity, and your routine all at once.' },
-              { icon: '🩺', title: 'Health condition', text: 'Chronic pain from illness or gradual onset has quietly changed what you can do and who you are.' },
-              { icon: '🤕', title: 'General injury', text: 'Any unexpected injury that has disrupted your normal life and left you needing support to rebuild.' },
+              { icon: '🏢', title: 'Workplace injury', text: 'You got hurt at work. Recovery means returning to your job with confidence.' },
+              { icon: '⚽', title: 'Sports injury', text: 'You were active. Now pain has sidelined you. Recovery means getting back in the game.' },
+              { icon: '🚗', title: 'Road accident', text: 'You survived. Now comes the harder part: rebuilding after trauma and pain.' },
+              { icon: '🩺', title: 'Health disruption', text: 'Sudden pain changed everything. Recovery means reclaiming your independence.' },
             ].map(card => (
               <div key={card.title} style={{ background: 'white', borderRadius: 16, padding: '24px 20px', border: '1px solid #eee' }}>
                 <div style={{ fontSize: 28, marginBottom: 12 }}>{card.icon}</div>
@@ -202,6 +198,46 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* ── FAQ ── */}
+      <section id="faq" style={{ padding: '80px 24px', background: 'white' }}>
+        <div style={{ maxWidth: 760, margin: '0 auto' }}>
+          <h2 style={{ textAlign: 'center', fontSize: 28, fontWeight: 700, margin: '0 0 48px' }}>Frequently asked questions</h2>
+          <div style={{ display: 'grid', gap: 20 }}>
+            {[
+              {
+                q: 'Is this counseling or therapy?',
+                a: 'PTS is a counseling-led recovery support program. It is not a medical service and does not replace diagnosis or treatment from a doctor or licensed therapist where that is required.',
+              },
+              {
+                q: 'Is my information confidential?',
+                a: 'Your assessment and messages are visible to your assigned counselor and platform administrators for safety and quality. You control optional stored support artifacts from your account settings.',
+              },
+              {
+                q: 'What if I\'m in crisis?',
+                a: 'PTS is not for emergencies. Crisis helplines are shown at the top of every page. If you report safety concerns in intake, a counselor will review before your plan is delivered.',
+              },
+              {
+                q: 'How much does it cost?',
+                a: 'The pilot is free for participants. There is no credit card required to sign up.',
+              },
+              {
+                q: 'Can I cancel?',
+                a: 'Yes. You can stop using the program at any time. Contact your counselor or program administrator if you want your data removed.',
+              },
+              {
+                q: 'How long until I get my plan?',
+                a: 'After you complete the intake, a draft plan is generated and your counselor reviews it — typically within 24 hours during the pilot.',
+              },
+            ].map((item) => (
+              <div key={item.q} style={{ borderBottom: '1px solid #eee', paddingBottom: 20 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 8px' }}>{item.q}</h3>
+                <p style={{ fontSize: 15, color: '#555', lineHeight: 1.6, margin: 0 }}>{item.a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── CTA ── */}
       <section style={{ background: 'linear-gradient(160deg, #0f0f0f 0%, #1a1a2e 100%)', color: 'white', padding: '96px 24px', textAlign: 'center' }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
@@ -236,7 +272,15 @@ export function LandingPage() {
             </div>
             <div style={{ display: 'grid', gap: 8, alignContent: 'start' }}>
               <Link href="/red-flags" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Safety guidelines</Link>
+              <Link href="/privacy" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Privacy policy</Link>
+              <Link href="/terms" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Terms of use</Link>
               <Link href="/support" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Your data</Link>
+            </div>
+            <div style={{ display: 'grid', gap: 8, alignContent: 'start' }}>
+              <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Crisis lines</span>
+              <a href="tel:9152987821" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>iCall: 9152987821</a>
+              <a href="tel:9820466726" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>Aasra: 9820466726</a>
+              <a href="https://findahelpline.com" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Global helplines</a>
             </div>
           </div>
         </div>

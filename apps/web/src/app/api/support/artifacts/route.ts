@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { getDb } from '../../../../db';
 import { supportArtifacts, userConsents } from '../../../../db/schema';
 import { logError } from '../../../../lib/logger';
-import { getUserFromCookieHeader } from '../../../../lib/session';
+import { getUserFromRequest } from '../../../../lib/session';
 
 const artifactSchema = z.object({
   kind: z.enum(['intake', 'plan', 'daily', 'check-in']),
@@ -23,7 +23,7 @@ function unauthorized() {
 
 export async function POST(request: Request) {
   try {
-    const user = await getUserFromCookieHeader(request.headers.get('cookie'));
+    const user = await getUserFromRequest(request);
     if (!user) return unauthorized();
 
     const parsed = artifactSchema.safeParse(await request.json());

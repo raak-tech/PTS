@@ -15,14 +15,20 @@ if (process.env.SKIP_DB_MIGRATE === '1') {
   process.exit(0);
 }
 
-function defaultDatabaseUrl() {
-  const username = encodeURIComponent(os.userInfo().username);
-  const socketDir = encodeURIComponent('/var/run/postgresql');
-  return `postgresql://${username}@localhost/pts?host=${socketDir}`;
+function createSql() {
+  if (process.env.DATABASE_URL) {
+    return postgres(process.env.DATABASE_URL, { max: 1 });
+  }
+  return postgres({
+    database: 'pts',
+    user: os.userInfo().username,
+    host: '/var/run/postgresql',
+    max: 1,
+  });
 }
 
-const connectionString = process.env.DATABASE_URL ?? defaultDatabaseUrl();
-const sql = postgres(connectionString, { max: 1 });
+const sql = createSql();
+const connectionLabel = process.env.DATABASE_URL ?? `unix socket /var/run/postgresql (db=pts, user=${os.userInfo().username})`;
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const migrationsDir = resolve(__dir, '../src/db/migrations');
@@ -41,30 +47,36 @@ try {
     .filter(f => f.endsWith('.sql'))
     .sort();
 
-  // If this is an existing DB (users table already exists), mark any old migration
-  // files as applied without running them so they don't error on "already exists".
-  const [usersExists] = await sql`
-    SELECT 1 FROM information_schema.tables WHERE table_name = 'users' LIMIT 1
-  `;
-  if (usersExists) {
-    for (const file of files) {
-      await sql`
-        INSERT INTO _pts_migrations (filename) VALUES (${file})
-        ON CONFLICT (filename) DO NOTHING
-      `;
-    }
-    // Now re-fetch applied set so only truly new files (added after this seeding) get run
-  }
-
   // Find already-applied migrations
   const applied = await sql`SELECT filename FROM _pts_migrations`;
-  const appliedSet = new Set(applied.map(r => r.filename));
+  const appliedSet = new Set(applied.map((r) => r.filename));
+
+  // Legacy: if users table exists but phone column is missing, unmark 0009 so it can re-run.
+  const [phoneCol] = await sql`
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'users' AND column_name = 'phone'
+    LIMIT 1
+  `;
+  if (!phoneCol) {
+    await sql`DELETE FROM _pts_migrations WHERE filename IN ('0009_mobile_auth.sql', '0010_mobile_auth_retry.sql')`;
+    appliedSet.delete('0009_mobile_auth.sql');
+    appliedSet.delete('0010_mobile_auth_retry.sql');
+  }
 
   let count = 0;
   for (const file of files) {
     if (appliedSet.has(file)) continue;
 
     const ddl = readFileSync(resolve(migrationsDir, file), 'utf8');
+
+    // 0001/0002 were generated for SQLite; 0000_postgres already includes those columns.
+    if (ddl.includes('`')) {
+      console.log(`  skipping ${file} (legacy SQLite migration)`);
+      await sql`INSERT INTO _pts_migrations (filename) VALUES (${file})`;
+      count++;
+      continue;
+    }
+
     console.log(`  applying ${file}…`);
     await sql.unsafe(ddl);
     await sql`INSERT INTO _pts_migrations (filename) VALUES (${file})`;
@@ -77,7 +89,7 @@ try {
     console.log(`Applied ${count} migration(s).`);
   }
 
-  console.log(`migrated postgres db at ${connectionString}`);
+  console.log(`migrated postgres db at ${connectionLabel}`);
 } finally {
   await sql.end({ timeout: 5 });
 }

@@ -19,7 +19,13 @@ import { sessions, users } from '@/db/schema';
 const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   password: z.string().min(1).max(128),
+  next: z.string().optional(),
 });
+
+function safeNextPath(next?: string) {
+  if (!next || !next.startsWith('/') || next.startsWith('//')) return '/';
+  return next;
+}
 
 function errorRedirect(request: Request, message: string) {
   const url = new URL('/login', request.url);
@@ -42,6 +48,7 @@ export async function POST(request: Request) {
     const parsed = loginSchema.safeParse({
       email: formData.get('email'),
       password: formData.get('password'),
+      next: formData.get('next') || undefined,
     });
 
     if (!parsed.success) {
@@ -51,7 +58,7 @@ export async function POST(request: Request) {
     const db = getDb();
     const [user] = await db.select().from(users).where(eq(users.email, parsed.data.email)).limit(1);
 
-    if (!user) {
+    if (!user || !user.passwordHash) {
       return errorRedirect(request, 'invalid');
     }
 
@@ -72,7 +79,12 @@ export async function POST(request: Request) {
       expiresAt,
     });
 
-    const dest = user.role === 'provider' ? '/provider' : '/';
+    const dest =
+      parsed.data.next && safeNextPath(parsed.data.next) !== '/'
+        ? safeNextPath(parsed.data.next)
+        : user.role === 'provider'
+          ? '/provider'
+          : '/';
     const response = NextResponse.redirect(new URL(dest, request.url), 303);
     response.cookies.set(createSessionCookie(sessionToken));
     return response;

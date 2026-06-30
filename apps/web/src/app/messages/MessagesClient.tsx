@@ -46,6 +46,7 @@ export function MessagesClient({
   hasContacts: boolean;
   preselectedId?: string;
 }) {
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const initial = preselectedId ? (contacts.find(c => c.id === preselectedId) ?? contacts[0] ?? null) : (contacts[0] ?? null);
   const [activeContact, setActiveContact] = useState<Contact | null>(initial);
   const [thread, setThread] = useState<Message[]>([]);
@@ -53,19 +54,35 @@ export function MessagesClient({
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const loadUnreadCounts = async () => {
+    const res = await fetch('/api/messages/unread-count');
+    if (res.ok) {
+      const data = await res.json() as { counts?: Record<string, number> };
+      setUnreadCounts(data.counts ?? {});
+    }
+  };
+
   const loadThread = async (contact: Contact) => {
     const res = await fetch(`/api/messages?with=${contact.id}`);
     if (res.ok) {
       const data = await res.json() as { messages: Message[] };
       setThread(data.messages ?? []);
+      setUnreadCounts((prev) => ({ ...prev, [contact.id]: 0 }));
     }
   };
+
+  useEffect(() => {
+    void loadUnreadCounts();
+    const unreadInterval = setInterval(() => void loadUnreadCounts(), 30000);
+    return () => clearInterval(unreadInterval);
+  }, []);
 
   useEffect(() => {
     if (activeContact) loadThread(activeContact);
     // Poll every 8 seconds for new messages
     const interval = setInterval(() => {
       if (activeContact) loadThread(activeContact);
+      void loadUnreadCounts();
     }, 8000);
     return () => clearInterval(interval);
   }, [activeContact]);
@@ -111,7 +128,9 @@ export function MessagesClient({
               <p style={{ margin: 0, fontSize: 13 }}>Your counselor will reach out once your plan is ready.</p>
             </div>
           )}
-          {contacts.map(c => (
+          {contacts.map(c => {
+            const unread = unreadCounts[c.id] ?? 0;
+            return (
             <button
               key={c.id}
               onClick={() => setActiveContact(c)}
@@ -119,14 +138,26 @@ export function MessagesClient({
                 display: "block", width: "100%", textAlign: "left", padding: "14px 16px",
                 background: activeContact?.id === c.id ? "#f5f5f5" : "transparent",
                 border: "none", borderBottom: "1px solid #f0f0f0", cursor: "pointer",
+                position: "relative",
               }}
             >
-              <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>
-                {anonymise(c.email, c.role)}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>
+                  {anonymise(c.email, c.role)}
+                </div>
+                {unread > 0 && (
+                  <span style={{
+                    minWidth: 20, height: 20, padding: "0 6px", borderRadius: 999,
+                    background: "#e53935", color: "white", fontSize: 11, fontWeight: 700,
+                    display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: 12, color: "#999" }}>{c.role === "provider" ? "Your counselor" : "Client"}</div>
             </button>
-          ))}
+          );})}
         </div>
       </div>
 

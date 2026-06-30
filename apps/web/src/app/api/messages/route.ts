@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { getDb } from '@/db';
 import { messages, users } from '@/db/schema';
 import { logError } from '@/lib/logger';
-import { getUserFromCookieHeader } from '@/lib/session';
+import { getUserFromRequest } from '@/lib/session';
 
 function unauthorized() {
   return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
@@ -16,7 +16,7 @@ function unauthorized() {
 // GET /api/messages?with=<userId>  — fetch thread between current user and <userId>
 export async function GET(request: Request) {
   try {
-    const user = await getUserFromCookieHeader(request.headers.get('cookie'));
+    const user = await getUserFromRequest(request);
     if (!user) return unauthorized();
 
     const { searchParams } = new URL(request.url);
@@ -57,7 +57,7 @@ const sendSchema = z.object({
 // POST /api/messages  — send a message
 export async function POST(request: Request) {
   try {
-    const user = await getUserFromCookieHeader(request.headers.get('cookie'));
+    const user = await getUserFromRequest(request);
     if (!user) return unauthorized();
 
     const parsed = sendSchema.safeParse(await request.json());
