@@ -11,10 +11,10 @@ import {
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
-  role: text("role").notNull(), // 'client' | 'provider'
+  passwordHash: text("password_hash"),
+  phone: text("phone").unique(),
+  role: text("role").notNull(), // 'client' | 'provider' | 'admin'
   displayName: text("display_name"),
-  // notificationsEnabled moved to Phase 1 (will add after pilot validation)
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
 
@@ -117,6 +117,7 @@ export const intakeResponses = pgTable("intake_responses", {
   // Preferences
   structurePreference: text("structure_preference"),
   engagementTime: text("engagement_time"),
+  ayurvedaPreferences: text("ayurveda_preferences"),
   // Safety
   hasRedFlags: boolean("has_red_flags").notNull().default(false),
   isSafe: boolean("is_safe").notNull().default(true),
@@ -165,4 +166,118 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   auth: text("auth").notNull(),
   p256dh: text("p256dh").notNull(),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+export const dailyReinforcements = pgTable("daily_reinforcements", {
+  id: text("id").primaryKey(),
+  counselorId: text("counselor_id").notNull(),
+  clientId: text("client_id").notNull(),
+  title: text("title").notNull(),
+  bodyText: text("body_text").notNull(),
+  counselorAudioUrl: text("counselor_audio_url"),
+  planWeek: integer("plan_week"),
+  startDate: text("start_date").notNull(),
+  endDate: text("end_date").notNull(),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+export const reinforcementResponses = pgTable("reinforcement_responses", {
+  id: text("id").primaryKey(),
+  reinforcementId: text("reinforcement_id").notNull(),
+  clientId: text("client_id").notNull(),
+  responseType: text("response_type").notNull(),
+  bodyText: text("body_text"),
+  audioUrl: text("audio_url"),
+  submittedAt: timestamp("submitted_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+export const dailyCalendarEntries = pgTable("daily_calendar_entries", {
+  id: text("id").primaryKey(),
+  clientId: text("client_id").notNull(),
+  dateIso: text("date_iso").notNull(),
+  blocks: text("blocks").notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+export const dailyScheduleFeedback = pgTable("daily_schedule_feedback", {
+  id: text("id").primaryKey(),
+  clientId: text("client_id").notNull(),
+  dateIso: text("date_iso").notNull(),
+  workedText: text("worked_text"),
+  didntWorkText: text("didnt_work_text"),
+  submittedAt: timestamp("submitted_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+export const musicSets = pgTable("music_sets", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  purposeTag: text("purpose_tag").notNull(),
+  spotifyUri: text("spotify_uri"),
+  description: text("description"),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+export const holisticCompletions = pgTable("holistic_completions", {
+  id: text("id").primaryKey(),
+  clientId: text("client_id").notNull(),
+  dateIso: text("date_iso").notNull(),
+  weekNumber: integer("week_number").notNull(),
+  activityType: text("activity_type").notNull(),
+  notes: text("notes"),
+  completedAt: timestamp("completed_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+export const weeklyCheckIns = pgTable("weekly_check_ins", {
+  id: text("id").primaryKey(),
+  clientId: text("client_id").notNull(),
+  weekNumber: integer("week_number").notNull(),
+  weekStartIso: text("week_start_iso").notNull(),
+  answersJson: text("answers_json").notNull(),
+  submittedAt: timestamp("submitted_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+export const eveningReflections = pgTable("evening_reflections", {
+  id: text("id").primaryKey(),
+  clientId: text("client_id").notNull(),
+  dateIso: text("date_iso").notNull(),
+  bodyText: text("body_text").notNull(),
+  submittedAt: timestamp("submitted_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+export const otpCodes = pgTable("otp_codes", {
+  id: text("id").primaryKey(),
+  phone: text("phone").notNull(),
+  code: text("code").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  maxAttempts: integer("max_attempts").notNull().default(10),
+  expiresAt: timestamp("expires_at", { mode: "date", withTimezone: true }).notNull(),
+  consumedAt: timestamp("consumed_at", { mode: "date", withTimezone: true }),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+// Per-week counselor-approved plan content (SCOPE-A).
+// Replaces atomic plan approval — clients see only weeks with status='approved'.
+// Counselor edits content inline then approves each week independently.
+export const planWeeks = pgTable("plan_weeks", {
+  id: text("id").primaryKey(),
+  planId: text("plan_id").notNull(),
+  weekNumber: integer("week_number").notNull(),
+  content: text("content").notNull(), // JSON — one week from GeneratedPlan.weeks[]
+  status: text("status").notNull().default("draft"), // 'draft' | 'edited' | 'approved'
+  approvedAt: timestamp("approved_at", { mode: "date", withTimezone: true }),
+  editedAt: timestamp("edited_at", { mode: "date", withTimezone: true }),
+  counselorId: text("counselor_id"),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+// Daily morning check-in — pain level, sleep quality, intention (SCOPE-F).
+// One entry per client per day. Feeds counselor engagement dashboard pain trend.
+export const dailyCheckIns = pgTable("daily_check_ins", {
+  id: text("id").primaryKey(),
+  clientId: text("client_id").notNull(),
+  dateIso: text("date_iso").notNull(),         // YYYY-MM-DD local date
+  painLevel: integer("pain_level").notNull(),  // 0–10 NRS
+  sleepQuality: text("sleep_quality").notNull(), // 'poor' | 'ok' | 'good'
+  intention: text("intention"),
+  submittedAt: timestamp("submitted_at", { mode: "date", withTimezone: true }).notNull(),
 });
