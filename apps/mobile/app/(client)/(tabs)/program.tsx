@@ -1,4 +1,5 @@
 import * as Linking from 'expo-linking';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
 
@@ -10,11 +11,38 @@ import { useProgramTime } from '@/hooks/useProgramTime';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { PROGRAM_WEEK_THEMES } from '@/lib/appTime';
 import { API_URL } from '@/config';
+import { useAuth } from '@/context/AuthContext';
+import { apiGetMonthlyCheckIn } from '@/lib/api';
+
+function daysSinceProgramComplete(completedAt: string): number {
+  const completed = new Date(completedAt).getTime();
+  const now = new Date().getTime();
+  return Math.floor((now - completed) / (1000 * 60 * 60 * 24));
+}
 
 export default function ProgramScreen() {
   const router = useRouter();
+  const { user, token } = useAuth();
   const programTime = useProgramTime();
   const { calendlyUrl, counselorName } = useCounselorContact();
+  const [monthlyCheckInDue, setMonthlyCheckInDue] = useState(false);
+  const [monthlyCheckInSubmitted, setMonthlyCheckInSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (!token || !programTime?.programComplete) return;
+    const checkMonthly = async () => {
+      try {
+        const data = await apiGetMonthlyCheckIn(token);
+        setMonthlyCheckInSubmitted(data.checkIn !== null);
+      } catch {
+        // Ignore
+      }
+    };
+    checkMonthly();
+  }, [token, programTime?.programComplete]);
+
+  const daysElapsed = programTime?.completedAt ? daysSinceProgramComplete(programTime.completedAt) : 0;
+  const showMonthlyPrompt = programTime?.programComplete && daysElapsed >= 30 && !monthlyCheckInSubmitted;
   const styles = useThemedStyles((c) => ({
     status: { fontSize: 13, color: c.muted },
     body: { fontSize: 14, color: c.muted, lineHeight: 22 },
@@ -43,6 +71,21 @@ export default function ProgramScreen() {
               label={`Review Week ${lastWeek.id}`}
               variant="secondary"
               onPress={() => router.push(`/(client)/program/week/${lastWeek.id}`)}
+            />
+          </Card>
+        )}
+
+        {showMonthlyPrompt && (
+          <Card alert>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: 'var(--text)', marginBottom: 8 }}>
+              📋 Monthly check-in available
+            </Text>
+            <Text style={[styles.body, { marginBottom: 12 }]}>
+              30 days have passed. How's your maintenance going?
+            </Text>
+            <Button
+              label="Complete monthly check-in"
+              onPress={() => router.push('/(client)/program/monthly-check-in')}
             />
           </Card>
         )}

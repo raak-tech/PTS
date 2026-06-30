@@ -19,6 +19,7 @@ export type ProgramTimeState = {
   theme: string;
   focus: string;
   programComplete: boolean;
+  completedAt?: string; // ISO date when program completed
   weeks: ProgramWeek[];
   subtitle: string;
   dayProgress: number;
@@ -61,12 +62,15 @@ export function computeProgramTime(programStartedAt: Date, now = new Date()): Pr
       ? 0
       : REAL_MS_PER_APP_WEEK - (elapsedRealMs % REAL_MS_PER_APP_WEEK);
 
+  const completedAt = programComplete ? new Date(programStartedAt.getTime() + PROGRAM_WEEK_COUNT * REAL_MS_PER_APP_WEEK).toISOString() : undefined;
+
   return {
     weekNumber,
     dayInWeek,
     theme: current.theme,
     focus: current.focus,
     programComplete,
+    completedAt,
     weeks,
     subtitle: programComplete
       ? `Program complete — ${current.theme}`
