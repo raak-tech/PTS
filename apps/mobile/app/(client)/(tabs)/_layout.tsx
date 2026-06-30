@@ -13,6 +13,9 @@ export default function ClientTabsLayout() {
   const insets = useSafeAreaInsets();
   const { total: unreadTotal } = useUnreadCounts();
 
+  // Badge lifecycle:
+  // - Messages: shows unread count, clears after opening a thread, re-badges on new messages
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <TestTimeBanner />

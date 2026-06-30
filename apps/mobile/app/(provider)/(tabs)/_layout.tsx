@@ -4,11 +4,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabBarIcon } from '@/components/navigation/TabBarIcon';
 import { useTheme } from '@/context/ThemeContext';
 import { useUnreadCounts } from '@/hooks/useUnreadCounts';
+import { useProviderQueueBadge } from '@/hooks/useProviderQueueBadge';
 
 export default function ProviderTabsLayout() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { total: unreadTotal } = useUnreadCounts();
+  const { badgeCount: queueBadge } = useProviderQueueBadge();
+
+  // Badge lifecycle:
+  // - Queue: shows pending plan count, clears after viewing queue screen, re-badges if new plans arrive
+  // - Messages: shows unread count, clears after opening a thread, re-badges on new messages
 
   return (
     <Tabs
@@ -32,6 +38,8 @@ export default function ProviderTabsLayout() {
         options={{
           title: 'Queue',
           tabBarIcon: ({ focused }) => <TabBarIcon name="home" focused={focused} />,
+          tabBarBadge: queueBadge > 0 ? queueBadge : undefined,
+          tabBarBadgeStyle: { backgroundColor: colors.danger, fontSize: 10 },
         }}
       />
       <Tabs.Screen
