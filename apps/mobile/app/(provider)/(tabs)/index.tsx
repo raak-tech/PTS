@@ -24,7 +24,7 @@ export default function ProviderHomeScreen() {
     alert: { color: c.danger, fontWeight: '700' as const },
     row: { fontSize: 14, color: c.text, lineHeight: 22 },
     badge: {
-      display: 'inline-block',
+      alignSelf: 'flex-start' as const,
       paddingVertical: 2,
       paddingHorizontal: 8,
       backgroundColor: '#fee2e2',
@@ -117,19 +117,21 @@ export default function ProviderHomeScreen() {
               </Text>
               <Text style={[styles.body, { marginVertical: 4 }]}>{intake.painSource}</Text>
               <Text style={[styles.body, { marginBottom: 8 }]}>{new Date(intake.submittedAt).toLocaleDateString()}</Text>
-              <View style={{ display: 'flex', flexDirection: 'row', gap: 8 }}>
-                <Button
-                  label="Message"
-                  variant="secondary"
-                  onPress={() => router.push(`/(provider)/messages/${intake.userId}`)}
-                  style={{ flex: 1 }}
-                />
-                <Button
-                  label={generating === intake.userId ? 'Generating...' : 'Generate plan'}
-                  disabled={generating === intake.userId}
-                  onPress={() => void handleGeneratePlan(intake.userId)}
-                  style={{ flex: 1 }}
-                />
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    label="Message"
+                    variant="secondary"
+                    onPress={() => router.push(`/(provider)/messages/${intake.userId}`)}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    label={generating === intake.userId ? 'Generating...' : 'Generate plan'}
+                    disabled={generating === intake.userId}
+                    onPress={() => void handleGeneratePlan(intake.userId)}
+                  />
+                </View>
               </View>
             </View>
           ))}

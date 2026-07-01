@@ -58,8 +58,25 @@ export default function LoginScreen() {
       setPendingPhone(phone);
       await sendOtp(phone);
       router.push({ pathname: '/(auth)/otp', params: { phone } });
-    } catch {
-      setError('Something went wrong. Please try again.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '';
+      if (message === 'not-registered') {
+        router.push({ pathname: '/(auth)/not-registered', params: { phone: normalizePhone(digits) } });
+        return;
+      }
+      if (message === 'too-many-requests') {
+        setError('Too many attempts. Please wait a few minutes and try again.');
+      } else if (message === 'sms-failed') {
+        setError('Could not send the verification code. Please try again shortly.');
+      } else if (message === 'invalid-phone') {
+        setError('Enter a valid 10-digit mobile number.');
+      } else if (message === 'http-404') {
+        setError('This number is not registered. Contact your program administrator.');
+      } else if (message.includes('abort') || message.includes('network') || message.includes('fetch')) {
+        setError('Cannot reach the server. Check your internet connection and try again.');
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,10 @@
-import { Audio } from 'expo-av';
+import {
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  useAudioRecorder,
+  useAudioRecorderState,
+} from 'expo-audio';
 import * as FileSystem from 'expo-file-system';
 import { useEffect, useState } from 'react';
 import { Platform, Text, View } from 'react-native';
@@ -12,7 +18,8 @@ type Props = {
 };
 
 export function VoiceReadOut({ disabled, onSubmitVoice }: Props) {
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(recorder);
   const [permission, setPermission] = useState<boolean | null>(null);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
@@ -24,7 +31,7 @@ export function VoiceReadOut({ disabled, onSubmitVoice }: Props) {
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
-    void Audio.requestPermissionsAsync().then(({ granted }) => setPermission(granted));
+    void requestRecordingPermissionsAsync().then(({ granted }) => setPermission(granted));
   }, []);
 
   const startRecording = async () => {
@@ -33,7 +40,7 @@ export function VoiceReadOut({ disabled, onSubmitVoice }: Props) {
       return;
     }
     if (!permission) {
-      const { granted } = await Audio.requestPermissionsAsync();
+      const { granted } = await requestRecordingPermissionsAsync();
       setPermission(granted);
       if (!granted) {
         setMessage('Microphone permission is required to record.');
@@ -41,21 +48,18 @@ export function VoiceReadOut({ disabled, onSubmitVoice }: Props) {
       }
     }
     setMessage('');
-    await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-    const next = new Audio.Recording();
-    await next.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-    await next.startAsync();
-    setRecording(next);
+    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+    await recorder.prepareToRecordAsync();
+    recorder.record();
   };
 
   const stopAndSubmit = async () => {
-    if (!recording) return;
+    if (!recorderState.isRecording) return;
     setUploading(true);
     setMessage('');
     try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      setRecording(null);
+      await recorder.stop();
+      const uri = recorder.uri;
       if (!uri) throw new Error('No recording');
 
       const base64 = await FileSystem.readAsStringAsync(uri, {
@@ -78,7 +82,7 @@ export function VoiceReadOut({ disabled, onSubmitVoice }: Props) {
   return (
     <View>
       <Text style={styles.meta}>Or record yourself reading the read-out aloud (up to ~60 seconds).</Text>
-      {recording ? (
+      {recorderState.isRecording ? (
         <Button label="Stop & submit recording" onPress={() => void stopAndSubmit()} loading={uploading} />
       ) : (
         <Button

@@ -82,7 +82,11 @@ export default function OtpScreen() {
     setLoading(true);
     setError('');
     try {
-      await verifyOtp(phone, code);
+      const sessionUser = await verifyOtp(phone, code);
+      if (sessionUser.role === 'provider') {
+        router.replace('/(provider)/(tabs)');
+        return;
+      }
       router.replace('/');
     } catch {
       setError('Invalid OTP. Use 123456 in prototype.');

@@ -42,6 +42,7 @@ export type GeneratedPlan = {
       disclaimer: string;
     };
     reinforcementTemplate?: { title: string; bodyText: string };
+    reinforcementTemplates?: { title: string; bodyText: string }[];
     musicMoment?: {
       purpose: string;
       suggestion: string;
@@ -289,7 +290,11 @@ function localDateIso(date = new Date()): string {
 }
 
 export async function apiGetTodayReinforcement(token: string) {
-  return parseJson<{ ok: boolean; today: TodayReinforcement | null }>(
+  return parseJson<{
+    ok: boolean;
+    today: TodayReinforcement | null;
+    todayReadouts?: TodayReinforcement[];
+  }>(
     await fetchWithTimeout(`${API_URL}/api/reinforcements?date=${localDateIso()}`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
@@ -439,6 +444,15 @@ export async function apiUpdateReinforcement(
       },
       60_000,
     ),
+  );
+}
+
+export async function apiDeleteReinforcement(token: string, reinforcementId: string) {
+  return parseJson<{ ok: boolean }>(
+    await fetchWithTimeout(`${API_URL}/api/reinforcements/${reinforcementId}`, {
+      method: 'DELETE',
+      headers: authHeaders(token),
+    }),
   );
 }
 

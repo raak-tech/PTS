@@ -19,7 +19,7 @@ import { useHolisticWeek } from '@/hooks/useHolisticWeek';
 import { useProgramTime } from '@/hooks/useProgramTime';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { greetingForDayProgress } from '@/lib/appTime';
-import type { CalendarBlock, HolisticActivityType } from '@/lib/api';
+import type { CalendarBlock, HolisticActivityType, TodayReinforcement } from '@/lib/api';
 
 function BlockRow({
   block,
@@ -68,6 +68,76 @@ function BlockRow({
   );
 }
 
+function ReadOutCards({
+  items,
+  readOutTexts,
+  onChangeText,
+  onSubmit,
+  onSubmitVoice,
+  savingId,
+}: {
+  items: TodayReinforcement[];
+  readOutTexts: Record<string, string>;
+  onChangeText: (id: string, value: string) => void;
+  onSubmit: (id: string) => void;
+  onSubmitVoice: (id: string, audioBase64: string) => void;
+  savingId: string | null;
+}) {
+  const styles = useThemedStyles((c) => ({
+    practice: { fontSize: 17, fontWeight: '700' as const, color: c.text, marginBottom: 6 },
+    meta: { fontSize: 14, color: c.muted, lineHeight: 22, marginBottom: 10 },
+    done: { fontSize: 14, color: c.success, fontWeight: '600' as const, marginTop: 8 },
+    input: {
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 12,
+      padding: 12,
+      backgroundColor: c.surface,
+      marginTop: 8,
+      marginBottom: 8,
+      minHeight: 72,
+    },
+  }));
+
+  if (items.length === 0) return null;
+
+  return (
+    <>
+      {items.map((item) => (
+        <Card key={item.id} title={items.length > 1 ? `Read-out · ${item.title}` : 'Daily read-out'}>
+          <Text style={styles.practice}>{item.title}</Text>
+          {item.counselorAudioUrl ? <CounselorAudioPlayer audioUrl={item.counselorAudioUrl} /> : null}
+          <Text style={styles.meta}>{item.bodyText}</Text>
+          {item.respondedToday ? (
+            <Text style={styles.done}>✓ Recorded today</Text>
+          ) : (
+            <>
+              <TextField
+                style={styles.input}
+                multiline
+                placeholder="Your response — read back or reflect in your own words"
+                value={readOutTexts[item.id] ?? ''}
+                onChangeText={(value) => onChangeText(item.id, value)}
+              />
+              <Button
+                label="Submit response"
+                onPress={() => onSubmit(item.id)}
+                loading={savingId === item.id}
+              />
+              <VoiceReadOut
+                disabled={item.respondedToday}
+                onSubmitVoice={async (audioBase64) => {
+                  await onSubmitVoice(item.id, audioBase64);
+                }}
+              />
+            </>
+          )}
+        </Card>
+      ))}
+    </>
+  );
+}
+
 function SectionLabel({ children }: { children: string }) {
   const styles = useThemedStyles((c) => ({
     label: {
@@ -88,7 +158,7 @@ export default function TodayScreen() {
   const programTime = useProgramTime();
   const { practices, weekTheme, reflection } = useTodayPlan();
   const { counselorId } = useCounselorContact();
-  const { reinforcement, submitResponse, submitVoice } = useTodayReinforcement();
+  const { reinforcements, submitResponse, submitVoice } = useTodayReinforcement();
   const { blocks, updateBlockStatus, saveBlocks, submitFeedback } = useDailyCalendar();
   const { week: holisticWeek, completed: holisticCompleted, markComplete } = useHolisticWeek();
   const [holisticSaving, setHolisticSaving] = useState<HolisticActivityType | null>(null);
@@ -96,10 +166,10 @@ export default function TodayScreen() {
   const [practiceDone, setPracticeDone] = useState(false);
   const [practiceFeelingShown, setPracticeFeelingShown] = useState(false);
   const [practiceFeeling, setPracticeFeeling] = useState('');
-  const [readOutText, setReadOutText] = useState('');
+  const [readOutTexts, setReadOutTexts] = useState<Record<string, string>>({});
+  const [savingReadOutId, setSavingReadOutId] = useState<string | null>(null);
   const [workedText, setWorkedText] = useState('');
   const [didntWorkText, setDidntWorkText] = useState('');
-  const [savingReadOut, setSavingReadOut] = useState(false);
   const [savingFeedback, setSavingFeedback] = useState(false);
   const [reflectionText, setReflectionText] = useState('');
   const [reflectionSaved, setReflectionSaved] = useState(false);
@@ -188,16 +258,32 @@ export default function TodayScreen() {
     }
   };
 
-  const onSubmitReadOut = async () => {
-    if (!readOutText.trim()) return;
-    setSavingReadOut(true);
+  const onSubmitReadOut = async (reinforcementId: string) => {
+    const text = readOutTexts[reinforcementId]?.trim();
+    if (!text) return;
+    setSavingReadOutId(reinforcementId);
     try {
-      await submitResponse(readOutText.trim());
-      setReadOutText('');
+      await submitResponse(reinforcementId, text);
+      setReadOutTexts((prev) => {
+        const next = { ...prev };
+        delete next[reinforcementId];
+        return next;
+      });
     } finally {
-      setSavingReadOut(false);
+      setSavingReadOutId(null);
     }
   };
+
+  const onSubmitReadOutVoice = async (reinforcementId: string, audioBase64: string) => {
+    setSavingReadOutId(reinforcementId);
+    try {
+      await submitVoice(reinforcementId, audioBase64);
+    } finally {
+      setSavingReadOutId(null);
+    }
+  };
+
+  const pendingReadOuts = reinforcements.filter((r) => !r.respondedToday);
 
   const onSubmitFeedback = async () => {
     if (!workedText.trim() && !didntWorkText.trim()) return;
@@ -284,40 +370,14 @@ export default function TodayScreen() {
             saving={holisticSaving}
           />
 
-          {reinforcement ? (
-            <Card title="Daily read-out">
-              <Text style={styles.practice}>{reinforcement.title}</Text>
-              {reinforcement.counselorAudioUrl ? (
-                <CounselorAudioPlayer audioUrl={reinforcement.counselorAudioUrl} />
-              ) : null}
-              <Text style={styles.meta}>{reinforcement.bodyText}</Text>
-              {reinforcement.respondedToday ? (
-                <Text style={styles.done}>✓ Recorded today</Text>
-              ) : (
-                <>
-                  <TextField
-                    style={styles.input}
-                    multiline
-                    placeholder="Your response — read back or reflect in your own words"
-                    value={readOutText}
-                    onChangeText={setReadOutText}
-                  />
-                  <Button label="Submit response" onPress={() => void onSubmitReadOut()} loading={savingReadOut} />
-                  <VoiceReadOut
-                    disabled={reinforcement.respondedToday}
-                    onSubmitVoice={async (audioBase64) => {
-                      setSavingReadOut(true);
-                      try {
-                        await submitVoice(audioBase64);
-                      } finally {
-                        setSavingReadOut(false);
-                      }
-                    }}
-                  />
-                </>
-              )}
-            </Card>
-          ) : null}
+          <ReadOutCards
+            items={reinforcements}
+            readOutTexts={readOutTexts}
+            onChangeText={(id, value) => setReadOutTexts((prev) => ({ ...prev, [id]: value }))}
+            onSubmit={(id) => void onSubmitReadOut(id)}
+            onSubmitVoice={(id, audio) => void onSubmitReadOutVoice(id, audio)}
+            savingId={savingReadOutId}
+          />
 
           <Card title="Plan my day">
             <CalendarBuilder blocks={blocks} onChange={saveBlocks} />
@@ -427,22 +487,15 @@ export default function TodayScreen() {
             ) : null}
           </Card>
 
-          {!reinforcement?.respondedToday && reinforcement ? (
-            <Card title="Daily read-out">
-              <Text style={styles.practice}>{reinforcement.title}</Text>
-              {reinforcement.counselorAudioUrl ? (
-                <CounselorAudioPlayer audioUrl={reinforcement.counselorAudioUrl} />
-              ) : null}
-              <Text style={styles.meta}>{reinforcement.bodyText}</Text>
-              <TextField
-                style={styles.input}
-                multiline
-                placeholder="Your response"
-                value={readOutText}
-                onChangeText={setReadOutText}
-              />
-              <Button label="Submit response" onPress={() => void onSubmitReadOut()} loading={savingReadOut} />
-            </Card>
+          {pendingReadOuts.length > 0 ? (
+            <ReadOutCards
+              items={pendingReadOuts}
+              readOutTexts={readOutTexts}
+              onChangeText={(id, value) => setReadOutTexts((prev) => ({ ...prev, [id]: value }))}
+              onSubmit={(id) => void onSubmitReadOut(id)}
+              onSubmitVoice={(id, audio) => void onSubmitReadOutVoice(id, audio)}
+              savingId={savingReadOutId}
+            />
           ) : null}
         </>
       )}

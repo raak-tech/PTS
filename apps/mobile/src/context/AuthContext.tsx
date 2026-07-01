@@ -67,7 +67,7 @@ type AuthContextValue = {
   setPendingPhone: (phone: string | null) => void;
   checkPhone: (phone: string) => Promise<{ exists: boolean }>;
   sendOtp: (phone: string) => Promise<void>;
-  verifyOtp: (phone: string, code: string) => Promise<void>;
+  verifyOtp: (phone: string, code: string) => Promise<SessionUser>;
   completeIntake: (data: IntakeFormData) => Promise<void>;
   refreshUser: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -140,7 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await apiSendOtp(normalized);
   }, []);
 
-  const verifyOtp = useCallback(async (phone: string, code: string) => {
+  const verifyOtp = useCallback(async (phone: string, code: string): Promise<SessionUser> => {
     const normalized = normalizePhone(phone);
 
     if (USE_MOCK_AUTH) {
@@ -161,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(mockToken);
       setUser(sessionUser);
       setPendingPhone(null);
-      return;
+      return sessionUser;
     }
 
     const { token: sessionToken, user: apiUser } = await apiVerifyOtp(normalized, code);
@@ -170,6 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(sessionToken);
     setUser(sessionUser);
     setPendingPhone(null);
+    return sessionUser;
   }, []);
 
   const refreshUser = useCallback(async () => {

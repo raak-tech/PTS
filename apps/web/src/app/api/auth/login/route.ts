@@ -11,6 +11,7 @@ import {
   SESSION_MAX_AGE_SECONDS,
   verifyPassword,
 } from '@/lib/auth';
+import { isAdminUser } from '@/lib/admin';
 import { logError } from '@/lib/logger';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { getDb } from '@/db';
@@ -82,9 +83,11 @@ export async function POST(request: Request) {
     const dest =
       parsed.data.next && safeNextPath(parsed.data.next) !== '/'
         ? safeNextPath(parsed.data.next)
-        : user.role === 'provider'
-          ? '/provider'
-          : '/';
+        : isAdminUser(user)
+          ? '/admin'
+          : user.role === 'provider'
+            ? '/provider'
+            : '/';
     const response = NextResponse.redirect(new URL(dest, request.url), 303);
     response.cookies.set(createSessionCookie(sessionToken));
     return response;

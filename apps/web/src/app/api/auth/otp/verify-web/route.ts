@@ -62,7 +62,15 @@ export async function POST(request: Request) {
   }
 
   const { token } = await createUserSession(user.id);
-  const dest = safeNextPath(parsed.data.next);
+  const explicitNext = parsed.data.next?.trim();
+  const dest =
+    explicitNext && explicitNext.startsWith('/') && !explicitNext.startsWith('//')
+      ? explicitNext
+      : user.role === 'provider'
+        ? '/provider'
+        : user.role === 'admin'
+          ? '/admin'
+          : '/intake';
   const response = NextResponse.redirect(new URL(dest, request.url), 303);
   response.cookies.set(createSessionCookie(token));
   return response;

@@ -17,7 +17,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: 'com.pts.mobile',
-    versionCode: 3,
+    versionCode: 6,
     adaptiveIcon: {
       backgroundColor: '#3D4F44',
       foregroundImage: './assets/android-icon-foreground.png',
@@ -25,7 +25,7 @@ const config: ExpoConfig = {
       monochromeImage: './assets/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: false,
-    permissions: ['INTERNET', 'RECORD_AUDIO', 'RECEIVE_BOOT_COMPLETED'],
+    permissions: ['INTERNET', 'RECORD_AUDIO'],
   },
   web: {
     favicon: './assets/favicon.png',
@@ -34,16 +34,7 @@ const config: ExpoConfig = {
   plugins: [
     'expo-router',
     'expo-secure-store',
-    'expo-av',
-    [
-      'expo-notifications',
-      {
-        icon: './assets/icon.png',
-        color: '#3D4F44',
-        defaultChannel: 'default',
-        sounds: [],
-      },
-    ],
+    'expo-audio',
     [
       'expo-splash-screen',
       {
@@ -61,7 +52,7 @@ const config: ExpoConfig = {
     },
   },
   updates: {
-    url: process.env.EAS_UPDATE_URL,
+    enabled: false,
   },
 };
 

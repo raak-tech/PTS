@@ -6,23 +6,29 @@ import {
   apiGetTodayReinforcement,
   apiSaveDailyCalendar,
   apiSubmitReinforcementResponse,
-  apiSubmitVoiceReinforcementResponse,
   apiSubmitScheduleFeedback,
+  apiSubmitVoiceReinforcementResponse,
   type CalendarBlock,
   type TodayReinforcement,
 } from '@/lib/api';
 
 export function useTodayReinforcement() {
   const { token } = useAuth();
-  const [reinforcement, setReinforcement] = useState<TodayReinforcement | null>(null);
+  const [reinforcements, setReinforcements] = useState<TodayReinforcement[]>([]);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
-      const { today } = await apiGetTodayReinforcement(token);
-      setReinforcement(today);
+      const data = await apiGetTodayReinforcement(token);
+      const list =
+        data.todayReadouts && data.todayReadouts.length > 0
+          ? data.todayReadouts
+          : data.today
+            ? [data.today]
+            : [];
+      setReinforcements(list);
     } finally {
       setLoading(false);
     }
@@ -32,19 +38,26 @@ export function useTodayReinforcement() {
     void reload();
   }, [reload]);
 
-  const submitResponse = async (bodyText: string) => {
-    if (!token || !reinforcement) return;
-    await apiSubmitReinforcementResponse(token, reinforcement.id, bodyText);
+  const submitResponse = async (reinforcementId: string, bodyText: string) => {
+    if (!token) return;
+    await apiSubmitReinforcementResponse(token, reinforcementId, bodyText);
     await reload();
   };
 
-  const submitVoice = async (audioBase64: string) => {
-    if (!token || !reinforcement) return;
-    await apiSubmitVoiceReinforcementResponse(token, reinforcement.id, audioBase64);
+  const submitVoice = async (reinforcementId: string, audioBase64: string) => {
+    if (!token) return;
+    await apiSubmitVoiceReinforcementResponse(token, reinforcementId, audioBase64);
     await reload();
   };
 
-  return { reinforcement, loading, submitResponse, submitVoice, reload };
+  return {
+    reinforcements,
+    reinforcement: reinforcements[0] ?? null,
+    loading,
+    submitResponse,
+    submitVoice,
+    reload,
+  };
 }
 
 export function useDailyCalendar() {

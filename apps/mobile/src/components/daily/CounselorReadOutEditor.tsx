@@ -56,7 +56,7 @@ export function CounselorReadOutEditor({
         placeholder="Read-out text"
         multiline
       />
-      <Button label={activeId ? 'Save changes' : 'Assign read-out'} onPress={() => void onSave()} loading={saving} />
+      <Button label={activeId ? 'Save changes' : 'Add read-out'} onPress={() => void onSave()} loading={saving} />
       <Button
         label={recording ? 'Stop & save recording' : 'Record counselor message'}
         variant="secondary"

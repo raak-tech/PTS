@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '../db';
 import { intakeResponses } from '../db/schema';
 import { getUserFromCookieHeader } from '../lib/session';
+import { isAdminUser } from '@/lib/admin';
 import { IntakeClient } from './IntakeClient';
 import { LandingPage } from './LandingPage';
 
@@ -20,6 +21,8 @@ export default async function HomePage() {
 
   // Not logged in — show the landing page
   if (!user) return <LandingPage />;
+
+  if (isAdminUser(user)) redirect('/admin');
 
   // Counselors go straight to their console
   if (user.role === 'provider') redirect('/provider');

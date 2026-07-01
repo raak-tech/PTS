@@ -1,9 +1,15 @@
-import { Audio } from 'expo-av';
+import {
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  useAudioRecorder,
+  useAudioRecorderState,
+} from 'expo-audio';
 import * as FileSystem from 'expo-file-system';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Text } from 'react-native';
+import { Text, Pressable } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -15,6 +21,7 @@ import { API_URL } from '@/config';
 import {
   apiApplyWeek,
   apiCreateReinforcement,
+  apiDeleteReinforcement,
   apiGetClientReinforcements,
   apiGetPlan,
   apiGetProviderEngagement,
@@ -24,6 +31,14 @@ import {
   apiUpdateReinforcement,
   parseGeneratedPlan,
 } from '@/lib/api';
+
+type ReadOutRow = {
+  id: string;
+  title: string;
+  bodyText: string;
+  hasCounselorAudio?: boolean;
+  isActive?: boolean;
+};
 
 export default function ProviderClientScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,28 +55,42 @@ export default function ProviderClientScreen() {
   } | null>(null);
   const [holisticPreview, setHolisticPreview] = useState<string[]>([]);
   const [weekly, setWeekly] = useState<string[]>([]);
+  const [readOutRows, setReadOutRows] = useState<ReadOutRow[]>([]);
   const [title, setTitle] = useState('');
   const [bodyText, setBodyText] = useState('');
   const [activeReadOutId, setActiveReadOutId] = useState<string | null>(null);
   const [hasCounselorAudio, setHasCounselorAudio] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(recorder);
   const [regenWeek, setRegenWeek] = useState(false);
   const [weekDraft, setWeekDraft] = useState<{ week: number; theme: string; focus: string } | null>(null);
   const [weekMessage, setWeekMessage] = useState('');
   const styles = useThemedStyles((c) => ({
     body: { fontSize: 14, color: c.muted, lineHeight: 22 },
-    input: {
+    rowBtn: {
+      padding: 10,
+      borderRadius: 10,
       borderWidth: 1,
       borderColor: c.border,
-      borderRadius: 12,
-      padding: 12,
-      minHeight: 72,
+      marginBottom: 8,
       backgroundColor: c.surface,
-      marginTop: 8,
     },
+    rowBtnActive: {
+      borderColor: c.primary,
+      backgroundColor: c.bg,
+    },
+    rowTitle: { fontSize: 14, fontWeight: '600' as const, color: c.text },
+    rowMeta: { fontSize: 12, color: c.muted, marginTop: 4 },
   }));
+
+  const loadReadOuts = async () => {
+    if (!token || !id) return [];
+    const data = await apiGetClientReinforcements(token, id);
+    const list = data.reinforcements;
+    setReadOutRows(list);
+    return list;
+  };
 
   useEffect(() => {
     if (!token || !id) return;
@@ -107,8 +136,8 @@ export default function ProviderClientScreen() {
     void apiGetWeeklySummary(token, id).then((data) => {
       setWeekly(data.summary.scheduleInsights.slice(0, 3));
     });
-    void apiGetClientReinforcements(token, id).then((data) => {
-      const active = data.reinforcements.find((r) => r.isActive);
+    void loadReadOuts().then((list) => {
+      const active = list.find((r) => r.isActive) ?? list[0];
       if (!active) return;
       setActiveReadOutId(active.id);
       setTitle(active.title);
@@ -116,6 +145,36 @@ export default function ProviderClientScreen() {
       setHasCounselorAudio(Boolean(active.hasCounselorAudio));
     });
   }, [token, id]);
+
+  const selectReadOut = (row: ReadOutRow) => {
+    setActiveReadOutId(row.id);
+    setTitle(row.title);
+    setBodyText(row.bodyText);
+    setHasCounselorAudio(Boolean(row.hasCounselorAudio));
+  };
+
+  const startNewReadOut = () => {
+    setActiveReadOutId(null);
+    setTitle('');
+    setBodyText('');
+    setHasCounselorAudio(false);
+  };
+
+  const removeReadOut = async () => {
+    if (!token || !activeReadOutId) return;
+    setSaving(true);
+    try {
+      await apiDeleteReinforcement(token, activeReadOutId);
+      const list = await loadReadOuts();
+      if (list.length > 0) {
+        selectReadOut(list[0]);
+      } else {
+        startNewReadOut();
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const saveReadOut = async (audioBase64?: string, clearAudio?: boolean) => {
     if (!token || !id || !title.trim() || !bodyText.trim()) return;
@@ -130,6 +189,7 @@ export default function ProviderClientScreen() {
           clearCounselorAudio: clearAudio,
         });
         setHasCounselorAudio(res.hasCounselorAudio);
+        await loadReadOuts();
         return;
       }
       const res = await apiCreateReinforcement(token, {
@@ -142,31 +202,27 @@ export default function ProviderClientScreen() {
       });
       setActiveReadOutId(res.id);
       setHasCounselorAudio(Boolean(audioBase64));
+      await loadReadOuts();
     } finally {
       setSaving(false);
     }
   };
 
   const onRecord = async () => {
-    if (isRecording && recording) {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      setRecording(null);
-      setIsRecording(false);
+    if (recorderState.isRecording) {
+      await recorder.stop();
+      const uri = recorder.uri;
       if (!uri) return;
       const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
       await saveReadOut(base64);
       await FileSystem.deleteAsync(uri, { idempotent: true });
       return;
     }
-    const { granted } = await Audio.requestPermissionsAsync();
+    const { granted } = await requestRecordingPermissionsAsync();
     if (!granted) return;
-    await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-    const next = new Audio.Recording();
-    await next.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-    await next.startAsync();
-    setRecording(next);
-    setIsRecording(true);
+    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+    await recorder.prepareToRecordAsync();
+    recorder.record();
   };
 
   const onGenerateWeek2 = async () => {
@@ -243,14 +299,31 @@ export default function ProviderClientScreen() {
         </Card>
       ) : null}
 
-      <Card title="Daily read-out">
+      <Card title={`Daily read-outs (${readOutRows.length})`}>
+        <Button label="+ Add read-out" variant="secondary" onPress={startNewReadOut} />
+        {readOutRows.map((row) => (
+          <Pressable
+            key={row.id}
+            style={[styles.rowBtn, row.id === activeReadOutId ? styles.rowBtnActive : null]}
+            onPress={() => selectReadOut(row)}
+          >
+            <Text style={styles.rowTitle}>{row.title}</Text>
+            <Text style={styles.rowMeta}>
+              {row.isActive ? 'Active this week' : 'Scheduled / past'}
+              {row.hasCounselorAudio ? ' · audio' : ''}
+            </Text>
+          </Pressable>
+        ))}
+        {activeReadOutId ? (
+          <Button label="Remove selected" variant="secondary" onPress={() => void removeReadOut()} disabled={saving} />
+        ) : null}
         <CounselorReadOutEditor
           activeId={activeReadOutId}
           title={title}
           bodyText={bodyText}
           hasAudio={hasCounselorAudio}
           saving={saving}
-          recording={isRecording}
+          recording={recorderState.isRecording}
           onChangeTitle={setTitle}
           onChangeBody={setBodyText}
           onSave={saveReadOut}

@@ -7,7 +7,11 @@ export default function ProviderLayout() {
   const { user, loading } = useAuth();
   const { colors } = useTheme();
 
-  if (!loading && (!user || user.role !== 'provider')) {
+  if (loading) {
+    return null;
+  }
+
+  if (!user || user.role !== 'provider') {
     return <Redirect href="/(auth)/login" />;
   }
 
