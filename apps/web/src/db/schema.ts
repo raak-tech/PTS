@@ -134,6 +134,7 @@ export const messages = pgTable("messages", {
   fromUserId: text("from_user_id").notNull(),
   toUserId: text("to_user_id").notNull(),
   body: text("body").notNull(),
+  isUrgent: boolean("is_urgent").notNull().default(false),
   readAt: timestamp("read_at", { mode: "date", withTimezone: true }),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
@@ -149,6 +150,7 @@ export const plans = pgTable("plans", {
   counselorId: text("counselor_id"),
   approvedAt: timestamp("approved_at", { mode: "date", withTimezone: true }),
   approvedBy: text("approved_by"),
+  programAnchorDate: text("program_anchor_date"),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
 
@@ -157,6 +159,9 @@ export const clientCounselor = pgTable("client_counselor", {
   clientId: text("client_id").primaryKey(),
   counselorId: text("counselor_id").notNull(),
   assignedAt: timestamp("assigned_at", { mode: "date", withTimezone: true }).notNull(),
+  scheduleRequired: boolean("schedule_required").notNull().default(false),
+  scheduleRequiredAt: timestamp("schedule_required_at", { mode: "date", withTimezone: true }),
+  scheduleCompletedAt: timestamp("schedule_completed_at", { mode: "date", withTimezone: true }),
 });
 
 // Admin notes flagged on a specific client for the assigned counselor to see and address.
@@ -165,6 +170,7 @@ export const counselorNotes = pgTable("counselor_client_notes", {
   clientId: text("client_id").notNull(),
   authorId: text("author_id").notNull(),
   body: text("body").notNull(),
+  isUrgent: boolean("is_urgent").notNull().default(false),
   resolvedAt: timestamp("resolved_at", { mode: "date", withTimezone: true }),
   resolvedBy: text("resolved_by"),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
@@ -275,8 +281,9 @@ export const planWeeks = pgTable("plan_weeks", {
   planId: text("plan_id").notNull(),
   weekNumber: integer("week_number").notNull(),
   content: text("content").notNull(), // JSON — one week from GeneratedPlan.weeks[]
-  status: text("status").notNull().default("draft"), // 'draft' | 'edited' | 'approved'
+  status: text("status").notNull().default("draft"), // 'draft' | 'edited' | 'approved' | 'released'
   approvedAt: timestamp("approved_at", { mode: "date", withTimezone: true }),
+  releasedAt: timestamp("released_at", { mode: "date", withTimezone: true }),
   editedAt: timestamp("edited_at", { mode: "date", withTimezone: true }),
   counselorId: text("counselor_id"),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),

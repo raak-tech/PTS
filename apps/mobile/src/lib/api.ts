@@ -117,22 +117,43 @@ export async function apiCheckPhone(phone: string) {
   );
 }
 
-export async function apiSendOtp(phone: string) {
+export async function apiSendOtp(phone: string, dataStorageConsent: boolean) {
   return parseJson<{ sent: boolean }>(
     await fetchWithTimeout(`${API_URL}/api/auth/otp/send`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone }),
+      body: JSON.stringify({ phone, dataStorageConsent }),
     }),
   );
 }
 
-export async function apiVerifyOtp(phone: string, code: string) {
+export async function apiVerifyOtp(phone: string, code: string, dataStorageConsent?: boolean) {
   return parseJson<{ token: string; user: SessionUser }>(
     await fetchWithTimeout(`${API_URL}/api/auth/otp/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, code }),
+      body: JSON.stringify({ phone, code, dataStorageConsent }),
+    }),
+  );
+}
+
+export async function apiGetClientSchedule(token: string) {
+  return parseJson<{ scheduleRequired: boolean }>(
+    await fetchWithTimeout(`${API_URL}/api/client/schedule`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
+}
+
+export async function apiSaveArtifact(
+  token: string,
+  payload: { title: string; bodyText: string; kind?: string },
+) {
+  return parseJson<{ ok: boolean }>(
+    await fetchWithTimeout(`${API_URL}/api/support/artifacts`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     }),
   );
 }

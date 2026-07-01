@@ -1,25 +1,29 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
-import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 
 import { getDb } from '@/db';
 import { counselorNotes, intakeResponses, messages, plans, users } from '@/db/schema';
+import { formatClientLabel } from '@/lib/provider-display';
 import { getUserFromCookieHeader } from '@/lib/session';
+import { ProviderClientsListClient } from '@/components/provider/ProviderClientsListClient';
 
 export const metadata: Metadata = { title: 'Clients | Counselor' };
 
-type ClientRow = { id: string; email: string; displayName: string | null; phone: string | null; createdAt: Date };
-type PlanRow = { userId: string; status: string; createdAt: Date };
-type IntakeFlagRow = { userId: string; hasRedFlags: boolean; isSafe: boolean };
-type UnreadRow = { fromUserId: string };
-type NoteCountRow = { clientId: string };
-
 export default async function ProviderClientsPage() {
   const user = await getUserFromCookieHeader((await headers()).get('cookie'));
+  if (!user) redirect('/login/mobile?next=/provider/clients');
+
   const db = getDb();
 
-  const clients = (await db
+  const clients: {
+    id: string;
+    email: string;
+    displayName: string | null;
+    phone: string | null;
+    createdAt: Date;
+  }[] = await db
     .select({
       id: users.id,
       email: users.email,
@@ -29,115 +33,89 @@ export default async function ProviderClientsPage() {
     })
     .from(users)
     .where(eq(users.role, 'client'))
-    .orderBy(desc(users.createdAt))) as ClientRow[];
+    .orderBy(desc(users.createdAt));
 
   const clientIds = clients.map((c) => c.id);
 
-  const allPlans: PlanRow[] =
+  const allPlans: { userId: string; status: string; createdAt: Date }[] =
     clientIds.length > 0
-      ? ((await db
-          .select({ userId: plans.userId, status: plans.status, createdAt: plans.createdAt })
-          .from(plans)) as PlanRow[])
+      ? await db.select({ userId: plans.userId, status: plans.status, createdAt: plans.createdAt }).from(plans)
       : [];
   const latestStatusByClient: Record<string, string> = {};
   for (const p of allPlans.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())) {
     latestStatusByClient[p.userId] = p.status;
   }
 
-  const intakeFlags: IntakeFlagRow[] =
+  const intakeFlags: {
+    userId: string;
+    hasRedFlags: boolean;
+    isSafe: boolean;
+  }[] =
     clientIds.length > 0
-      ? ((await db
-          .select({ userId: intakeResponses.userId, hasRedFlags: intakeResponses.hasRedFlags, isSafe: intakeResponses.isSafe })
-          .from(intakeResponses)) as IntakeFlagRow[])
+      ? await db
+          .select({
+            userId: intakeResponses.userId,
+            hasRedFlags: intakeResponses.hasRedFlags,
+            isSafe: intakeResponses.isSafe,
+          })
+          .from(intakeResponses)
       : [];
   const flagByClient = Object.fromEntries(intakeFlags.map((i) => [i.userId, i]));
 
-  const unreadRows: UnreadRow[] = user
-    ? ((await db
+  const unreadRows = user
+    ? await db
         .select({ fromUserId: messages.fromUserId })
         .from(messages)
-        .where(and(eq(messages.toUserId, user.id), isNull(messages.readAt)))) as UnreadRow[])
+        .where(and(eq(messages.toUserId, user.id), isNull(messages.readAt)))
     : [];
   const unreadByClient: Record<string, number> = {};
   for (const row of unreadRows) {
     unreadByClient[row.fromUserId] = (unreadByClient[row.fromUserId] ?? 0) + 1;
   }
 
-  const noteRows: NoteCountRow[] =
+  const noteRows =
     clientIds.length > 0
-      ? ((await db
+      ? await db
           .select({ clientId: counselorNotes.clientId })
           .from(counselorNotes)
-          .where(isNull(counselorNotes.resolvedAt))) as NoteCountRow[])
+          .where(isNull(counselorNotes.resolvedAt))
       : [];
   const noteCountByClient: Record<string, number> = {};
   for (const row of noteRows) {
     noteCountByClient[row.clientId] = (noteCountByClient[row.clientId] ?? 0) + 1;
   }
 
-  const enriched = clients.map((client) => {
+  const rows = clients.map((client) => {
     const hasRedFlag = Boolean(flagByClient[client.id]?.hasRedFlags) || flagByClient[client.id]?.isSafe === false;
     const unreadCount = unreadByClient[client.id] ?? 0;
     const noteCount = noteCountByClient[client.id] ?? 0;
     const planStatus = latestStatusByClient[client.id] ?? 'none';
     const needsAction = hasRedFlag || unreadCount > 0 || noteCount > 0;
-    return { ...client, hasRedFlag, unreadCount, noteCount, planStatus, needsAction };
+    return {
+      id: client.id,
+      label: formatClientLabel(client),
+      phone: client.phone,
+      registered: client.createdAt.toLocaleDateString(),
+      planStatus,
+      hasRedFlag,
+      unreadCount,
+      noteCount,
+      needsAction,
+    };
   });
 
-  enriched.sort((a, b) => {
+  rows.sort((a, b) => {
     if (a.needsAction !== b.needsAction) return a.needsAction ? -1 : 1;
-    return b.createdAt.getTime() - a.createdAt.getTime();
+    return 0;
   });
 
-  const actionCount = enriched.filter((c) => c.needsAction).length;
+  const actionCount = rows.filter((c) => c.needsAction).length;
 
   return (
-    <>
-      <h1 className="provider-page-title">Clients</h1>
-      <p className="provider-page-subtitle">
-        {actionCount} need action · {clients.length} total
-      </p>
-
-      {clients.length === 0 ? (
-        <section className="provider-panel">
-          <p style={{ margin: 0 }}>No clients have registered yet.</p>
-        </section>
-      ) : (
-        <div style={{ display: 'grid', gap: 12 }}>
-          {enriched.map((client) => (
-            <article key={client.id} className="provider-panel">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
-                <h2 style={{ margin: '0 0 8px', fontSize: '1.05rem' }}>{displayLabel(client)}</h2>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {client.hasRedFlag ? <span className="provider-tag provider-tag--danger">Red flags</span> : null}
-                  {client.unreadCount > 0 ? (
-                    <span className="provider-tag provider-tag--warn">{client.unreadCount} unread</span>
-                  ) : null}
-                  {client.noteCount > 0 ? (
-                    <span className="provider-tag provider-tag--warn">
-                      {client.noteCount} admin note{client.noteCount !== 1 ? 's' : ''}
-                    </span>
-                  ) : null}
-                  {!client.needsAction ? <span className="provider-tag provider-tag--ok">On track</span> : null}
-                </div>
-              </div>
-              <p style={{ margin: '0 0 4px', color: 'var(--muted)', fontSize: '0.875rem' }}>
-                Registered {client.createdAt.toLocaleDateString()} · Plan: {client.planStatus}
-              </p>
-              <Link href={`/provider/clients/${client.id}`} className="actionLink secondary" style={{ marginTop: 12 }}>
-                Open workspace →
-              </Link>
-            </article>
-          ))}
-        </div>
-      )}
-    </>
+    <ProviderClientsListClient
+      clients={rows}
+      actionCount={actionCount}
+      totalCount={rows.length}
+    />
   );
-}
-
-function displayLabel(client: { displayName: string | null; phone: string | null; email: string }) {
-  if (client.displayName) return client.displayName;
-  if (client.phone) return client.phone.replace('+91', '+91 ');
-  const [local, domain] = client.email.split('@');
-  return domain === 'phone.pts.local' ? `+${local.replace(/^91/, '91 ')}` : `${local[0]}***@${domain}`;
 }

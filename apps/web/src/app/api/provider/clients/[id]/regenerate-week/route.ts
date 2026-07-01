@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { getDb } from '@/db';
 import { intakeResponses, plans } from '@/db/schema';
-import { assertCounselorForClient } from '@/lib/client-access';
+import { assertProviderCanAccessClient } from '@/lib/client-access';
 import type { GeneratedPlan } from '@/lib/plan-generator';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
@@ -27,7 +27,7 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     const { id: clientId } = await context.params;
-    if (!(await assertCounselorForClient(user.id, clientId))) {
+    if (!(await assertProviderCanAccessClient(user.id, clientId))) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
 

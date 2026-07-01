@@ -6,6 +6,7 @@ import { getDb } from '@/db';
 import { planWeeks, plans, users } from '@/db/schema';
 import { sendPushToUser } from '@/lib/expo-push';
 import { logError } from '@/lib/logger';
+import { toDateIso } from '@/lib/program-calendar';
 import { getUserFromRequest } from '@/lib/session';
 
 function unauthorized() {
@@ -134,10 +135,22 @@ export async function POST(
     if (existing.length > 0) {
       await db
         .update(planWeeks)
-        .set({ status: 'approved', approvedAt: now, counselorId: user.id })
+        .set({
+          status: 'approved',
+          approvedAt: now,
+          releasedAt: now,
+          counselorId: user.id,
+        })
         .where(and(eq(planWeeks.planId, planId), eq(planWeeks.weekNumber, weekNum)));
     } else {
       return NextResponse.json({ error: 'week_not_found' }, { status: 404 });
+    }
+
+    if (weekNum === 1) {
+      await db
+        .update(plans)
+        .set({ programAnchorDate: toDateIso(now) })
+        .where(eq(plans.id, planId));
     }
 
     // Count how many weeks are now approved for this plan

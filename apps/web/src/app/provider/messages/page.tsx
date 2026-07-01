@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { and, eq, ne, or } from 'drizzle-orm';
 
 import { getDb } from '@/db';
-import { clientCounselor, counselorProfiles, messages, users } from '@/db/schema';
+import { clientCounselor, messages, users } from '@/db/schema';
+import { formatClientLabel } from '@/lib/provider-display';
 import { getUserFromCookieHeader } from '@/lib/session';
 import { MessagesClient } from '@/app/messages/MessagesClient';
 
@@ -15,8 +17,12 @@ export default async function ProviderMessagesPage({
   searchParams?: Promise<{ with?: string }>;
 }) {
   const user = await getUserFromCookieHeader((await headers()).get('cookie'));
-  const params = (await Promise.resolve(searchParams ?? {})) as Record<string, string | undefined>;
-  const preselectedId = params['with'];
+  if (!user || user.role !== 'provider') {
+    redirect('/login/mobile?next=/provider/clients');
+  }
+
+  const params = await searchParams;
+  const preselectedId = params?.with;
 
   const db = getDb();
   type ContactRow = {
@@ -24,20 +30,26 @@ export default async function ProviderMessagesPage({
     email: string;
     role: string;
     displayName: string | null;
-    calendlyUrl?: string | null;
+    phone: string | null;
   };
 
   const messaged = (await db
-    .selectDistinct({ id: users.id, email: users.email, role: users.role, displayName: users.displayName })
+    .selectDistinct({
+      id: users.id,
+      email: users.email,
+      role: users.role,
+      displayName: users.displayName,
+      phone: users.phone,
+    })
     .from(users)
     .innerJoin(
       messages,
       or(
-        and(eq(messages.fromUserId, user!.id), eq(messages.toUserId, users.id)),
-        and(eq(messages.toUserId, user!.id), eq(messages.fromUserId, users.id)),
+        and(eq(messages.fromUserId, user.id), eq(messages.toUserId, users.id)),
+        and(eq(messages.toUserId, user.id), eq(messages.fromUserId, users.id)),
       ),
     )
-    .where(ne(users.id, user!.id))) as ContactRow[];
+    .where(ne(users.id, user.id))) as ContactRow[];
 
   const messagedIds = new Set(messaged.map((c) => c.id));
   let allContacts: ContactRow[] = [...messaged];
@@ -45,12 +57,18 @@ export default async function ProviderMessagesPage({
   const assignments = await db
     .select({ clientId: clientCounselor.clientId })
     .from(clientCounselor)
-    .where(eq(clientCounselor.counselorId, user!.id));
+    .where(eq(clientCounselor.counselorId, user.id));
 
   for (const a of assignments) {
     if (!messagedIds.has(a.clientId)) {
       const [client] = (await db
-        .select({ id: users.id, email: users.email, role: users.role, displayName: users.displayName })
+        .select({
+          id: users.id,
+          email: users.email,
+          role: users.role,
+          displayName: users.displayName,
+          phone: users.phone,
+        })
         .from(users)
         .where(eq(users.id, a.clientId))
         .limit(1)) as ContactRow[];
@@ -60,22 +78,35 @@ export default async function ProviderMessagesPage({
 
   if (preselectedId && !allContacts.find((c) => c.id === preselectedId)) {
     const [extra] = (await db
-      .select({ id: users.id, email: users.email, role: users.role, displayName: users.displayName })
+      .select({
+        id: users.id,
+        email: users.email,
+        role: users.role,
+        displayName: users.displayName,
+        phone: users.phone,
+      })
       .from(users)
-      .where(eq(users.id, preselectedId))
+      .where(and(eq(users.id, preselectedId), eq(users.role, 'client')))
       .limit(1)) as ContactRow[];
     if (extra) allContacts = [extra, ...allContacts];
   }
 
+  const contacts = allContacts.map((c) => ({
+    id: c.id,
+    email: c.email,
+    role: c.role,
+    displayName: formatClientLabel(c),
+  }));
+
   return (
     <>
       <h1 className="provider-page-title">Messages</h1>
-      <p className="provider-page-subtitle">Secure threads with your assigned clients.</p>
+      <p className="provider-page-subtitle">Secure threads with your clients.</p>
       <MessagesClient
-        currentUserId={user!.id}
-        currentUserRole={user!.role}
-        contacts={allContacts}
-        hasContacts={allContacts.length > 0}
+        currentUserId={user.id}
+        currentUserRole={user.role}
+        contacts={contacts}
+        hasContacts={contacts.length > 0}
         preselectedId={preselectedId}
       />
     </>

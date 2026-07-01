@@ -10,6 +10,7 @@ import { isValidIndianMobile, normalizePhone } from '@/lib/phone';
 
 const schema = z.object({
   phone: z.string().min(8).max(20),
+  dataStorageConsent: z.literal(true),
 });
 
 export async function POST(request: Request) {

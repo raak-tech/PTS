@@ -66,8 +66,8 @@ type AuthContextValue = {
   pendingPhone: string | null;
   setPendingPhone: (phone: string | null) => void;
   checkPhone: (phone: string) => Promise<{ exists: boolean }>;
-  sendOtp: (phone: string) => Promise<void>;
-  verifyOtp: (phone: string, code: string) => Promise<SessionUser>;
+  sendOtp: (phone: string, dataStorageConsent: boolean) => Promise<void>;
+  verifyOtp: (phone: string, code: string, dataStorageConsent?: boolean) => Promise<SessionUser>;
   completeIntake: (data: IntakeFormData) => Promise<void>;
   refreshUser: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -131,16 +131,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { exists: result.exists };
   }, []);
 
-  const sendOtp = useCallback(async (phone: string) => {
+  const sendOtp = useCallback(async (phone: string, dataStorageConsent: boolean) => {
     const normalized = normalizePhone(phone);
     if (USE_MOCK_AUTH) {
       await new Promise((r) => setTimeout(r, 400));
       return;
     }
-    await apiSendOtp(normalized);
+    await apiSendOtp(normalized, dataStorageConsent);
   }, []);
 
-  const verifyOtp = useCallback(async (phone: string, code: string): Promise<SessionUser> => {
+  const verifyOtp = useCallback(async (phone: string, code: string, dataStorageConsent?: boolean): Promise<SessionUser> => {
     const normalized = normalizePhone(phone);
 
     if (USE_MOCK_AUTH) {
@@ -164,12 +164,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return sessionUser;
     }
 
-    const { token: sessionToken, user: apiUser } = await apiVerifyOtp(normalized, code);
+    const { token: sessionToken, user: apiUser } = await apiVerifyOtp(normalized, code, dataStorageConsent);
     const sessionUser = mapApiUser(apiUser);
     await persistSession(sessionToken, sessionUser);
     setToken(sessionToken);
     setUser(sessionUser);
     setPendingPhone(null);
+    try {
+      const { scheduleDailyReminders, registerPushTokenWithServer } = await import('@/lib/localNotifications');
+      await scheduleDailyReminders();
+      await registerPushTokenWithServer(sessionToken);
+    } catch {
+      /* optional */
+    }
     return sessionUser;
   }, []);
 

@@ -61,6 +61,10 @@ export async function POST(request: Request) {
     return errorRedirect(request, 'not-registered', parsed.data.phone, parsed.data.next);
   }
 
+  if (user.role === 'client') {
+    return errorRedirect(request, 'client-mobile-only', parsed.data.phone, parsed.data.next);
+  }
+
   const { token } = await createUserSession(user.id);
   const explicitNext = parsed.data.next?.trim();
   const dest =

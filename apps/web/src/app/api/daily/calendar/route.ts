@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getDb } from '@/db';
-import { dailyCalendarEntries } from '@/db/schema';
+import { dailyCalendarEntries, clientCounselor } from '@/db/schema';
 import { assertCounselorForClient } from '@/lib/client-access';
 import { localDateIso, parseCalendarBlocks, type CalendarBlock } from '@/lib/daily-layer';
 import { logError } from '@/lib/logger';
@@ -108,6 +108,13 @@ export async function PUT(request: Request) {
         blocks: JSON.stringify(blocks),
         updatedAt: now,
       });
+    }
+
+    if (blocks.length > 0) {
+      await db
+        .update(clientCounselor)
+        .set({ scheduleCompletedAt: now })
+        .where(eq(clientCounselor.clientId, user.id));
     }
 
     return NextResponse.json({ ok: true });

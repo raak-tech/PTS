@@ -14,6 +14,10 @@ type EngagementRow = {
   calendarBlocksDone: number;
   holisticDone?: number;
   holisticTotal?: number;
+  checkInDone?: boolean;
+  assignedTaskCount?: number;
+  completedTaskCount?: number;
+  completionPct?: number;
 };
 
 type WeeklySummary = {
@@ -32,7 +36,7 @@ type WeekDraft = {
   counselorNote: string;
   reinforcementTemplate?: { title: string; bodyText: string };
   yogaTrial?: { principle: string };
-  musicMoment?: { playlist?: { title: string } };
+  musicMoment?: { playlist?: { title: string; purpose?: string } };
 };
 
 type WeekStatus = 'draft' | 'edited' | 'approved';
@@ -117,19 +121,29 @@ export function ProviderClientWorkspaceClient({
   const [notes, setNotes] = useState<CounselorNote[]>([]);
   const [resolvingNoteId, setResolvingNoteId] = useState<string | null>(null);
   const [recentMessages, setRecentMessages] = useState<MessagePreview[]>([]);
+  const [scheduleRequired, setScheduleRequired] = useState(false);
+  const [scheduleCompletedAt, setScheduleCompletedAt] = useState<string | null>(null);
+  const [togglingSchedule, setTogglingSchedule] = useState(false);
+  const [currentWeekContent, setCurrentWeekContent] = useState<WeekDraft | null>(null);
 
   const approvedCount = Object.values(weekStatuses).filter((s) => s === 'approved').length;
 
   useEffect(() => {
     void Promise.all([
-      fetch('/api/provider/engagement', { credentials: 'include' }).then((r) => r.json()),
+      fetch(`/api/provider/engagement?clientId=${encodeURIComponent(clientId)}`, { credentials: 'include' }).then(
+        (r) => r.json(),
+      ),
+      fetch(`/api/provider/clients/${clientId}/schedule`, { credentials: 'include' }).then((r) => r.json()),
       fetch(`/api/plans?userId=${encodeURIComponent(clientId)}`, { credentials: 'include' }).then((r) => r.json()),
       fetch(`/api/provider/clients/${clientId}/weekly-summary`, { credentials: 'include' }).then((r) => r.json()),
       fetch(`/api/provider/clients/${clientId}/notes`, { credentials: 'include' }).then((r) => r.json()),
       fetch(`/api/messages?with=${encodeURIComponent(clientId)}`, { credentials: 'include' }).then((r) => r.json()),
-    ]).then(([engagementData, planData, weeklyData, notesData, messagesData]) => {
-      const row = (engagementData.clients as EngagementRow[] | undefined)?.find((c) => c.clientId === clientId);
+    ]).then(([engagementData, scheduleData, planData, weeklyData, notesData, messagesData]) => {
+      const row = (engagementData.clients as EngagementRow[] | undefined)?.[0];
       if (row) setEngagement(row);
+
+      if (scheduleData.scheduleRequired) setScheduleRequired(true);
+      if (scheduleData.scheduleCompletedAt) setScheduleCompletedAt(scheduleData.scheduleCompletedAt as string);
 
       if (planData.plan) {
         if (!planId && planData.plan.id) setPlanId(planData.plan.id as string);
@@ -137,10 +151,14 @@ export function ProviderClientWorkspaceClient({
           try {
             const parsed = JSON.parse(planData.plan.generatedContent as string) as {
               clientSummary?: string;
-              weeks?: { reinforcementTemplate?: { title: string; bodyText: string } }[];
+              weeks?: WeekDraft[];
             };
             if (parsed.clientSummary) setSummary(parsed.clientSummary);
-            const template = parsed.weeks?.[0]?.reinforcementTemplate;
+            const approvedWeek = Object.entries(weekStatuses).find(([, s]) => s === 'approved')?.[0];
+            const weekIdx = approvedWeek ? Number(approvedWeek) - 1 : 0;
+            const week = parsed.weeks?.[weekIdx] ?? parsed.weeks?.[0];
+            if (week) setCurrentWeekContent(week);
+            const template = week?.reinforcementTemplate ?? parsed.weeks?.[0]?.reinforcementTemplate;
             if (template) {
               setTemplateTitle(template.title);
               setTemplateBody(template.bodyText);
@@ -178,6 +196,24 @@ export function ProviderClientWorkspaceClient({
 
   const unresolvedNotes = notes.filter((n) => !n.resolvedAt);
 
+  const onToggleSchedule = async () => {
+    setTogglingSchedule(true);
+    try {
+      const res = await fetch(`/api/provider/clients/${clientId}/schedule`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ required: !scheduleRequired }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setScheduleRequired(Boolean(data.scheduleRequired));
+      }
+    } finally {
+      setTogglingSchedule(false);
+    }
+  };
+
   const onRegenerateWeek = async () => {
     setRegenWeek(true);
     setMessage('');
@@ -195,7 +231,8 @@ export function ProviderClientWorkspaceClient({
       clearTimeout(timer);
       const data = await res.json();
       if (!res.ok) {
-        setMessage(data.detail ?? data.error ?? 'Week generation failed');
+        const err = data.error === 'forbidden' ? 'Not linked to this client yet.' : data.detail ?? data.error ?? 'Week generation failed';
+        setMessage(err);
         return;
       }
       setWeekSuggestions(data.suggestions ?? []);
@@ -414,24 +451,58 @@ export function ProviderClientWorkspaceClient({
           </ul>
         </section>
 
-        {engagement ? (
-          <section className="provider-panel">
-            <h2>Today&apos;s engagement</h2>
-            <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.7 }}>
+        <section className="provider-panel">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            <h2 style={{ margin: 0 }}>Today&apos;s actions</h2>
+            {engagement?.completionPct != null && engagement.assignedTaskCount ? (
+              <span className="provider-tag provider-tag--ok">{engagement.completionPct}% complete</span>
+            ) : null}
+          </div>
+          {engagement && engagement.assignedTaskCount ? (
+            <ul style={{ margin: '12px 0 0', paddingLeft: 18, lineHeight: 1.7 }}>
+              <li>
+                <strong>Check-in:</strong> {engagement.checkInDone ? '✓ done' : '○ pending'}
+              </li>
               <li>
                 <strong>Read-out:</strong>{' '}
                 {engagement.reinforcementRecordedToday ? '✓ recorded' : '○ pending'}
               </li>
               <li>
-                <strong>Calendar:</strong> {engagement.calendarBlocksDone}/{engagement.calendarBlocksTotal}{' '}
-                blocks done
-              </li>
-              <li>
                 <strong>Holistic:</strong> {engagement.holisticDone ?? 0}/{engagement.holisticTotal ?? 3}
               </li>
+              <li>
+                <strong>Calendar:</strong> {engagement.calendarBlocksDone}/{engagement.calendarBlocksTotal} blocks
+                done
+              </li>
             </ul>
-          </section>
-        ) : null}
+          ) : (
+            <p style={{ margin: '12px 0 0', color: 'var(--muted)', fontSize: 14 }}>
+              No assigned daily tasks yet — approve a plan week or add read-outs to activate tracking.
+            </p>
+          )}
+        </section>
+
+        <section className="provider-panel">
+          <h2>Daily schedule request</h2>
+          <p style={{ marginTop: 0, fontSize: 14, color: 'var(--muted)' }}>
+            One-time ask for the client to plan their day in the mobile app.
+          </p>
+          <button type="button" onClick={() => void onToggleSchedule()} disabled={togglingSchedule}>
+            {togglingSchedule
+              ? 'Saving…'
+              : scheduleRequired
+                ? 'Schedule requested (tap to cancel)'
+                : 'Ask client to plan their day'}
+          </button>
+          {scheduleRequired ? (
+            <p style={{ margin: '10px 0 0', fontSize: 13, color: 'var(--muted)' }}>
+              Status:{' '}
+              {scheduleCompletedAt
+                ? `Client filled schedule · ${new Date(scheduleCompletedAt).toLocaleString()}`
+                : 'Waiting for client to build today’s schedule'}
+            </p>
+          ) : null}
+        </section>
 
         {weekly ? (
           <section className="provider-panel">
@@ -496,6 +567,29 @@ export function ProviderClientWorkspaceClient({
       </div>
 
       <div className="provider-tab-panel" data-active={tab === 'plan'} role="tabpanel">
+        {currentWeekContent ? (
+          <section className="provider-panel">
+            <h2>Current week content</h2>
+            <p style={{ margin: '0 0 8px', fontWeight: 700 }}>
+              Week {currentWeekContent.week}: {currentWeekContent.theme}
+            </p>
+            <p style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--muted)' }}>{currentWeekContent.focus}</p>
+            {currentWeekContent.musicMoment?.playlist ? (
+              <p style={{ margin: '0 0 8px', fontSize: 14 }}>
+                <strong>Music:</strong> {currentWeekContent.musicMoment.playlist.title}
+                {currentWeekContent.musicMoment.playlist.purpose
+                  ? ` — ${currentWeekContent.musicMoment.playlist.purpose}`
+                  : ''}
+              </p>
+            ) : null}
+            {currentWeekContent.yogaTrial ? (
+              <p style={{ margin: '0 0 8px', fontSize: 14 }}>
+                <strong>Yoga trial:</strong> {currentWeekContent.yogaTrial.principle}
+              </p>
+            ) : null}
+          </section>
+        ) : null}
+
         <section className="provider-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <h2 style={{ margin: 0 }}>Week approvals</h2>

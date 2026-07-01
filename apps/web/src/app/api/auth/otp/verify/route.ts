@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getDb } from '@/db';
-import { users } from '@/db/schema';
+import { userConsents, users } from '@/db/schema';
 import { createUserSession } from '@/lib/create-session';
 import { buildMobileSessionUser } from '@/lib/mobile-user';
 import { checkOtpVerifyLimit, verifyOtpCode } from '@/lib/otp';
@@ -12,6 +12,7 @@ import { isValidIndianMobile, normalizePhone } from '@/lib/phone';
 const schema = z.object({
   phone: z.string().min(8).max(20),
   code: z.string().trim().min(4).max(8),
+  dataStorageConsent: z.boolean().optional(),
 });
 
 export async function POST(request: Request) {
@@ -43,6 +44,21 @@ export async function POST(request: Request) {
   const [user] = await db.select().from(users).where(eq(users.phone, phone)).limit(1);
   if (!user) {
     return NextResponse.json({ error: 'not-registered' }, { status: 404 });
+  }
+
+  if (parsed.data.dataStorageConsent) {
+    const now = new Date();
+    await db
+      .insert(userConsents)
+      .values({
+        userId: user.id,
+        dataStorageEnabled: true,
+        enabledAt: now,
+      })
+      .onConflictDoUpdate({
+        target: userConsents.userId,
+        set: { dataStorageEnabled: true, enabledAt: now, revokedAt: null },
+      });
   }
 
   const { token } = await createUserSession(user.id);

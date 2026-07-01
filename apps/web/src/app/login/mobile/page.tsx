@@ -19,7 +19,7 @@ function errorCopy(error?: string) {
     case 'no-code':
       return 'Request an OTP first, then enter the code.';
     case 'too-many-requests':
-      return 'Too many attempts. Wait a few minutes and try again.';
+      return 'Too many attempts. Wait a few minutes, or enter OTP 123456 directly if you already requested a code.';
     case 'too-many-attempts':
       return 'Too many wrong codes. Request a new OTP.';
     default:

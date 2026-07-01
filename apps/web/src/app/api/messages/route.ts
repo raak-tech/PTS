@@ -53,6 +53,7 @@ export async function GET(request: Request) {
 const sendSchema = z.object({
   toUserId: z.string().min(1),
   body: z.string().trim().min(1).max(4000),
+  isUrgent: z.boolean().optional(),
 });
 
 // POST /api/messages  — send a message

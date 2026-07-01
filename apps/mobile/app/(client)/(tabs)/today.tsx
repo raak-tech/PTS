@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Modal, Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -13,11 +13,12 @@ import { TextField } from '@/components/TextField';
 import { useAuth } from '@/context/AuthContext';
 import { HolisticWeekSection } from '@/components/holistic/HolisticCards';
 import { useCounselorContact, useTodayPlan } from '@/hooks/useClientData';
-import { apiGetEveningReflection, apiSubmitEveningReflection, apiSubmitDailyCheckIn, apiGetDailyCheckIn } from '@/lib/api';
+import { apiGetEveningReflection, apiSubmitEveningReflection, apiSubmitDailyCheckIn, apiGetDailyCheckIn, apiGetClientSchedule } from '@/lib/api';
 import { useDailyCalendar, useTodayReinforcement } from '@/hooks/useDailyLayer';
 import { useHolisticWeek } from '@/hooks/useHolisticWeek';
 import { useProgramTime } from '@/hooks/useProgramTime';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
+import { TodayTaskQueue, type TodayTask } from '@/components/daily/TodayTaskQueue';
 import { greetingForDayProgress } from '@/lib/appTime';
 import type { CalendarBlock, HolisticActivityType, TodayReinforcement } from '@/lib/api';
 
@@ -180,6 +181,8 @@ export default function TodayScreen() {
   const [checkInSaved, setCheckInSaved] = useState(false);
   const [savingCheckIn, setSavingCheckIn] = useState(false);
   const [yesterdayPainLevel, setYesterdayPainLevel] = useState<number | undefined>();
+  const [scheduleRequired, setScheduleRequired] = useState(false);
+  const [eveningSheetOpen, setEveningSheetOpen] = useState(false);
   const styles = useThemedStyles((c) => ({
     practice: { fontSize: 16, fontWeight: '700' as const, color: c.text },
     meta: { fontSize: 14, color: c.muted, lineHeight: 20 },
@@ -285,6 +288,54 @@ export default function TodayScreen() {
 
   const pendingReadOuts = reinforcements.filter((r) => !r.respondedToday);
 
+  useEffect(() => {
+    if (!token) return;
+    void apiGetClientSchedule(token).then((data) => {
+      setScheduleRequired(data.scheduleRequired);
+    });
+  }, [token]);
+
+  useEffect(() => {
+    if (isEvening) setEveningSheetOpen(true);
+  }, [isEvening]);
+
+  const holisticDone = useMemo(() => {
+    if (!holisticWeek) return true;
+    const checks: boolean[] = [];
+    if (holisticWeek.ayurvedaBlock) checks.push(holisticCompleted.ayurveda);
+    if (holisticWeek.yogaTrial) checks.push(holisticCompleted.yoga);
+    if (holisticWeek.musicMoment) checks.push(holisticCompleted.music);
+    return checks.length === 0 || checks.every(Boolean);
+  }, [holisticWeek, holisticCompleted]);
+
+  const readoutDone = reinforcements.length === 0 || reinforcements.every((r) => r.respondedToday);
+  const scheduleDone = blocks.length > 0;
+  const eveningFeedbackDone = Boolean(workedText.trim() || didntWorkText.trim());
+  const eveningDone = reflectionSaved && eveningFeedbackDone;
+
+  const morningTasks = useMemo((): TodayTask[] => {
+    const tasks: TodayTask[] = [
+      { id: 'checkin', label: 'Morning check-in', done: checkInSaved },
+      { id: 'holistic', label: 'Holistic focus', done: holisticDone },
+      { id: 'readout', label: 'Daily read-out', done: readoutDone },
+    ];
+    if (scheduleRequired) {
+      tasks.push({ id: 'schedule', label: 'Plan my day', done: scheduleDone });
+    }
+    tasks.push({ id: 'practice', label: "Today's practice", done: practiceDone });
+    return tasks;
+  }, [checkInSaved, holisticDone, readoutDone, scheduleRequired, scheduleDone, practiceDone]);
+
+  const eveningTasks = useMemo((): TodayTask[] => {
+    return [
+      { id: 'feedback', label: 'Scheduling feedback', done: eveningFeedbackDone },
+      { id: 'reflection', label: 'Evening reflection', done: reflectionSaved },
+      ...(pendingReadOuts.length > 0
+        ? [{ id: 'readout', label: 'Pending read-outs', done: false }]
+        : []),
+    ];
+  }, [eveningFeedbackDone, reflectionSaved, pendingReadOuts.length]);
+
   const onSubmitFeedback = async () => {
     if (!workedText.trim() && !didntWorkText.trim()) return;
     setSavingFeedback(true);
@@ -304,94 +355,95 @@ export default function TodayScreen() {
     }
   };
 
-  return (
-    <Screen
-      layout="tab"
-      title={`${greeting}${firstName ? `, ${firstName}` : ''}`}
-      subtitle={subtitle}
-    >
-      {weekTheme ? (
-        <Card title="This week">
-          <Text style={styles.meta}>{weekTheme}</Text>
-        </Card>
-      ) : null}
-
-      {!isEvening ? (
-        <>
-          {!checkInSaved && (
-            <Card title="Morning check-in">
-              <NRSFaceScale
-                value={checkInPainLevel}
-                onChange={setCheckInPainLevel}
-                yestrdayValue={yesterdayPainLevel}
-              />
-              <Text style={[styles.meta, { marginTop: 12, marginBottom: 8 }]}>Sleep quality</Text>
-              <View style={{ flexDirection: 'row' as const, gap: 8 }}>
-                {(['poor', 'ok', 'good'] as const).map((sq) => (
-                  <Text
-                    key={sq}
-                    onPress={() => setCheckInSleepQuality(sq)}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 999,
-                      borderWidth: 1,
-                      borderColor: checkInSleepQuality === sq ? styles.input.borderColor : 'var(--border)',
-                      backgroundColor: checkInSleepQuality === sq ? 'var(--bg)' : 'transparent',
-                      color: 'var(--text)',
-                      fontSize: 13,
-                      fontWeight: checkInSleepQuality === sq ? '600' as const : '400' as const,
-                    }}
-                  >
-                    {sq[0]?.toUpperCase()}{sq.slice(1)}
-                  </Text>
-                ))}
-              </View>
-              <TextField
-                style={styles.input}
-                placeholder="Your intention for today"
-                value={checkInIntention}
-                onChangeText={setCheckInIntention}
-              />
-              <Button
-                label={savingCheckIn ? 'Saving…' : 'Save morning check-in'}
-                onPress={() => void onSubmitCheckIn()}
-                loading={savingCheckIn}
-              />
-            </Card>
-          )}
-
-          <SectionLabel>Morning focus</SectionLabel>
-
+  const renderMorningTask = (id: string) => {
+    switch (id) {
+      case 'checkin':
+        return checkInSaved ? (
+          <Text style={styles.done}>✓ Morning check-in saved</Text>
+        ) : (
+          <>
+            <NRSFaceScale
+              value={checkInPainLevel}
+              onChange={setCheckInPainLevel}
+              yestrdayValue={yesterdayPainLevel}
+            />
+            <Text style={[styles.meta, { marginTop: 12, marginBottom: 8 }]}>Sleep quality</Text>
+            <View style={{ flexDirection: 'row' as const, gap: 8 }}>
+              {(['poor', 'ok', 'good'] as const).map((sq) => (
+                <Text
+                  key={sq}
+                  onPress={() => setCheckInSleepQuality(sq)}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: checkInSleepQuality === sq ? styles.input.borderColor : 'var(--border)',
+                    backgroundColor: checkInSleepQuality === sq ? 'var(--bg)' : 'transparent',
+                    color: 'var(--text)',
+                    fontSize: 13,
+                    fontWeight: checkInSleepQuality === sq ? '600' as const : '400' as const,
+                  }}
+                >
+                  {sq[0]?.toUpperCase()}
+                  {sq.slice(1)}
+                </Text>
+              ))}
+            </View>
+            <TextField
+              style={styles.input}
+              placeholder="Your intention for today"
+              value={checkInIntention}
+              onChangeText={setCheckInIntention}
+            />
+            <Button
+              label={savingCheckIn ? 'Saving…' : 'Save morning check-in'}
+              onPress={() => void onSubmitCheckIn()}
+              loading={savingCheckIn}
+            />
+          </>
+        );
+      case 'holistic':
+        return (
           <HolisticWeekSection
             week={holisticWeek}
             completed={holisticCompleted}
             onComplete={(type) => void onHolisticComplete(type)}
             saving={holisticSaving}
           />
-
+        );
+      case 'readout':
+        return (
           <ReadOutCards
             items={reinforcements}
             readOutTexts={readOutTexts}
-            onChangeText={(id, value) => setReadOutTexts((prev) => ({ ...prev, [id]: value }))}
-            onSubmit={(id) => void onSubmitReadOut(id)}
-            onSubmitVoice={(id, audio) => void onSubmitReadOutVoice(id, audio)}
+            onChangeText={(rid, value) => setReadOutTexts((prev) => ({ ...prev, [rid]: value }))}
+            onSubmit={(rid) => void onSubmitReadOut(rid)}
+            onSubmitVoice={(rid, audio) => void onSubmitReadOutVoice(rid, audio)}
             savingId={savingReadOutId}
           />
-
-          <Card title="Plan my day">
+        );
+      case 'schedule':
+        return (
+          <>
             <CalendarBuilder blocks={blocks} onChange={saveBlocks} />
             {blocks.length > 0 ? (
               <>
                 <Text style={[styles.meta, { marginTop: 16, marginBottom: 8 }]}>Mark what you did:</Text>
                 {blocks.map((block) => (
-                  <BlockRow key={block.id} block={block} onStatus={(id, status) => void updateBlockStatus(id, status)} />
+                  <BlockRow
+                    key={block.id}
+                    block={block}
+                    onStatus={(bid, status) => void updateBlockStatus(bid, status)}
+                  />
                 ))}
               </>
             ) : null}
-          </Card>
-
-          <Card title="Today's practice">
+          </>
+        );
+      case 'practice':
+        return (
+          <>
             {primaryPractice ? (
               <>
                 <Text style={styles.practice}>{primaryPractice.title}</Text>
@@ -402,42 +454,46 @@ export default function TodayScreen() {
             ) : (
               <>
                 <Text style={styles.practice}>5-minute grounding breath</Text>
-                <Text style={styles.meta}>Notice your breath without changing it. When your mind wanders, gently return.</Text>
+                <Text style={styles.meta}>
+                  Notice your breath without changing it. When your mind wanders, gently return.
+                </Text>
               </>
             )}
             {practiceDone ? (
               <Text style={styles.done}>✓ Marked done for today</Text>
             ) : (
-              <Button label="Mark practice done" onPress={() => {
-                setPracticeDone(true);
-                setPracticeFeelingShown(true);
-              }} />
-            )}
-          </Card>
-
-          {practiceFeelingShown && practiceDone && (
-            <Card title="How did this feel?">
-              <Text style={styles.meta}>Share a quick thought (optional — helps your counselor)</Text>
-              <TextField
-                style={styles.input}
-                multiline
-                placeholder="Easy, challenging, refreshing, powerful…"
-                value={practiceFeeling}
-                onChangeText={setPracticeFeeling}
-              />
               <Button
-                label="Done"
-                variant="secondary"
-                onPress={() => setPracticeFeelingShown(false)}
+                label="Mark practice done"
+                onPress={() => {
+                  setPracticeDone(true);
+                  setPracticeFeelingShown(true);
+                }}
               />
-            </Card>
-          )}
-        </>
-      ) : (
-        <>
-          <SectionLabel>Evening check-in</SectionLabel>
+            )}
+            {practiceFeelingShown && practiceDone ? (
+              <>
+                <Text style={[styles.meta, { marginTop: 12 }]}>How did this feel? (optional)</Text>
+                <TextField
+                  style={styles.input}
+                  multiline
+                  placeholder="Easy, challenging, refreshing…"
+                  value={practiceFeeling}
+                  onChangeText={setPracticeFeeling}
+                />
+              </>
+            ) : null}
+          </>
+        );
+      default:
+        return null;
+    }
+  };
 
-          <Card title="How did today go?">
+  const renderEveningTask = (id: string) => {
+    switch (id) {
+      case 'feedback':
+        return (
+          <>
             <Text style={styles.meta}>What part of today&apos;s schedule worked? What didn&apos;t?</Text>
             <TextField
               style={styles.input}
@@ -459,9 +515,11 @@ export default function TodayScreen() {
               onPress={() => void onSubmitFeedback()}
               loading={savingFeedback}
             />
-          </Card>
-
-          <Card title="Evening reflection">
+          </>
+        );
+      case 'reflection':
+        return (
+          <>
             <Text style={styles.meta}>
               {reflection ?? programTime?.eveningReflectionAvailable
                 ? 'What worked today? Take a few minutes to reflect.'
@@ -485,18 +543,74 @@ export default function TodayScreen() {
                 />
               </>
             ) : null}
-          </Card>
+          </>
+        );
+      case 'readout':
+        return (
+          <ReadOutCards
+            items={pendingReadOuts}
+            readOutTexts={readOutTexts}
+            onChangeText={(rid, value) => setReadOutTexts((prev) => ({ ...prev, [rid]: value }))}
+            onSubmit={(rid) => void onSubmitReadOut(rid)}
+            onSubmitVoice={(rid, audio) => void onSubmitReadOutVoice(rid, audio)}
+            savingId={savingReadOutId}
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
-          {pendingReadOuts.length > 0 ? (
-            <ReadOutCards
-              items={pendingReadOuts}
-              readOutTexts={readOutTexts}
-              onChangeText={(id, value) => setReadOutTexts((prev) => ({ ...prev, [id]: value }))}
-              onSubmit={(id) => void onSubmitReadOut(id)}
-              onSubmitVoice={(id, audio) => void onSubmitReadOutVoice(id, audio)}
-              savingId={savingReadOutId}
+  return (
+    <Screen
+      layout="tab"
+      title={`${greeting}${firstName ? `, ${firstName}` : ''}`}
+      subtitle={subtitle}
+    >
+      {weekTheme ? (
+        <Card title="This week">
+          <Text style={styles.meta}>{weekTheme}</Text>
+        </Card>
+      ) : null}
+
+      {!isEvening ? (
+        <TodayTaskQueue
+          tasks={morningTasks}
+          subtitle="Tap each item to open and complete"
+          renderExpanded={renderMorningTask}
+        />
+      ) : (
+        <>
+          <Card title="Evening check-in">
+            <Text style={styles.meta}>
+              {eveningDone
+                ? '✓ Evening check-in complete'
+                : 'Wrap up your day — feedback and reflection.'}
+            </Text>
+            <Button
+              label={eveningSheetOpen ? 'Close evening sheet' : 'Open evening sheet'}
+              variant="secondary"
+              onPress={() => setEveningSheetOpen((v) => !v)}
             />
-          ) : null}
+          </Card>
+          <Modal visible={eveningSheetOpen} animationType="slide" transparent>
+            <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }}>
+              <View
+                style={{
+                  maxHeight: '88%',
+                  backgroundColor: 'var(--surface)',
+                  borderTopLeftRadius: 20,
+                  borderTopRightRadius: 20,
+                  padding: 16,
+                }}
+              >
+                <Pressable onPress={() => setEveningSheetOpen(false)} style={{ alignSelf: 'flex-end', padding: 8 }}>
+                  <Text style={{ fontSize: 16, color: 'var(--muted)' }}>Close</Text>
+                </Pressable>
+                <TodayTaskQueue tasks={eveningTasks} renderExpanded={renderEveningTask} />
+              </View>
+            </View>
+          </Modal>
         </>
       )}
 

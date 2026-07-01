@@ -36,20 +36,23 @@ function errorRedirect(request: Request, message: string) {
 
 export async function POST(request: Request) {
   try {
-    const ip = request.headers.get('x-forwarded-for') ?? 'unknown';
-    const rl = checkRateLimit(`login:${ip}`);
+    const formData = await request.formData();
+    const next = formData.get('next')?.toString();
+
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    const pilotMode = ['1', 'true', 'yes'].includes(process.env.OTP_TEST_MODE?.trim().toLowerCase() ?? '');
+    const rl = pilotMode ? { limited: false } : checkRateLimit(`login:${ip}`);
     if (rl.limited) {
-      return NextResponse.json(
-        { error: 'too-many-requests' },
-        { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } },
-      );
+      const url = new URL('/login', request.url);
+      url.searchParams.set('error', 'too-many-requests');
+      if (next) url.searchParams.set('next', next);
+      return NextResponse.redirect(url, 303);
     }
 
-    const formData = await request.formData();
     const parsed = loginSchema.safeParse({
       email: formData.get('email'),
       password: formData.get('password'),
-      next: formData.get('next') || undefined,
+      next: next || undefined,
     });
 
     if (!parsed.success) {

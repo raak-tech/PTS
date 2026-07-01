@@ -44,9 +44,17 @@ export async function POST(request: Request) {
   }
 
   const db = getDb();
-  const [user] = await db.select({ id: users.id }).from(users).where(eq(users.phone, phone)).limit(1);
+  const [user] = await db
+    .select({ id: users.id, role: users.role })
+    .from(users)
+    .where(eq(users.phone, phone))
+    .limit(1);
   if (!user) {
     return redirectWith(request, { error: 'not-registered', phone: parsed.data.phone, next });
+  }
+
+  if (user.role === 'client') {
+    return redirectWith(request, { error: 'client-mobile-only', phone: parsed.data.phone, next });
   }
 
   const limit = await checkOtpSendLimit(phone);

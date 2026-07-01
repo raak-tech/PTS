@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { BrandMark } from '@/components/BrandMark';
 import { Button } from '@/components/Button';
@@ -18,6 +18,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const { checkPhone, sendOtp, setPendingPhone } = useAuth();
   const [digits, setDigits] = useState('');
+  const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [devOpen, setDevOpen] = useState(false);
@@ -36,14 +37,30 @@ export default function LoginScreen() {
     },
     error: { color: c.danger, fontSize: 14 },
     link: { textAlign: 'center' as const, color: c.muted, fontSize: 15, textDecorationLine: 'underline' as const },
-    dev: { marginTop: spacing.lg, alignItems: 'center' as const },
-    devText: { fontSize: 13, color: c.faint },
+    consentRow: { flexDirection: 'row' as const, alignItems: 'flex-start' as const, gap: 10, marginTop: 4 },
+    checkbox: {
+      width: 22,
+      height: 22,
+      borderRadius: 6,
+      borderWidth: 2,
+      borderColor: c.border,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      marginTop: 2,
+    },
+    checkboxOn: { backgroundColor: c.primary, borderColor: c.primary },
+    checkMark: { color: c.onPrimary, fontWeight: '700' as const, fontSize: 14 },
+    consentText: { flex: 1, fontSize: 13, color: c.muted, lineHeight: 19 },
     hint: { fontSize: 12, color: c.faint, textAlign: 'center' as const, lineHeight: 18 },
   }));
 
   const onContinue = async () => {
     if (!isValidIndianMobile(digits)) {
       setError('Enter a valid 10-digit mobile number.');
+      return;
+    }
+    if (!consent) {
+      setError('Please agree to data retention to continue.');
       return;
     }
     setLoading(true);
@@ -56,8 +73,8 @@ export default function LoginScreen() {
         return;
       }
       setPendingPhone(phone);
-      await sendOtp(phone);
-      router.push({ pathname: '/(auth)/otp', params: { phone } });
+      await sendOtp(phone, true);
+      router.push({ pathname: '/(auth)/otp', params: { phone, consent: '1' } });
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
       if (message === 'not-registered') {
@@ -68,7 +85,7 @@ export default function LoginScreen() {
         setError('Too many attempts. Please wait a few minutes and try again.');
       } else if (message === 'sms-failed') {
         setError('Could not send the verification code. Please try again shortly.');
-      } else if (message === 'invalid-phone') {
+      } else if (message === 'invalid-phone' || message === 'invalid') {
         setError('Enter a valid 10-digit mobile number.');
       } else if (message === 'http-404') {
         setError('This number is not registered. Contact your program administrator.');
@@ -84,7 +101,10 @@ export default function LoginScreen() {
 
   return (
     <Screen subtitle="Sign in with the mobile number registered for your program." showCrisis scroll={false}>
-      <BrandMark size="lg" />
+      <Pressable onLongPress={() => USE_MOCK_AUTH && setDevOpen(true)}>
+        <BrandMark size="lg" />
+      </Pressable>
+      <DevMenu visible={devOpen} onClose={() => setDevOpen(false)} />
 
       <View style={styles.phoneRow}>
         <Text style={styles.prefix}>+91</Text>
@@ -100,16 +120,26 @@ export default function LoginScreen() {
         />
       </View>
 
+      <Pressable style={styles.consentRow} onPress={() => setConsent((v) => !v)}>
+        <View style={[styles.checkbox, consent ? styles.checkboxOn : null]}>
+          {consent ? <Text style={styles.checkMark}>✓</Text> : null}
+        </View>
+        <Text style={styles.consentText}>
+          I agree that PTS may store my responses and reflections to support my recovery program.
+        </Text>
+      </Pressable>
+
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <Button label="Continue" onPress={onContinue} loading={loading} disabled={digits.length !== 10} />
+      <Button
+        label="Continue"
+        onPress={onContinue}
+        loading={loading}
+        disabled={digits.length !== 10 || !consent}
+      />
 
       <HitTarget onPress={() => router.push('/(auth)/safety')}>
         <Text style={styles.link}>Safety guidelines</Text>
-      </HitTarget>
-
-      <HitTarget onPress={() => setDevOpen(true)} style={styles.dev}>
-        <Text style={styles.devText}>Dev menu</Text>
       </HitTarget>
 
       <Text style={styles.hint}>
@@ -117,8 +147,6 @@ export default function LoginScreen() {
           ? 'Test client: 9876543210 · Counselor: 9123456789 · OTP: 123456'
           : 'Use a phone number registered by your program administrator.'}
       </Text>
-
-      <DevMenu visible={devOpen} onClose={() => setDevOpen(false)} />
     </Screen>
   );
 }

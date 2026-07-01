@@ -15,6 +15,11 @@ function fixedOtpCode() {
 }
 
 export async function checkOtpSendLimit(phone: string) {
+  const normalized = normalizePhone(phone);
+  if (usesFixedOtp(normalized)) {
+    return { limited: false as const };
+  }
+
   const mem = checkRateLimit(`otp-send:${phone}`, 5, 60 * 60 * 1000);
   if (mem.limited) {
     return { limited: true as const, retryAfterSeconds: mem.retryAfter ?? 60 };
@@ -25,7 +30,7 @@ export async function checkOtpSendLimit(phone: string) {
   const recent = await db
     .select({ id: otpCodes.id })
     .from(otpCodes)
-    .where(and(eq(otpCodes.phone, phone), gte(otpCodes.createdAt, since)));
+    .where(and(eq(otpCodes.phone, normalized), gte(otpCodes.createdAt, since)));
 
   if (recent.length >= 5) {
     return { limited: true as const, retryAfterSeconds: 300 };
@@ -35,6 +40,11 @@ export async function checkOtpSendLimit(phone: string) {
 }
 
 export async function checkOtpVerifyLimit(phone: string) {
+  const normalized = normalizePhone(phone);
+  if (usesFixedOtp(normalized)) {
+    return { limited: false as const };
+  }
+
   const mem = checkRateLimit(`otp-verify:${phone}`, 10, 60 * 60 * 1000);
   if (mem.limited) {
     return { limited: true as const, retryAfterSeconds: mem.retryAfter ?? 60 };
@@ -45,11 +55,15 @@ export async function checkOtpVerifyLimit(phone: string) {
 export async function createAndSendOtp(phone: string) {
   const normalized = normalizePhone(phone);
   const fixed = usesFixedOtp(normalized);
-  const code = fixed ? fixedOtpCode() : generateOtpCode();
+
+  // Pilot / test numbers: no SMS, no DB rows — code is always OTP_FIXED_CODE (default 123456).
+  if (fixed) {
+    return { ok: true as const, phone: normalized };
+  }
+
+  const code = generateOtpCode();
   const now = new Date();
-  const expiresAt = fixed
-    ? new Date(now.getTime() + 10 * 365 * 24 * 60 * 60 * 1000)
-    : new Date(now.getTime() + 10 * 60 * 1000);
+  const expiresAt = new Date(now.getTime() + 10 * 60 * 1000);
 
   const db = getDb();
   await db.insert(otpCodes).values({
@@ -62,10 +76,6 @@ export async function createAndSendOtp(phone: string) {
     createdAt: now,
   });
 
-  if (fixed) {
-    return { ok: true as const, phone: normalized };
-  }
-
   const sms = await sendOtpViaMSG91(normalized, code);
   if (!sms.ok) {
     return { ok: false as const, error: sms.error };
@@ -76,6 +86,15 @@ export async function createAndSendOtp(phone: string) {
 
 export async function verifyOtpCode(phone: string, code: string) {
   const normalized = normalizePhone(phone);
+  const trimmed = code.trim();
+
+  if (usesFixedOtp(normalized)) {
+    if (trimmed === fixedOtpCode()) {
+      return { ok: true as const };
+    }
+    return { ok: false as const, error: 'invalid' as const };
+  }
+
   const db = getDb();
 
   const [challenge] = await db
@@ -100,7 +119,7 @@ export async function verifyOtpCode(phone: string, code: string) {
   const nextAttempts = challenge.attempts + 1;
   await db.update(otpCodes).set({ attempts: nextAttempts }).where(eq(otpCodes.id, challenge.id));
 
-  if (challenge.code !== code.trim()) {
+  if (challenge.code !== trimmed) {
     return { ok: false as const, error: 'invalid' as const };
   }
 

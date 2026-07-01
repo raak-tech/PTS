@@ -11,7 +11,7 @@ import { MOCK_OTP } from '@/mock/data';
 
 export default function OtpScreen() {
   const router = useRouter();
-  const { phone } = useLocalSearchParams<{ phone: string }>();
+  const { phone, consent } = useLocalSearchParams<{ phone: string; consent?: string }>();
   const { verifyOtp, sendOtp } = useAuth();
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const inputRefs = useRef<(TextInput | null)[]>([]);
@@ -82,7 +82,7 @@ export default function OtpScreen() {
     setLoading(true);
     setError('');
     try {
-      const sessionUser = await verifyOtp(phone, code);
+      const sessionUser = await verifyOtp(phone, code, consent === '1');
       if (sessionUser.role === 'provider') {
         router.replace('/(provider)/(tabs)');
         return;
@@ -97,7 +97,7 @@ export default function OtpScreen() {
 
   const onResend = async () => {
     if (!phone || countdown > 0) return;
-    await sendOtp(phone);
+    await sendOtp(phone, consent === '1');
     setCountdown(15);
   };
 

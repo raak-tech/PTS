@@ -131,9 +131,7 @@ export default function ProgramScreen() {
           {week.status === 'locked' ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Text style={{ fontSize: 20 }}>🔒</Text>
-              <Text style={[styles.status, { flex: 1 }]}>
-                Week {Number(week.id) - 1} unlocks when your counselor marks Week {Number(week.id) - 1} complete.
-              </Text>
+              <Text style={[styles.status, { flex: 1 }]}>Coming soon — your counselor will release this week.</Text>
             </View>
           ) : (
             <Text style={styles.status}>

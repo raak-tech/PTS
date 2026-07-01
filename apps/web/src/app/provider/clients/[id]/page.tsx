@@ -4,6 +4,7 @@ import { desc, eq } from 'drizzle-orm';
 
 import { getDb } from '@/db';
 import { intakeResponses, planWeeks, plans, supportArtifacts, userConsents, users } from '@/db/schema';
+import { formatClientLabel } from '@/lib/provider-display';
 import { ProviderClientWorkspaceClient } from './ProviderClientWorkspaceClient';
 
 type Props = {
@@ -31,7 +32,14 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
   const db = getDb();
 
   const [client] = await db
-    .select({ id: users.id, email: users.email, role: users.role, createdAt: users.createdAt })
+    .select({
+      id: users.id,
+      email: users.email,
+      phone: users.phone,
+      displayName: users.displayName,
+      role: users.role,
+      createdAt: users.createdAt,
+    })
     .from(users)
     .where(eq(users.id, id))
     .limit(1);
@@ -98,7 +106,7 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
   return (
     <ProviderClientWorkspaceClient
       clientId={client.id}
-      clientLabel={anonymise(client.email)}
+      clientLabel={formatClientLabel(client)}
       planId={latestPlan?.id}
       initialWeekStatuses={weekStatuses}
       totalWeeks={weekStatusRows.length > 0 ? Math.max(...weekStatusRows.map((r) => r.weekNumber)) : 6}
@@ -131,7 +139,3 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
   );
 }
 
-function anonymise(email: string) {
-  const [local] = email.split('@');
-  return `${local[0]}***@${email.split('@')[1]}`;
-}

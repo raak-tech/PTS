@@ -7,6 +7,7 @@ type ReadOutRow = {
   title: string;
   bodyText: string;
   hasCounselorAudio?: boolean;
+  counselorAudioUrl?: string | null;
   isActive?: boolean;
   planWeek?: number | null;
 };
@@ -32,6 +33,7 @@ export function CounselorReadOutEditor({
   const [recording, setRecording] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
@@ -53,6 +55,7 @@ export function CounselorReadOutEditor({
         setTitle(active.title);
         setBodyText(active.bodyText);
         setHasAudio(Boolean(active.hasCounselorAudio));
+        setPreviewUrl(active.counselorAudioUrl ?? null);
         return;
       }
       if (initialTitle || initialBody) {
@@ -69,6 +72,7 @@ export function CounselorReadOutEditor({
     setTitle(row.title);
     setBodyText(row.bodyText);
     setHasAudio(Boolean(row.hasCounselorAudio));
+    setPreviewUrl(row.counselorAudioUrl ?? null);
     setMessage('');
   };
 
@@ -77,6 +81,7 @@ export function CounselorReadOutEditor({
     setTitle('');
     setBodyText('');
     setHasAudio(false);
+    setPreviewUrl(null);
     setMessage('');
   };
 
@@ -107,6 +112,7 @@ export function CounselorReadOutEditor({
           return;
         }
         setHasAudio(Boolean(data.hasCounselorAudio));
+        setPreviewUrl(typeof data.counselorAudioUrl === 'string' ? data.counselorAudioUrl : previewUrl);
         setMessage(clearAudio ? 'Read-out updated — recording removed.' : 'Read-out saved.');
         await loadRows();
         return;
@@ -132,6 +138,7 @@ export function CounselorReadOutEditor({
       }
       setSelectedId(data.id);
       setHasAudio(Boolean(audioBase64));
+      setPreviewUrl(audioBase64 ? `data:audio/webm;base64,${audioBase64}` : null);
       setMessage('Read-out added for this client.');
       await loadRows();
     } finally {
@@ -201,7 +208,7 @@ export function CounselorReadOutEditor({
 
   return (
     <div>
-      <p style={{ color: '#555', fontSize: 14, marginTop: 0 }}>
+      <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 0 }}>
         Add multiple read-out messages for this week. The client sees every active read-out on Today and can respond to each.
       </p>
 
@@ -227,13 +234,14 @@ export function CounselorReadOutEditor({
                 textAlign: 'left',
                 padding: '10px 12px',
                 borderRadius: 10,
-                border: row.id === selectedId ? '2px solid #111' : '1px solid #ddd',
-                background: row.id === selectedId ? '#f5f5f5' : '#fff',
+                border: row.id === selectedId ? '2px solid var(--primary)' : '1px solid var(--border)',
+                background: row.id === selectedId ? 'var(--surface)' : 'transparent',
+                color: 'var(--text)',
                 cursor: 'pointer',
               }}
             >
-              <strong style={{ fontSize: 14 }}>{row.title}</strong>
-              <span style={{ display: 'block', fontSize: 12, color: '#666', marginTop: 4 }}>
+              <strong style={{ fontSize: 14, color: 'var(--text)' }}>{row.title}</strong>
+              <span style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
                 {row.isActive ? 'Active this week' : 'Scheduled / past'}
                 {row.hasCounselorAudio ? ' · audio attached' : ''}
               </span>
@@ -241,21 +249,38 @@ export function CounselorReadOutEditor({
           ))}
         </div>
       ) : (
-        <p style={{ fontSize: 13, color: '#888', marginBottom: 16 }}>No read-outs yet — add one below.</p>
+        <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>No read-outs yet — add one below.</p>
       )}
 
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title"
-        style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid #ddd', marginBottom: 10 }}
+        style={{
+          width: '100%',
+          padding: '10px 12px',
+          borderRadius: 10,
+          border: '1px solid var(--border)',
+          marginBottom: 10,
+          background: 'var(--surface)',
+          color: 'var(--text)',
+        }}
       />
       <textarea
         value={bodyText}
         onChange={(e) => setBodyText(e.target.value)}
         placeholder="What should the client read or internalize?"
         rows={5}
-        style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid #ddd', marginBottom: 12, fontFamily: 'inherit' }}
+        style={{
+          width: '100%',
+          padding: '10px 12px',
+          borderRadius: 10,
+          border: '1px solid var(--border)',
+          marginBottom: 12,
+          fontFamily: 'inherit',
+          background: 'var(--surface)',
+          color: 'var(--text)',
+        }}
       />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -267,8 +292,14 @@ export function CounselorReadOutEditor({
             Stop & save recording
           </button>
         ) : (
-          <button type="button" className="actionLink secondary" onClick={() => void startRecording()} disabled={saving}>
-            Record counselor message
+          <button
+            type="button"
+            className="actionLink"
+            onClick={() => void startRecording()}
+            disabled={saving}
+            style={{ border: '2px solid var(--primary)', fontWeight: 600 }}
+          >
+            ● Record counselor message
           </button>
         )}
         {hasAudio ? (
@@ -283,10 +314,15 @@ export function CounselorReadOutEditor({
         ) : null}
       </div>
 
-      {hasAudio ? (
-        <p style={{ fontSize: 13, color: '#2e7d32', margin: '0 0 8px' }}>✓ Counselor recording attached — client can play it on Today.</p>
+      {hasAudio && previewUrl ? (
+        <div style={{ marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: 'var(--success, #2e7d32)', margin: '0 0 8px' }}>
+            ✓ Counselor recording attached — preview below.
+          </p>
+          <audio controls src={previewUrl} style={{ width: '100%' }} />
+        </div>
       ) : null}
-      {message ? <p role="status" style={{ fontSize: 14, color: '#333' }}>{message}</p> : null}
+      {message ? <p role="status" style={{ fontSize: 14, color: 'var(--text)' }}>{message}</p> : null}
     </div>
   );
 }

@@ -11,6 +11,8 @@ function errorCopy(error?: string) {
   switch (error) {
     case 'invalid':
       return 'Invalid email or password. Try again.';
+    case 'too-many-requests':
+      return 'Too many sign-in attempts. Wait a few minutes and try again.';
     default:
       return null;
   }
