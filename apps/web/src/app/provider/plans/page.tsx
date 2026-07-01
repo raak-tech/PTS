@@ -1,12 +1,8 @@
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
-import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 import { getDb } from '../../../db';
 import { intakeResponses, planWeeks, plans, users } from '../../../db/schema';
-import { getUserFromCookieHeader } from '../../../lib/session';
 import { PlanReviewClient } from './PlanReviewClient';
 import { PendingIntakesClient } from './PendingIntakesClient';
 import type { GeneratedPlan } from '../../../lib/plan-generator';
@@ -14,10 +10,6 @@ import type { GeneratedPlan } from '../../../lib/plan-generator';
 export const metadata: Metadata = { title: 'Plan review | Provider' };
 
 export default async function ProviderPlansPage() {
-  const headersList = await headers();
-  const user = await getUserFromCookieHeader(headersList.get('cookie'));
-  if (!user || user.role !== 'provider') redirect('/login');
-
   const db = getDb();
 
   // Pending intakes (no plan yet)
@@ -100,11 +92,9 @@ export default async function ProviderPlansPage() {
   }));
 
   return (
-    <main className="pageShell" style={{ maxWidth: 900 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h1 style={{ margin: 0 }}>Plan review</h1>
-        <Link href="/provider" className="actionLink secondary">← Console</Link>
-      </div>
+    <>
+      <h1 className="provider-page-title">Plan review</h1>
+      <p className="provider-page-subtitle">Approve drafts and edit week content before clients see it.</p>
 
       {/* Pending intakes section */}
       <PendingIntakesClient
@@ -116,9 +106,6 @@ export default async function ProviderPlansPage() {
           createdAt: intake.createdAt,
           email: emailById[intake.userId] ?? 'unknown@unknown.com',
         }))}
-        onIntakeGenerated={() => {
-          // Handled by the client component's page reload
-        }}
       />
 
       {enriched.length === 0 && (
@@ -155,6 +142,6 @@ export default async function ProviderPlansPage() {
           </div>
         </section>
       )}
-    </main>
+    </>
   );
 }

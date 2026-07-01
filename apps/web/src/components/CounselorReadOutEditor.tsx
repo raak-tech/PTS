@@ -1,23 +1,31 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-type ActiveReadOut = {
+type ReadOutRow = {
   id: string;
   title: string;
   bodyText: string;
   hasCounselorAudio?: boolean;
   isActive?: boolean;
+  planWeek?: number | null;
 };
 
 type Props = {
   clientId: string;
   initialTitle?: string;
   initialBody?: string;
+  planWeek?: number;
 };
 
-export function CounselorReadOutEditor({ clientId, initialTitle = '', initialBody = '' }: Props) {
-  const [activeId, setActiveId] = useState<string | null>(null);
+export function CounselorReadOutEditor({
+  clientId,
+  initialTitle = '',
+  initialBody = '',
+  planWeek = 1,
+}: Props) {
+  const [rows, setRows] = useState<ReadOutRow[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [title, setTitle] = useState(initialTitle);
   const [bodyText, setBodyText] = useState(initialBody);
   const [hasAudio, setHasAudio] = useState(false);
@@ -27,23 +35,50 @@ export function CounselorReadOutEditor({ clientId, initialTitle = '', initialBod
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
-  useEffect(() => {
-    setTitle(initialTitle);
-    setBodyText(initialBody);
-  }, [initialTitle, initialBody]);
+  const loadRows = useCallback(async () => {
+    const res = await fetch(`/api/reinforcements?clientId=${encodeURIComponent(clientId)}`, {
+      credentials: 'include',
+    });
+    const data = (await res.json()) as { reinforcements?: ReadOutRow[] };
+    const list = data.reinforcements ?? [];
+    setRows(list);
+    return list;
+  }, [clientId]);
 
   useEffect(() => {
-    void fetch(`/api/reinforcements?clientId=${encodeURIComponent(clientId)}`, { credentials: 'include' })
-      .then((r) => r.json())
-      .then((data: { reinforcements?: ActiveReadOut[] }) => {
-        const active = data.reinforcements?.find((r) => r.isActive);
-        if (!active) return;
-        setActiveId(active.id);
+    void loadRows().then((list) => {
+      if (list.length > 0) {
+        const active = list.find((r) => r.isActive) ?? list[0];
+        setSelectedId(active.id);
         setTitle(active.title);
         setBodyText(active.bodyText);
         setHasAudio(Boolean(active.hasCounselorAudio));
-      });
-  }, [clientId]);
+        return;
+      }
+      if (initialTitle || initialBody) {
+        setSelectedId(null);
+        setTitle(initialTitle);
+        setBodyText(initialBody);
+        setHasAudio(false);
+      }
+    });
+  }, [clientId, initialTitle, initialBody, loadRows]);
+
+  const selectRow = (row: ReadOutRow) => {
+    setSelectedId(row.id);
+    setTitle(row.title);
+    setBodyText(row.bodyText);
+    setHasAudio(Boolean(row.hasCounselorAudio));
+    setMessage('');
+  };
+
+  const startNew = () => {
+    setSelectedId(null);
+    setTitle('');
+    setBodyText('');
+    setHasAudio(false);
+    setMessage('');
+  };
 
   const saveText = async (audioBase64?: string, clearAudio?: boolean) => {
     if (!title.trim() || !bodyText.trim()) {
@@ -53,8 +88,8 @@ export function CounselorReadOutEditor({ clientId, initialTitle = '', initialBod
     setSaving(true);
     setMessage('');
     try {
-      if (activeId) {
-        const res = await fetch(`/api/reinforcements/${activeId}`, {
+      if (selectedId) {
+        const res = await fetch(`/api/reinforcements/${selectedId}`, {
           method: 'PATCH',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
@@ -72,7 +107,8 @@ export function CounselorReadOutEditor({ clientId, initialTitle = '', initialBod
           return;
         }
         setHasAudio(Boolean(data.hasCounselorAudio));
-        setMessage(clearAudio ? 'Read-out updated — counselor recording removed.' : 'Read-out updated for client.');
+        setMessage(clearAudio ? 'Read-out updated — recording removed.' : 'Read-out saved.');
+        await loadRows();
         return;
       }
 
@@ -86,7 +122,7 @@ export function CounselorReadOutEditor({ clientId, initialTitle = '', initialBod
           bodyText: bodyText.trim(),
           counselorAudioBase64: audioBase64,
           counselorAudioMime: audioBase64 ? 'audio/webm' : undefined,
-          planWeek: 1,
+          planWeek,
         }),
       });
       const data = await res.json();
@@ -94,9 +130,37 @@ export function CounselorReadOutEditor({ clientId, initialTitle = '', initialBod
         setMessage(data.error ?? 'Could not assign read-out');
         return;
       }
-      setActiveId(data.id);
+      setSelectedId(data.id);
       setHasAudio(Boolean(audioBase64));
-      setMessage('Daily read-out saved for this week.');
+      setMessage('Read-out added for this client.');
+      await loadRows();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removeSelected = async () => {
+    if (!selectedId) return;
+    if (!window.confirm('Remove this read-out from the client’s list?')) return;
+    setSaving(true);
+    setMessage('');
+    try {
+      const res = await fetch(`/api/reinforcements/${selectedId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setMessage(data.error ?? 'Could not remove read-out');
+        return;
+      }
+      const list = await loadRows();
+      if (list.length > 0) {
+        selectRow(list[0]);
+      } else {
+        startNew();
+      }
+      setMessage('Read-out removed.');
     } finally {
       setSaving(false);
     }
@@ -138,8 +202,48 @@ export function CounselorReadOutEditor({ clientId, initialTitle = '', initialBod
   return (
     <div>
       <p style={{ color: '#555', fontSize: 14, marginTop: 0 }}>
-        Edit the text your client reads each morning. Optionally record yourself reading it aloud for them to listen to first.
+        Add multiple read-out messages for this week. The client sees every active read-out on Today and can respond to each.
       </p>
+
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+        <button type="button" className="actionLink secondary" onClick={startNew} disabled={saving}>
+          + Add read-out
+        </button>
+        {selectedId ? (
+          <button type="button" className="actionLink secondary" onClick={() => void removeSelected()} disabled={saving}>
+            Remove selected
+          </button>
+        ) : null}
+      </div>
+
+      {rows.length > 0 ? (
+        <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
+          {rows.map((row) => (
+            <button
+              key={row.id}
+              type="button"
+              onClick={() => selectRow(row)}
+              style={{
+                textAlign: 'left',
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: row.id === selectedId ? '2px solid #111' : '1px solid #ddd',
+                background: row.id === selectedId ? '#f5f5f5' : '#fff',
+                cursor: 'pointer',
+              }}
+            >
+              <strong style={{ fontSize: 14 }}>{row.title}</strong>
+              <span style={{ display: 'block', fontSize: 12, color: '#666', marginTop: 4 }}>
+                {row.isActive ? 'Active this week' : 'Scheduled / past'}
+                {row.hasCounselorAudio ? ' · audio attached' : ''}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p style={{ fontSize: 13, color: '#888', marginBottom: 16 }}>No read-outs yet — add one below.</p>
+      )}
+
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
@@ -156,7 +260,7 @@ export function CounselorReadOutEditor({ clientId, initialTitle = '', initialBod
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
         <button type="button" onClick={() => void saveText()} disabled={saving}>
-          {saving ? 'Saving…' : activeId ? 'Save changes' : 'Assign read-out'}
+          {saving ? 'Saving…' : selectedId ? 'Save changes' : 'Add read-out'}
         </button>
         {recording ? (
           <button type="button" onClick={() => void stopAndSaveRecording()} disabled={saving}>

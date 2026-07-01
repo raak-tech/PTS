@@ -24,6 +24,8 @@ export type WeekPlan = {
   ayurvedaBlock?: { practices: string[]; rhythmNote: string; disclaimer?: string };
   yogaTrial?: YogaTrial;
   reinforcementTemplate?: { title: string; bodyText: string };
+  /** Counselor may assign multiple daily read-outs per week. */
+  reinforcementTemplates?: { title: string; bodyText: string }[];
   musicMoment?: {
     purpose: string;
     suggestion: string;

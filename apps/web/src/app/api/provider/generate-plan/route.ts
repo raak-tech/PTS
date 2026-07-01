@@ -47,11 +47,11 @@ export async function POST(request: Request) {
     .from(users)
     .where(eq(users.role, 'admin'));
 
-  const clientEmail = await db
+  const clientRows = await db
     .select({ email: users.email })
     .from(users)
-    .where(eq(users.id, userId))
-    .then(rows => rows[0]?.email ?? 'unknown');
+    .where(eq(users.id, userId));
+  const clientEmail = clientRows[0]?.email ?? 'unknown';
 
   const [clientFirstChar] = clientEmail.split('@');
   const anonEmail = `${clientFirstChar[0]}***@${clientEmail.split('@')[1]}`;

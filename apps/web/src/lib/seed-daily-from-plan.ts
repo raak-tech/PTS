@@ -6,6 +6,7 @@ import type { getDb } from '@/db';
 import { dailyCalendarEntries, dailyReinforcements } from '@/db/schema';
 import { localDateIso, type CalendarBlock } from '@/lib/daily-layer';
 import type { GeneratedPlan } from '@/lib/plan-generator';
+import { getWeekReinforcementTemplates } from '@/lib/reinforcement-templates';
 
 type Db = ReturnType<typeof getDb>;
 
@@ -30,8 +31,8 @@ export async function seedDailyFromApprovedPlan(
   const startIso = localDateIso(now);
   const endIso = localDateIso(end);
 
-  const template = week.reinforcementTemplate;
-  if (template?.title && template.bodyText) {
+  const templates = getWeekReinforcementTemplates(week);
+  if (templates.length > 0) {
     await db
       .delete(dailyReinforcements)
       .where(
@@ -41,17 +42,20 @@ export async function seedDailyFromApprovedPlan(
         ),
       );
 
-    await db.insert(dailyReinforcements).values({
-      id: randomUUID(),
-      counselorId: opts.counselorId,
-      clientId: opts.clientId,
-      title: template.title,
-      bodyText: template.bodyText,
-      planWeek: week.week,
-      startDate: startIso,
-      endDate: endIso,
-      createdAt: now,
-    });
+    for (const template of templates) {
+      if (!template.title?.trim() || !template.bodyText?.trim()) continue;
+      await db.insert(dailyReinforcements).values({
+        id: randomUUID(),
+        counselorId: opts.counselorId,
+        clientId: opts.clientId,
+        title: template.title,
+        bodyText: template.bodyText,
+        planWeek: week.week,
+        startDate: startIso,
+        endDate: endIso,
+        createdAt: now,
+      });
+    }
   } else if (week.dailyPractices[0]) {
     const practice = week.dailyPractices[0];
     await db.insert(dailyReinforcements).values({
@@ -75,15 +79,16 @@ export async function seedDailyFromApprovedPlan(
     status: 'planned',
   }));
 
-  if (template?.title) {
+  templates.forEach((template, i) => {
+    if (!template.title?.trim()) return;
     blocks.unshift({
-      id: 'reinforcement-0',
+      id: `reinforcement-${i}`,
       type: 'reinforcement',
       label: template.title,
-      plannedTime: '08:00',
+      plannedTime: i === 0 ? '08:00' : '08:30',
       status: 'planned',
     });
-  }
+  });
 
   if (week.ayurvedaBlock?.practices[0]) {
     blocks.push({

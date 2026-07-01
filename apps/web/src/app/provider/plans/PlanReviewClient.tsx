@@ -3,6 +3,11 @@
 import Link from 'next/link';
 import { useCallback, useState, type CSSProperties } from 'react';
 import type { GeneratedPlan, WeekPlan } from '../../../lib/plan-generator';
+import {
+  getWeekReinforcementTemplates,
+  withWeekReinforcementTemplates,
+  type ReinforcementTemplate,
+} from '@/lib/reinforcement-templates';
 import { PlanGenerationProgress } from '@/components/PlanGenerationProgress';
 import {
   applyHolisticVisibility,
@@ -173,6 +178,33 @@ function WeekEditor({
     void saveWeek(updated);
   };
 
+  const readOuts = getWeekReinforcementTemplates(data);
+
+  const updateReadOut = (index: number, field: keyof ReinforcementTemplate, value: string) => {
+    const next = readOuts.map((item, i) => (i === index ? { ...item, [field]: value } : item));
+    const updated = withWeekReinforcementTemplates(data, next);
+    setData(updated);
+    void saveWeek(updated);
+  };
+
+  const addReadOut = () => {
+    const updated = withWeekReinforcementTemplates(data, [
+      ...readOuts,
+      { title: 'New read-out', bodyText: '' },
+    ]);
+    setData(updated);
+    void saveWeek(updated);
+  };
+
+  const removeReadOut = (index: number) => {
+    const updated = withWeekReinforcementTemplates(
+      data,
+      readOuts.filter((_, i) => i !== index),
+    );
+    setData(updated);
+    void saveWeek(updated);
+  };
+
   const approveWeek = async () => {
     setApproving(true);
     setApproveError('');
@@ -231,15 +263,32 @@ function WeekEditor({
           </div>
         ))}
 
-        {data.reinforcementTemplate && (
-          <>
-            <p style={{ margin: '16px 0 8px', fontWeight: 600, fontSize: 13 }}>Daily read-out</p>
-            <div style={{ padding: '10px 12px', background: '#f3f8ff', borderRadius: 8, border: '1px solid #cfe2ff', marginBottom: 8 }}>
-              <EditableField label="Read-out title" value={data.reinforcementTemplate.title} onSave={v => updateField('reinforcementTemplate', { ...data.reinforcementTemplate!, title: v })} />
-              <EditableField label="Read-out body" value={data.reinforcementTemplate.bodyText} multiline onSave={v => updateField('reinforcementTemplate', { ...data.reinforcementTemplate!, bodyText: v })} />
+        <p style={{ margin: '16px 0 8px', fontWeight: 600, fontSize: 13 }}>
+          Daily read-outs ({readOuts.length})
+        </p>
+        {readOuts.length === 0 ? (
+          <p style={{ fontSize: 13, color: '#888', marginBottom: 8 }}>No read-outs in this week yet.</p>
+        ) : (
+          readOuts.map((readOut, i) => (
+            <div
+              key={`readout-${i}`}
+              style={{ padding: '10px 12px', background: '#f3f8ff', borderRadius: 8, border: '1px solid #cfe2ff', marginBottom: 8 }}
+            >
+              <EditableField label={`Read-out ${i + 1} title`} value={readOut.title} onSave={v => updateReadOut(i, 'title', v)} />
+              <EditableField label="Read-out body" value={readOut.bodyText} multiline onSave={v => updateReadOut(i, 'bodyText', v)} />
+              <button
+                type="button"
+                onClick={() => removeReadOut(i)}
+                style={{ ...btnSecondary, fontSize: 12, padding: '6px 12px', marginTop: 4 }}
+              >
+                Remove read-out
+              </button>
             </div>
-          </>
+          ))
         )}
+        <button type="button" onClick={addReadOut} style={{ ...btnSecondary, marginBottom: 12 }}>
+          + Add read-out
+        </button>
 
         {data.ayurvedaBlock && (
           <>

@@ -70,17 +70,26 @@ export async function GET(request: Request) {
           endDate: string;
         }[];
 
-        const active = reinforcements.find((r) => isDateInRange(today, r.startDate, r.endDate));
+        const activeRows = reinforcements.filter((r) => isDateInRange(today, r.startDate, r.endDate));
         let reinforcementRecordedToday = false;
-        if (active) {
-          const responses = (await db
-            .select()
-            .from(reinforcementResponses)
-            .where(eq(reinforcementResponses.reinforcementId, active.id))) as {
-            submittedAt: Date;
-          }[];
-          reinforcementRecordedToday = responses.some((r) => localDateIso(r.submittedAt) === today);
+        let reinforcementPendingCount = 0;
+        if (activeRows.length > 0) {
+          const responseChecks = await Promise.all(
+            activeRows.map(async (row) => {
+              const responses = (await db
+                .select()
+                .from(reinforcementResponses)
+                .where(eq(reinforcementResponses.reinforcementId, row.id))) as {
+                submittedAt: Date;
+              }[];
+              return responses.some((r) => localDateIso(r.submittedAt) === today);
+            }),
+          );
+          reinforcementPendingCount = responseChecks.filter((done) => !done).length;
+          reinforcementRecordedToday = reinforcementPendingCount === 0;
         }
+
+        const active = activeRows[0] ?? null;
 
         const [calendar] = (await db
           .select()
@@ -112,14 +121,19 @@ export async function GET(request: Request) {
         return {
           clientId,
           name: profile ? displayLabel(profile) : 'Client',
-          reinforcementTitle: active?.title ?? null,
+          reinforcementTitle:
+            activeRows.length > 1
+              ? `${activeRows.length} read-outs`
+              : active?.title ?? null,
+          reinforcementCount: activeRows.length,
+          reinforcementPendingCount,
           reinforcementRecordedToday,
           calendarBlocksTotal: blocks.length,
           calendarBlocksDone: doneCount,
           holisticDone,
           holisticTotal,
           needsAttention: Boolean(
-            (active && !reinforcementRecordedToday) || holisticDone < 2,
+            (activeRows.length > 0 && !reinforcementRecordedToday) || holisticDone < 2,
           ),
         };
       }),

@@ -58,6 +58,7 @@ Generate JSON for week ${weekNumber} ONLY (no markdown). Match this structure ex
     "disclaimer": "..."
   },
   "reinforcementTemplate": { "title": "...", "bodyText": "..." },
+  "reinforcementTemplates": [{ "title": "...", "bodyText": "..." }],
   "musicMoment": {
     "purpose": "grounding|activation|flare|reflection",
     "suggestion": "...",

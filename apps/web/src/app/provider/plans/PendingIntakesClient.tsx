@@ -14,7 +14,6 @@ interface PendingIntake {
 
 interface PendingIntakesClientProps {
   intakes: PendingIntake[];
-  onIntakeGenerated: (userId: string) => void;
 }
 
 function anon(email: string) {
@@ -22,7 +21,7 @@ function anon(email: string) {
   return `${local[0]}***@${email.split('@')[1]}`;
 }
 
-export function PendingIntakesClient({ intakes, onIntakeGenerated }: PendingIntakesClientProps) {
+export function PendingIntakesClient({ intakes }: PendingIntakesClientProps) {
   const [generating, setGenerating] = useState<string | null>(null);
 
   const handleGeneratePlan = async (userId: string) => {
@@ -41,7 +40,6 @@ export function PendingIntakesClient({ intakes, onIntakeGenerated }: PendingInta
         return;
       }
 
-      onIntakeGenerated(userId);
       alert('Plan draft generated! Refreshing...');
       window.location.reload();
     } catch (err) {

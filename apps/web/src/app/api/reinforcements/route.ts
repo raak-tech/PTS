@@ -52,34 +52,34 @@ export async function GET(request: Request) {
         .orderBy(desc(dailyReinforcements.createdAt))) as ReinforcementRow[];
 
       const active = rows.filter((r) => isDateInRange(dateIso, r.startDate, r.endDate));
-      const today = active[0] ?? null;
 
-      let respondedToday = false;
-      if (today) {
-        const responses = (await db
-          .select()
-          .from(reinforcementResponses)
-          .where(
-            and(
-              eq(reinforcementResponses.reinforcementId, today.id),
-              eq(reinforcementResponses.clientId, user.id),
-            ),
-          )) as { submittedAt: Date }[];
-        respondedToday = responses.some((r) => localDateIso(r.submittedAt) === dateIso);
-      }
+      const todayReadouts = await Promise.all(
+        active.map(async (row) => {
+          const responses = (await db
+            .select()
+            .from(reinforcementResponses)
+            .where(
+              and(
+                eq(reinforcementResponses.reinforcementId, row.id),
+                eq(reinforcementResponses.clientId, user.id),
+              ),
+            )) as { submittedAt: Date }[];
+          const respondedToday = responses.some((r) => localDateIso(r.submittedAt) === dateIso);
+          return {
+            id: row.id,
+            title: row.title,
+            bodyText: row.bodyText,
+            counselorAudioUrl: row.counselorAudioUrl,
+            planWeek: row.planWeek,
+            respondedToday,
+          };
+        }),
+      );
 
       return NextResponse.json({
         ok: true,
-        today: today
-          ? {
-              id: today.id,
-              title: today.title,
-              bodyText: today.bodyText,
-              counselorAudioUrl: today.counselorAudioUrl,
-              planWeek: today.planWeek,
-              respondedToday,
-            }
-          : null,
+        today: todayReadouts[0] ?? null,
+        todayReadouts,
         all: rows.map((r) => ({
           id: r.id,
           title: r.title,
@@ -167,29 +167,6 @@ export async function POST(request: Request) {
       counselorAudioBase64: parsed.data.counselorAudioBase64,
       counselorAudioMime: parsed.data.counselorAudioMime,
     });
-
-    const existing = (await db
-      .select()
-      .from(dailyReinforcements)
-      .where(eq(dailyReinforcements.clientId, parsed.data.clientId))
-      .orderBy(desc(dailyReinforcements.createdAt))) as ReinforcementRow[];
-
-    const active = existing.find((r) => isDateInRange(startIso, r.startDate, r.endDate));
-    if (active) {
-      await db
-        .update(dailyReinforcements)
-        .set({
-          title: parsed.data.title,
-          bodyText: parsed.data.bodyText,
-          counselorAudioUrl: counselorAudioUrl ?? active.counselorAudioUrl,
-          planWeek: parsed.data.planWeek ?? active.planWeek,
-          startDate: startIso,
-          endDate: endIso,
-        })
-        .where(eq(dailyReinforcements.id, active.id));
-
-      return NextResponse.json({ ok: true, id: active.id, updated: true });
-    }
 
     const id = randomUUID();
     await db.insert(dailyReinforcements).values({

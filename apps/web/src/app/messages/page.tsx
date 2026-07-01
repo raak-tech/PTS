@@ -14,6 +14,11 @@ export default async function MessagesPage({ searchParams }: { searchParams?: Pr
   const headersList = await headers();
   const user = await getUserFromCookieHeader(headersList.get('cookie'));
   if (!user) redirect('/login?next=/messages');
+  if (user.role === 'provider') {
+    const withParam = (await Promise.resolve(searchParams ?? {})) as { with?: string };
+    const dest = withParam.with ? `/provider/messages?with=${withParam.with}` : '/provider/messages';
+    redirect(dest);
+  }
 
   const params = (await Promise.resolve(searchParams ?? {})) as Record<string, string | undefined>;
   const preselectedId = params['with'];
