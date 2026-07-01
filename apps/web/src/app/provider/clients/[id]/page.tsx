@@ -1,28 +1,33 @@
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { desc, eq } from 'drizzle-orm';
 
-import { getDb } from '../../../../db';
-import { planWeeks, plans, supportArtifacts, userConsents, users } from '../../../../db/schema';
-import { getUserFromCookieHeader } from '../../../../lib/session';
+import { getDb } from '@/db';
+import { intakeResponses, planWeeks, plans, supportArtifacts, userConsents, users } from '@/db/schema';
 import { ProviderClientWorkspaceClient } from './ProviderClientWorkspaceClient';
 
-type Props = { params: Promise<{ id: string }> };
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ tab?: string }>;
+};
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const db = getDb();
   const [client] = await db.select({ email: users.email }).from(users).where(eq(users.id, id)).limit(1);
-  return { title: client ? `Client detail | Provider console` : 'Client not found' };
+  return { title: client ? `Client | Counselor` : 'Client not found' };
 }
 
-export default async function ProviderClientDetailPage({ params }: Props) {
-  const headersList = await headers();
-  const user = await getUserFromCookieHeader(headersList.get('cookie'));
-  if (!user) redirect('/login');
+function parseTab(tab?: string): 'overview' | 'plan' | 'readouts' | 'messages' {
+  if (tab === 'plan' || tab === 'readouts' || tab === 'messages') return tab;
+  return 'overview';
+}
 
+export default async function ProviderClientDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const sp = (await Promise.resolve(searchParams ?? {})) as { tab?: string };
+  const initialTab = parseTab(sp.tab);
+
   const db = getDb();
 
   const [client] = await db
@@ -39,9 +44,14 @@ export default async function ProviderClientDetailPage({ params }: Props) {
     .where(eq(userConsents.userId, id))
     .limit(1);
 
-  const artifacts = consent?.dataStorageEnabled
+  const artifacts: Array<{ id: string; kind: string; title: string; createdAt: Date }> = consent?.dataStorageEnabled
     ? await db
-        .select({ id: supportArtifacts.id, kind: supportArtifacts.kind, title: supportArtifacts.title, createdAt: supportArtifacts.createdAt })
+        .select({
+          id: supportArtifacts.id,
+          kind: supportArtifacts.kind,
+          title: supportArtifacts.title,
+          createdAt: supportArtifacts.createdAt,
+        })
         .from(supportArtifacts)
         .where(eq(supportArtifacts.userId, id))
         .orderBy(supportArtifacts.createdAt)
@@ -52,7 +62,6 @@ export default async function ProviderClientDetailPage({ params }: Props) {
     kindCounts[a.kind] = (kindCounts[a.kind] ?? 0) + 1;
   }
 
-  // Fetch plan and week statuses for the workspace approval panel
   const [latestPlan] = await db
     .select({ id: plans.id })
     .from(plans)
@@ -62,65 +71,63 @@ export default async function ProviderClientDetailPage({ params }: Props) {
 
   type WeekStatusRow = { weekNumber: number; status: string };
   const weekStatusRows: WeekStatusRow[] = latestPlan
-    ? (await db
+    ? ((await db
         .select({ weekNumber: planWeeks.weekNumber, status: planWeeks.status })
         .from(planWeeks)
-        .where(eq(planWeeks.planId, latestPlan.id))) as WeekStatusRow[]
+        .where(eq(planWeeks.planId, latestPlan.id))) as WeekStatusRow[])
     : [];
 
   const weekStatuses = Object.fromEntries(
-    weekStatusRows.map(r => [r.weekNumber, r.status as 'draft' | 'edited' | 'approved'])
+    weekStatusRows.map((r) => [r.weekNumber, r.status as 'draft' | 'edited' | 'approved']),
   );
 
+  const [intake] = await db
+    .select({
+      painSource: intakeResponses.painSource,
+      painSourceOther: intakeResponses.painSourceOther,
+      painDescription: intakeResponses.painDescription,
+      recoveryGoal: intakeResponses.recoveryGoal,
+      hasRedFlags: intakeResponses.hasRedFlags,
+      isSafe: intakeResponses.isSafe,
+      completedAt: intakeResponses.completedAt,
+    })
+    .from(intakeResponses)
+    .where(eq(intakeResponses.userId, id))
+    .limit(1);
+
   return (
-    <main className="pageShell" style={{ maxWidth: 900 }}>
-      <h1>Client detail</h1>
-
-      <section className="heroPanel" style={{ marginTop: 24 }}>
-        <h2>{anonymise(client.email)}</h2>
-        <ul>
-          <li><strong>Registered:</strong> {client.createdAt.toLocaleDateString()}</li>
-          <li><strong>Storage consent:</strong> {consent?.dataStorageEnabled ? 'Enabled' : 'Not enabled'}</li>
-          <li><strong>Saved artifacts:</strong> {artifacts.length}</li>
-          {Object.entries(kindCounts).map(([kind, count]) => (
-            <li key={kind}><strong>{kind}:</strong> {count}</li>
-          ))}
-        </ul>
-      </section>
-
-      <ProviderClientWorkspaceClient
-        clientId={client.id}
-        clientLabel={anonymise(client.email)}
-        planId={latestPlan?.id}
-        initialWeekStatuses={weekStatuses}
-        totalWeeks={weekStatusRows.length > 0 ? Math.max(...weekStatusRows.map(r => r.weekNumber)) : 6}
-      />
-
-      {artifacts.length > 0 && (
-        <section className="sectionStack" style={{ marginTop: 24 }}>
-          <h2>Activity log</h2>
-          <div style={{ display: 'grid', gap: 8 }}>
-            {(artifacts as Array<{ id: string; kind: string; title: string; createdAt: Date }>).map((a) => (
-              <div
-                key={a.id}
-                style={{ border: '1px solid var(--border)', borderRadius: 12, padding: '12px 16px', background: 'var(--surface-2)' }}
-              >
-                <strong>{a.kind}</strong> — {a.title}{' '}
-                <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
-                  {a.createdAt.toLocaleDateString()}
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {!consent?.dataStorageEnabled && (
-        <section className="sectionStack" style={{ marginTop: 24 }}>
-          <p>This client has not enabled data storage. No artifacts are available for review.</p>
-        </section>
-      )}
-    </main>
+    <ProviderClientWorkspaceClient
+      clientId={client.id}
+      clientLabel={anonymise(client.email)}
+      planId={latestPlan?.id}
+      initialWeekStatuses={weekStatuses}
+      totalWeeks={weekStatusRows.length > 0 ? Math.max(...weekStatusRows.map((r) => r.weekNumber)) : 6}
+      initialTab={initialTab}
+      intake={
+        intake
+          ? {
+              painSource: intake.painSourceOther ?? intake.painSource,
+              painDescription: intake.painDescription,
+              recoveryGoal: intake.recoveryGoal,
+              hasRedFlags: intake.hasRedFlags,
+              isSafe: intake.isSafe,
+              completedAt: intake.completedAt ? intake.completedAt.toISOString() : null,
+            }
+          : null
+      }
+      overview={{
+        registered: client.createdAt.toLocaleDateString(),
+        storageConsent: Boolean(consent?.dataStorageEnabled),
+        artifactCount: artifacts.length,
+        kindCounts,
+        artifacts: artifacts.map((a) => ({
+          id: a.id,
+          kind: a.kind,
+          title: a.title,
+          createdAt: a.createdAt.toISOString(),
+        })),
+      }}
+    />
   );
 }
 

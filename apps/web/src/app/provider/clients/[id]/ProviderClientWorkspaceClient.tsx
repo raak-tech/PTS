@@ -37,13 +37,57 @@ type WeekDraft = {
 
 type WeekStatus = 'draft' | 'edited' | 'approved';
 
+type ArtifactRow = { id: string; kind: string; title: string; createdAt: string };
+
+type OverviewProps = {
+  registered: string;
+  storageConsent: boolean;
+  artifactCount: number;
+  kindCounts: Record<string, number>;
+  artifacts: ArtifactRow[];
+};
+
+type IntakeSummary = {
+  painSource: string;
+  painDescription: string;
+  recoveryGoal: string;
+  hasRedFlags: boolean;
+  isSafe: boolean;
+  completedAt: string | null;
+};
+
+type CounselorNote = {
+  id: string;
+  body: string;
+  createdAt: string;
+  resolvedAt: string | null;
+};
+
+type MessagePreview = {
+  id: string;
+  fromUserId: string;
+  toUserId: string;
+  body: string;
+  createdAt: string;
+};
+
 type Props = {
   clientId: string;
   clientLabel: string;
   planId?: string;
   initialWeekStatuses?: Record<number, WeekStatus>;
   totalWeeks?: number;
+  overview: OverviewProps;
+  intake?: IntakeSummary | null;
+  initialTab?: 'overview' | 'plan' | 'readouts' | 'messages';
 };
+
+const TABS = [
+  { id: 'overview' as const, label: 'Overview' },
+  { id: 'plan' as const, label: 'Plan' },
+  { id: 'readouts' as const, label: 'Read-outs' },
+  { id: 'messages' as const, label: 'Messages' },
+];
 
 export function ProviderClientWorkspaceClient({
   clientId,
@@ -51,7 +95,11 @@ export function ProviderClientWorkspaceClient({
   planId: initialPlanId,
   initialWeekStatuses = {},
   totalWeeks = 6,
+  overview,
+  intake = null,
+  initialTab = 'overview',
 }: Props) {
+  const [tab, setTab] = useState(initialTab);
   const [engagement, setEngagement] = useState<EngagementRow | null>(null);
   const [summary, setSummary] = useState('');
   const [weekly, setWeekly] = useState<WeeklySummary | null>(null);
@@ -66,18 +114,21 @@ export function ProviderClientWorkspaceClient({
   const [weekStatuses, setWeekStatuses] = useState<Record<number, WeekStatus>>(initialWeekStatuses);
   const [approvingWeek, setApprovingWeek] = useState<number | null>(null);
   const [approveError, setApproveError] = useState('');
+  const [notes, setNotes] = useState<CounselorNote[]>([]);
+  const [resolvingNoteId, setResolvingNoteId] = useState<string | null>(null);
+  const [recentMessages, setRecentMessages] = useState<MessagePreview[]>([]);
 
-  const approvedCount = Object.values(weekStatuses).filter(s => s === 'approved').length;
+  const approvedCount = Object.values(weekStatuses).filter((s) => s === 'approved').length;
 
   useEffect(() => {
     void Promise.all([
       fetch('/api/provider/engagement', { credentials: 'include' }).then((r) => r.json()),
       fetch(`/api/plans?userId=${encodeURIComponent(clientId)}`, { credentials: 'include' }).then((r) => r.json()),
       fetch(`/api/provider/clients/${clientId}/weekly-summary`, { credentials: 'include' }).then((r) => r.json()),
-    ]).then(([engagementData, planData, weeklyData]) => {
-      const row = (engagementData.clients as EngagementRow[] | undefined)?.find(
-        (c) => c.clientId === clientId,
-      );
+      fetch(`/api/provider/clients/${clientId}/notes`, { credentials: 'include' }).then((r) => r.json()),
+      fetch(`/api/messages?with=${encodeURIComponent(clientId)}`, { credentials: 'include' }).then((r) => r.json()),
+    ]).then(([engagementData, planData, weeklyData, notesData, messagesData]) => {
+      const row = (engagementData.clients as EngagementRow[] | undefined)?.find((c) => c.clientId === clientId);
       if (row) setEngagement(row);
 
       if (planData.plan) {
@@ -101,8 +152,31 @@ export function ProviderClientWorkspaceClient({
       }
 
       if (weeklyData.summary) setWeekly(weeklyData.summary as WeeklySummary);
+      if (notesData.notes) setNotes(notesData.notes as CounselorNote[]);
+      if (Array.isArray(messagesData.messages)) {
+        setRecentMessages((messagesData.messages as MessagePreview[]).slice(-5));
+      }
     });
   }, [clientId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onResolveNote = async (noteId: string) => {
+    setResolvingNoteId(noteId);
+    try {
+      const res = await fetch(`/api/provider/clients/${clientId}/notes/${noteId}/resolve`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (res.ok) {
+        setNotes((prev) =>
+          prev.map((n) => (n.id === noteId ? { ...n, resolvedAt: new Date().toISOString() } : n)),
+        );
+      }
+    } finally {
+      setResolvingNoteId(null);
+    }
+  };
+
+  const unresolvedNotes = notes.filter((n) => !n.resolvedAt);
 
   const onRegenerateWeek = async () => {
     setRegenWeek(true);
@@ -174,7 +248,7 @@ export function ProviderClientWorkspaceClient({
         setApproveError(data.error ?? 'Approval failed');
         return;
       }
-      setWeekStatuses(prev => ({ ...prev, [weekNumber]: 'approved' }));
+      setWeekStatuses((prev) => ({ ...prev, [weekNumber]: 'approved' }));
       setMessage(`Week ${weekNumber} approved — client can now see it in their app.`);
     } catch {
       setApproveError('Network error — approval not saved');
@@ -184,176 +258,391 @@ export function ProviderClientWorkspaceClient({
   };
 
   const statusColour: Record<WeekStatus, string> = {
-    draft:    '#888',
-    edited:   '#f57c00',
-    approved: '#2e7d32',
+    draft: 'var(--muted)',
+    edited: 'var(--warning)',
+    approved: 'var(--success)',
   };
 
   const statusLabel: Record<WeekStatus, string> = {
-    draft:    'Draft',
-    edited:   'Edited',
+    draft: 'Draft',
+    edited: 'Edited',
     approved: '✓ Approved',
   };
 
   return (
     <>
-      <section className="heroPanel" style={{ marginTop: 24 }}>
-        <h2>{clientLabel}</h2>
-        {summary ? <p style={{ maxWidth: 720, lineHeight: 1.6 }}>{summary}</p> : null}
-        <div style={{ marginTop: 16, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <Link href={`/messages?with=${clientId}`} className="actionLink">
-            Message client →
-          </Link>
-          <Link href="/provider/engagement" className="actionLink secondary">
-            Engagement dashboard
-          </Link>
-          <Link href="/provider/plans" className="actionLink secondary">
-            Plan queue (full edit)
-          </Link>
-        </div>
-      </section>
+      <h1 className="provider-page-title" style={{ marginTop: 8 }}>
+        {clientLabel}
+      </h1>
+      {summary ? (
+        <p className="provider-page-subtitle" style={{ marginBottom: 20 }}>
+          {summary}
+        </p>
+      ) : (
+        <p className="provider-page-subtitle">Client workspace</p>
+      )}
 
-      {engagement ? (
-        <section className="sectionStack" style={{ marginTop: 24 }}>
-          <h2>Today&apos;s engagement</h2>
-          <ul style={{ lineHeight: 1.7 }}>
+      <div className="provider-tabs" role="tablist" aria-label="Client sections">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            className="provider-tab"
+            aria-selected={tab === t.id}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="provider-tab-panel" data-active={tab === 'overview'} role="tabpanel">
+        {unresolvedNotes.length > 0 ? (
+          <section className="provider-panel provider-panel--attention">
+            <h2>Admin notes ({unresolvedNotes.length})</h2>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {unresolvedNotes.map((note) => (
+                <div key={note.id} className="provider-queue-item">
+                  <div>
+                    <div style={{ fontSize: '0.875rem' }}>{note.body}</div>
+                    <div style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: 4 }}>
+                      Flagged {new Date(note.createdAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={resolvingNoteId === note.id}
+                    onClick={() => void onResolveNote(note.id)}
+                  >
+                    {resolvingNoteId === note.id ? 'Marking…' : 'Mark addressed'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {intake ? (
+          <section className="provider-panel">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+              <h2 style={{ margin: 0 }}>Intake</h2>
+              {intake.hasRedFlags || !intake.isSafe ? (
+                <span className="provider-tag provider-tag--danger">Red flags</span>
+              ) : null}
+            </div>
+            <ul style={{ margin: '12px 0 0', paddingLeft: 18, lineHeight: 1.7 }}>
+              <li>
+                <strong>Pain source:</strong> {intake.painSource}
+              </li>
+              <li>
+                <strong>Description:</strong> {intake.painDescription}
+              </li>
+              <li>
+                <strong>Recovery goal:</strong> {intake.recoveryGoal}
+              </li>
+              {intake.completedAt ? (
+                <li>
+                  <strong>Submitted:</strong> {new Date(intake.completedAt).toLocaleDateString()}
+                </li>
+              ) : null}
+            </ul>
+          </section>
+        ) : null}
+
+        <section className="provider-panel">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 style={{ margin: 0 }}>Plan status</h2>
+            <button type="button" onClick={() => setTab('plan')} style={{ fontSize: 13 }}>
+              Open Plan tab →
+            </button>
+          </div>
+          <p style={{ marginTop: 12, marginBottom: 0, fontSize: 14 }}>
+            {planId
+              ? `${approvedCount} / ${totalWeeks} weeks approved`
+              : 'No plan generated for this client yet.'}
+          </p>
+        </section>
+
+        {recentMessages.length > 0 ? (
+          <section className="provider-panel">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0 }}>Recent messages</h2>
+              <button type="button" onClick={() => setTab('messages')} style={{ fontSize: 13 }}>
+                Open thread →
+              </button>
+            </div>
+            <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
+              {recentMessages.map((m) => (
+                <div
+                  key={m.id}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 10,
+                    background: m.fromUserId === clientId ? 'var(--surface-2)' : 'var(--accent-soft)',
+                    fontSize: 13,
+                  }}
+                >
+                  <div style={{ color: 'var(--muted)', fontSize: 11, marginBottom: 4 }}>
+                    {m.fromUserId === clientId ? 'Client' : 'You'} ·{' '}
+                    {new Date(m.createdAt).toLocaleDateString()}
+                  </div>
+                  {m.body}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        <section className="provider-panel">
+          <h2>Profile</h2>
+          <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.7 }}>
             <li>
-              <strong>Read-out:</strong>{' '}
-              {engagement.reinforcementRecordedToday ? '✓ recorded' : '○ pending'}
+              <strong>Registered:</strong> {overview.registered}
             </li>
             <li>
-              <strong>Calendar:</strong> {engagement.calendarBlocksDone}/{engagement.calendarBlocksTotal} blocks done
+              <strong>Storage consent:</strong> {overview.storageConsent ? 'Enabled' : 'Not enabled'}
             </li>
             <li>
-              <strong>Holistic:</strong> {engagement.holisticDone ?? 0}/{engagement.holisticTotal ?? 3}
+              <strong>Saved artifacts:</strong> {overview.artifactCount}
             </li>
+            {Object.entries(overview.kindCounts).map(([kind, count]) => (
+              <li key={kind}>
+                <strong>{kind}:</strong> {count}
+              </li>
+            ))}
           </ul>
         </section>
-      ) : null}
 
-      {weekly ? (
-        <section className="sectionStack" style={{ marginTop: 24 }}>
-          <h2>This week&apos;s data</h2>
-          <ul style={{ lineHeight: 1.7 }}>
-            <li><strong>Read-out responses:</strong> {weekly.reinforcementResponses}</li>
-            <li><strong>Calendar blocks done:</strong> {weekly.blocksCompleted}</li>
-            <li><strong>Blocks skipped:</strong> {weekly.blocksSkipped}</li>
-          </ul>
-          {weekly.scheduleInsights.length > 0 ? (
-            <div style={{ marginTop: 12 }}>
-              <p style={{ fontWeight: 600, marginBottom: 8 }}>Scheduling feedback</p>
-              <ul>
-                {weekly.scheduleInsights.slice(0, 5).map((line) => (
-                  <li key={line} style={{ fontSize: 14, marginBottom: 4 }}>{line}</li>
-                ))}
-              </ul>
+        {engagement ? (
+          <section className="provider-panel">
+            <h2>Today&apos;s engagement</h2>
+            <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.7 }}>
+              <li>
+                <strong>Read-out:</strong>{' '}
+                {engagement.reinforcementRecordedToday ? '✓ recorded' : '○ pending'}
+              </li>
+              <li>
+                <strong>Calendar:</strong> {engagement.calendarBlocksDone}/{engagement.calendarBlocksTotal}{' '}
+                blocks done
+              </li>
+              <li>
+                <strong>Holistic:</strong> {engagement.holisticDone ?? 0}/{engagement.holisticTotal ?? 3}
+              </li>
+            </ul>
+          </section>
+        ) : null}
+
+        {weekly ? (
+          <section className="provider-panel">
+            <h2>This week&apos;s data</h2>
+            <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.7 }}>
+              <li>
+                <strong>Read-out responses:</strong> {weekly.reinforcementResponses}
+              </li>
+              <li>
+                <strong>Calendar blocks done:</strong> {weekly.blocksCompleted}
+              </li>
+              <li>
+                <strong>Blocks skipped:</strong> {weekly.blocksSkipped}
+              </li>
+            </ul>
+            {weekly.scheduleInsights.length > 0 ? (
+              <div style={{ marginTop: 12 }}>
+                <p style={{ fontWeight: 600, marginBottom: 8 }}>Scheduling feedback</p>
+                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                  {weekly.scheduleInsights.slice(0, 5).map((line) => (
+                    <li key={line} style={{ fontSize: 14, marginBottom: 4 }}>
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+
+        {overview.artifacts.length > 0 ? (
+          <section className="provider-panel">
+            <h2>Activity log</h2>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {overview.artifacts.map((a) => (
+                <div
+                  key={a.id}
+                  style={{
+                    border: '1px solid var(--border-light)',
+                    borderRadius: 12,
+                    padding: '12px 16px',
+                    background: 'var(--surface-2)',
+                  }}
+                >
+                  <strong>{a.kind}</strong> — {a.title}{' '}
+                  <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
+                    {new Date(a.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {!overview.storageConsent ? (
+          <section className="provider-panel">
+            <p style={{ margin: 0 }}>
+              This client has not enabled data storage. No artifacts are available for review.
+            </p>
+          </section>
+        ) : null}
+      </div>
+
+      <div className="provider-tab-panel" data-active={tab === 'plan'} role="tabpanel">
+        <section className="provider-panel">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <h2 style={{ margin: 0 }}>Week approvals</h2>
+            <span style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600 }}>
+              {approvedCount} / {totalWeeks} weeks approved
+            </span>
+          </div>
+
+          <div
+            style={{
+              height: 6,
+              background: 'var(--surface-2)',
+              borderRadius: 3,
+              marginBottom: 16,
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                height: '100%',
+                background: 'var(--success)',
+                borderRadius: 3,
+                width: `${totalWeeks > 0 ? (approvedCount / totalWeeks) * 100 : 0}%`,
+                transition: 'width 0.3s',
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'grid', gap: 8 }}>
+            {Array.from({ length: totalWeeks }, (_, i) => i + 1).map((weekNum) => {
+              const status = weekStatuses[weekNum] ?? 'draft';
+              const isApproving = approvingWeek === weekNum;
+              return (
+                <div
+                  key={weekNum}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    flexWrap: 'wrap',
+                    padding: '10px 14px',
+                    borderRadius: 10,
+                    border: `1px solid ${status === 'approved' ? 'rgba(155, 196, 168, 0.45)' : 'var(--border-light)'}`,
+                    background: status === 'approved' ? 'rgba(155, 196, 168, 0.1)' : 'var(--surface-2)',
+                  }}
+                >
+                  <div>
+                    <span style={{ fontWeight: 600, fontSize: 14 }}>Week {weekNum}</span>
+                    <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 600, color: statusColour[status] }}>
+                      {statusLabel[status]}
+                    </span>
+                  </div>
+                  {status !== 'approved' ? (
+                    <button
+                      type="button"
+                      disabled={isApproving || !planId}
+                      onClick={() => void onApproveWeek(weekNum)}
+                      style={{ opacity: isApproving ? 0.7 : 1 }}
+                    >
+                      {isApproving ? 'Approving…' : `Approve Week ${weekNum}`}
+                    </button>
+                  ) : (
+                    <span style={{ fontSize: 12, color: 'var(--success)' }}>Client can see this week ✓</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {approveError ? (
+            <p style={{ marginTop: 8, fontSize: 13, color: 'var(--danger)' }}>{approveError}</p>
+          ) : null}
+          <p style={{ marginTop: 12, fontSize: 13, color: 'var(--muted)' }}>
+            To edit week content inline, use the{' '}
+            <Link href="/provider/plans">plan review queue</Link>.
+          </p>
+        </section>
+
+        <section className="provider-panel">
+          <h2>Next week planning (AI)</h2>
+          <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 0 }}>
+            Uses this week&apos;s engagement data to draft the next week with holistic blocks. Takes 1–2 minutes.
+          </p>
+          <button type="button" onClick={() => void onRegenerateWeek()} disabled={regenWeek}>
+            {regenWeek ? 'Generating next week draft…' : 'Generate next week draft'}
+          </button>
+          {weekSuggestions.length > 0 ? (
+            <ul style={{ marginTop: 12, lineHeight: 1.6 }}>
+              {weekSuggestions.map((s) => (
+                <li key={s}>{s}</li>
+              ))}
+            </ul>
+          ) : null}
+          {weekDraft ? (
+            <div
+              style={{
+                marginTop: 16,
+                padding: 16,
+                border: '1px solid var(--border-light)',
+                borderRadius: 12,
+                background: 'var(--surface-2)',
+              }}
+            >
+              <p style={{ margin: '0 0 8px', fontWeight: 700 }}>
+                Week {weekDraft.week}: {weekDraft.theme}
+              </p>
+              <p style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--muted)' }}>{weekDraft.focus}</p>
+              <p style={{ margin: '0 0 4px', fontSize: 13 }}>
+                <strong>Read-out:</strong> {weekDraft.reinforcementTemplate?.title ?? '—'}
+              </p>
+              <p style={{ margin: '0 0 4px', fontSize: 13 }}>
+                <strong>Yoga:</strong> {weekDraft.yogaTrial?.principle ?? '—'}
+              </p>
+              <p style={{ margin: '0 0 12px', fontSize: 13 }}>
+                <strong>Music:</strong> {weekDraft.musicMoment?.playlist?.title ?? '—'}
+              </p>
+              <button type="button" onClick={() => void onApplyWeek()} disabled={applyingWeek}>
+                {applyingWeek ? 'Applying…' : `Apply Week ${weekDraft.week} draft to plan`}
+              </button>
             </div>
           ) : null}
         </section>
-      ) : null}
+      </div>
 
-      {/* Week approval status + quick approve */}
-      <section className="sectionStack" style={{ marginTop: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h2 style={{ margin: 0 }}>Week approvals</h2>
-          <span style={{ fontSize: 13, color: '#888', fontWeight: 600 }}>
-            {approvedCount} / {totalWeeks} weeks approved
-          </span>
-        </div>
+      <div className="provider-tab-panel" data-active={tab === 'readouts'} role="tabpanel">
+        <section className="provider-panel">
+          <h2>Daily read-outs</h2>
+          <CounselorReadOutEditor
+            clientId={clientId}
+            initialTitle={templateTitle}
+            initialBody={templateBody}
+          />
+        </section>
+      </div>
 
-        {/* Progress bar */}
-        <div style={{ height: 6, background: '#f0f0f0', borderRadius: 3, marginBottom: 16, overflow: 'hidden' }}>
-          <div style={{ height: '100%', background: '#2e7d32', borderRadius: 3, width: `${totalWeeks > 0 ? (approvedCount / totalWeeks) * 100 : 0}%`, transition: 'width 0.3s' }} />
-        </div>
-
-        <div style={{ display: 'grid', gap: 8 }}>
-          {Array.from({ length: totalWeeks }, (_, i) => i + 1).map(weekNum => {
-            const status = weekStatuses[weekNum] ?? 'draft';
-            const isApproving = approvingWeek === weekNum;
-            return (
-              <div key={weekNum} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 14px', borderRadius: 10,
-                border: `1px solid ${status === 'approved' ? '#c8e6c9' : '#e0e0e0'}`,
-                background: status === 'approved' ? '#f1f8e9' : '#fafafa',
-              }}>
-                <div>
-                  <span style={{ fontWeight: 600, fontSize: 14 }}>Week {weekNum}</span>
-                  <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 600, color: statusColour[status] }}>
-                    {statusLabel[status]}
-                  </span>
-                </div>
-                {status !== 'approved' ? (
-                  <button
-                    type="button"
-                    disabled={isApproving || !planId}
-                    onClick={() => void onApproveWeek(weekNum)}
-                    style={{
-                      fontSize: 13, padding: '6px 14px', borderRadius: 999,
-                      border: 'none', background: '#2e7d32', color: 'white',
-                      fontWeight: 600, cursor: planId ? 'pointer' : 'not-allowed',
-                      opacity: isApproving ? 0.7 : 1, minHeight: 36,
-                    }}
-                  >
-                    {isApproving ? 'Approving…' : `Approve Week ${weekNum}`}
-                  </button>
-                ) : (
-                  <span style={{ fontSize: 12, color: '#2e7d32' }}>Client can see this week ✓</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {approveError ? <p style={{ marginTop: 8, fontSize: 13, color: '#c62828' }}>{approveError}</p> : null}
-        <p style={{ marginTop: 12, fontSize: 13, color: '#888' }}>
-          To edit week content inline, use the{' '}
-          <Link href="/provider/plans" style={{ color: '#555', textDecoration: 'underline' }}>plan queue</Link>.
-        </p>
-      </section>
-
-      <section className="sectionStack" style={{ marginTop: 24 }}>
-        <h2>Daily read-out</h2>
-        <CounselorReadOutEditor
-          clientId={clientId}
-          initialTitle={templateTitle}
-          initialBody={templateBody}
-        />
-      </section>
-
-      <section className="sectionStack" style={{ marginTop: 24 }}>
-        <h2>Next week planning (AI)</h2>
-        <p style={{ color: '#555', fontSize: 14 }}>
-          Uses this week&apos;s engagement data to draft the next week with holistic blocks. Takes 1–2 minutes.
-        </p>
-        <button type="button" onClick={() => void onRegenerateWeek()} disabled={regenWeek}>
-          {regenWeek ? 'Generating next week draft…' : 'Generate next week draft'}
-        </button>
-        {weekSuggestions.length > 0 ? (
-          <ul style={{ marginTop: 12, lineHeight: 1.6 }}>
-            {weekSuggestions.map((s) => (
-              <li key={s}>{s}</li>
-            ))}
-          </ul>
-        ) : null}
-        {weekDraft ? (
-          <div style={{ marginTop: 16, padding: 16, border: '1px solid #e0e0e0', borderRadius: 12, background: '#fafafa' }}>
-            <p style={{ margin: '0 0 8px', fontWeight: 700 }}>
-              Week {weekDraft.week}: {weekDraft.theme}
-            </p>
-            <p style={{ margin: '0 0 12px', fontSize: 14, color: '#555' }}>{weekDraft.focus}</p>
-            <p style={{ margin: '0 0 4px', fontSize: 13 }}><strong>Read-out:</strong> {weekDraft.reinforcementTemplate?.title ?? '—'}</p>
-            <p style={{ margin: '0 0 4px', fontSize: 13 }}><strong>Yoga:</strong> {weekDraft.yogaTrial?.principle ?? '—'}</p>
-            <p style={{ margin: '0 0 12px', fontSize: 13 }}><strong>Music:</strong> {weekDraft.musicMoment?.playlist?.title ?? '—'}</p>
-            <p style={{ margin: '0 0 12px', fontSize: 13, color: '#555' }}>
-              Applying saves this draft. Then approve it from the week approvals section above to release it to the client.
-            </p>
-            <button type="button" onClick={() => void onApplyWeek()} disabled={applyingWeek}>
-              {applyingWeek ? 'Applying…' : `Apply Week ${weekDraft.week} draft to plan`}
-            </button>
-          </div>
-        ) : null}
-      </section>
+      <div className="provider-tab-panel" data-active={tab === 'messages'} role="tabpanel">
+        <section className="provider-panel">
+          <h2>Messages</h2>
+          <p style={{ marginTop: 0, color: 'var(--muted)' }}>
+            Open a secure thread with this client.
+          </p>
+          <Link href={`/provider/messages?with=${clientId}`} className="actionLink">
+            Open message thread →
+          </Link>
+        </section>
+      </div>
 
       {message ? (
         <p role="status" className="statusBanner" style={{ marginTop: 24 }}>
