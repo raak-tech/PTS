@@ -49,10 +49,24 @@ function parseJsonField(raw: string | null | undefined): string {
   }
 }
 
+type CounselorNote = {
+  id: string;
+  clientId: string;
+  authorId: string;
+  body: string;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+  createdAt: string;
+};
+
 export function AdminClientDossierClient({ clientId }: Props) {
   const [dossier, setDossier] = useState<AdminClientDossier | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
+  const [notes, setNotes] = useState<CounselorNote[]>([]);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [submittingNote, setSubmittingNote] = useState(false);
+  const [noteError, setNoteError] = useState('');
 
   useEffect(() => {
     void fetch(`/api/admin/clients/${clientId}`, { credentials: 'include' })
@@ -66,6 +80,47 @@ export function AdminClientDossierClient({ clientId }: Props) {
       })
       .catch(() => setError('Could not load client dossier.'));
   }, [clientId]);
+
+  const loadNotes = () => {
+    void fetch(`/api/admin/clients/${clientId}/notes`, { credentials: 'include' })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = (await res.json()) as { notes: CounselorNote[] };
+        setNotes(data.notes ?? []);
+      })
+      .catch(() => undefined);
+  };
+
+  useEffect(() => {
+    loadNotes();
+  }, [clientId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onSubmitNote = async () => {
+    if (!noteDraft.trim()) return;
+    setSubmittingNote(true);
+    setNoteError('');
+    try {
+      const res = await fetch(`/api/admin/clients/${clientId}/notes`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: noteDraft.trim() }),
+      });
+      if (!res.ok) {
+        setNoteError('Could not save note.');
+        return;
+      }
+      setNoteDraft('');
+      loadNotes();
+    } catch {
+      setNoteError('Network error saving note.');
+    } finally {
+      setSubmittingNote(false);
+    }
+  };
+
+  const unresolvedNotes = notes.filter((n) => !n.resolvedAt);
+  const resolvedNotes = notes.filter((n) => n.resolvedAt);
 
   if (error) {
     return (
@@ -116,6 +171,74 @@ export function AdminClientDossierClient({ clientId }: Props) {
           </p>
         </div>
       )}
+
+      <Section title="Notes for counselor">
+        {unresolvedNotes.length > 0 ? (
+          <div style={{ display: 'grid', gap: 10, marginBottom: 16 }}>
+            {unresolvedNotes.map((n) => (
+              <div key={n.id} style={{ padding: 12, borderRadius: 10, background: '#fff8e1', border: '1px solid #ffe082' }}>
+                <div style={{ fontSize: 12, color: '#8d6e00', marginBottom: 6 }}>
+                  Unresolved · flagged {formatWhen(n.createdAt)}
+                </div>
+                <div style={{ fontSize: 14, lineHeight: 1.5 }}>{n.body}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p style={{ margin: '0 0 16px', color: '#666', fontSize: 14 }}>No open notes for this client.</p>
+        )}
+
+        <textarea
+          value={noteDraft}
+          onChange={(e) => setNoteDraft(e.target.value)}
+          placeholder="Flag something for the counselor to address (e.g. billing question, escalation, scheduling conflict)…"
+          rows={3}
+          style={{
+            width: '100%',
+            padding: '8px 12px',
+            fontSize: 14,
+            border: '1px solid #ddd',
+            borderRadius: 8,
+            boxSizing: 'border-box',
+            fontFamily: 'inherit',
+            marginBottom: 8,
+          }}
+        />
+        {noteError ? <p style={{ color: '#b71c1c', fontSize: 13, margin: '0 0 8px' }}>{noteError}</p> : null}
+        <button
+          type="button"
+          onClick={() => void onSubmitNote()}
+          disabled={submittingNote || !noteDraft.trim()}
+          style={{
+            padding: '8px 14px',
+            fontSize: 13,
+            fontWeight: 600,
+            background: submittingNote ? '#999' : '#111',
+            color: 'white',
+            border: 'none',
+            borderRadius: 8,
+            cursor: submittingNote ? 'default' : 'pointer',
+          }}
+        >
+          {submittingNote ? 'Flagging…' : 'Flag for counselor'}
+        </button>
+
+        {resolvedNotes.length > 0 ? (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>Resolved ({resolvedNotes.length})</div>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {resolvedNotes.map((n) => (
+                <div key={n.id} style={{ padding: 10, borderRadius: 8, background: '#f5f5f5', fontSize: 13, color: '#666' }}>
+                  {n.body}
+                  <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
+                    Flagged {formatWhen(n.createdAt)} · resolved {formatWhen(n.resolvedAt)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </Section>
 
       <Section title="Account">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>

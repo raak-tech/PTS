@@ -159,6 +159,17 @@ export const clientCounselor = pgTable("client_counselor", {
   assignedAt: timestamp("assigned_at", { mode: "date", withTimezone: true }).notNull(),
 });
 
+// Admin notes flagged on a specific client for the assigned counselor to see and address.
+export const counselorNotes = pgTable("counselor_client_notes", {
+  id: text("id").primaryKey(),
+  clientId: text("client_id").notNull(),
+  authorId: text("author_id").notNull(),
+  body: text("body").notNull(),
+  resolvedAt: timestamp("resolved_at", { mode: "date", withTimezone: true }),
+  resolvedBy: text("resolved_by"),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
 // Web Push notification subscriptions (for Web Push Protocol)
 export const pushSubscriptions = pgTable("push_subscriptions", {
   id: text("id").primaryKey(),
