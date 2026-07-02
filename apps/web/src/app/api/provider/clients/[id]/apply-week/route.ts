@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { applyWeekToApprovedPlan } from '@/lib/apply-week-to-plan';
+import { recordAudit } from '@/lib/audit';
 import { assertCounselorForClient } from '@/lib/client-access';
 import type { WeekPlan } from '@/lib/plan-generator';
 import { logError } from '@/lib/logger';
@@ -48,6 +49,15 @@ export async function POST(request: Request, context: RouteContext) {
     if (!planId) {
       return NextResponse.json({ error: 'no_approved_plan' }, { status: 404 });
     }
+
+    void recordAudit({
+      actorUserId: user.id,
+      actorRole: user.role,
+      action: 'apply_week',
+      targetType: 'plan_week',
+      targetId: planId,
+      metadata: { clientId, weekNumber: weekPlan.week },
+    });
 
     return NextResponse.json({ ok: true, planId, weekNumber: weekPlan.week });
   } catch (err) {

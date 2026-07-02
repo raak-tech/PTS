@@ -5,6 +5,8 @@
 **Audience:** Satheesh (product), Ramya (clinical), Engineering  
 **Purpose:** One document tying together web, mobile, admin, API, pilot, and the new holistic recovery features (Ayurveda, music psychology, daily reinforcement, scheduling).
 
+> **Execution todos:** [`PILOT_TODO.md`](./PILOT_TODO.md). Mobile APK is shipping (Expo); some sections below are dated.
+
 ---
 
 ## 1. Executive summary

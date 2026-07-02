@@ -29,12 +29,16 @@ export function TestTimeBanner() {
     <View style={styles.wrap}>
       <Text style={styles.text}>
         {programTime.programComplete
-          ? 'Test time: program complete (6 weeks elapsed)'
+          ? programTime.usesCalendarWeeks
+            ? 'Program complete (6 calendar weeks)'
+            : 'Test time: program complete (6 weeks elapsed)'
           : programTime.testModeLabel}
       </Text>
       <Text style={styles.meta}>{programTime.subtitle}</Text>
       <Pressable onPress={resetProgramClock}>
-        <Text style={styles.reset}>Reset to Week 1 Day 1</Text>
+        <Text style={styles.reset}>
+          {programTime.usesCalendarWeeks ? 'Refresh program state' : 'Reset to Week 1 Day 1'}
+        </Text>
       </Pressable>
     </View>
   );

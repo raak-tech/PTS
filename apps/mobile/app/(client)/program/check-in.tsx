@@ -15,7 +15,7 @@ export default function WeeklyCheckInScreen() {
   const router = useRouter();
   const { token } = useAuth();
   const programTime = useProgramTime();
-  const weekNumber = programTime?.weekNumber ?? 1;
+  const weekNumber = programTime?.contentWeekNumber ?? programTime?.weekNumber ?? 1;
   const [prompts, setPrompts] = useState<Array<{ id: string; question: string }>>([]);
   const [answers, setAnswers] = useState({ q1: '', q2: '', q3: '' });
   const [currentStep, setCurrentStep] = useState(0);

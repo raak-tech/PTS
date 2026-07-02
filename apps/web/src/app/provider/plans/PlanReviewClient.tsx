@@ -29,17 +29,34 @@ const btnSecondary: CSSProperties = {
   minHeight: 44,
 };
 
-const btnPrimary: CSSProperties = {
-  padding: '12px 24px',
-  borderRadius: 999,
-  border: 'none',
-  background: '#111111',
-  color: '#ffffff',
-  fontWeight: 700,
-  fontSize: 15,
-  cursor: 'pointer',
-  minHeight: 44,
+const PROGRAM_WEEKS = 6;
+
+const lockedCard: CSSProperties = {
+  border: '1px dashed #d0d0d0',
+  borderRadius: 12,
+  marginBottom: 10,
+  padding: '14px 16px',
+  background: '#fafafa',
 };
+
+function LockedWeekCard({ weekNumber, clientId }: { weekNumber: number; clientId: string }) {
+  return (
+    <div style={lockedCard}>
+      <p style={{ margin: '0 0 6px', fontWeight: 700, fontSize: 14, color: '#666' }}>
+        Week {weekNumber} — Not generated yet
+      </p>
+      <p style={{ margin: '0 0 10px', fontSize: 13, color: '#888', lineHeight: 1.5 }}>
+        Approve Week {weekNumber - 1} first, then generate Week {weekNumber} from the client workspace after saving your week comment.
+      </p>
+      <Link
+        href={`/provider/clients/${clientId}?tab=plan`}
+        style={{ fontSize: 13, color: '#333', textDecoration: 'underline', fontWeight: 600 }}
+      >
+        Open client workspace →
+      </Link>
+    </div>
+  );
+}
 
 const btnApprove: CSSProperties = {
   padding: '10px 20px',
@@ -367,10 +384,8 @@ export function PlanReviewClient({
   initialWeekStatuses?: Record<number, 'draft' | 'edited' | 'approved'>;
   hasCrisisNotes?: boolean;
 }) {
-  const [notes, setNotes] = useState('');
   const [expanded, setExpanded] = useState(false);
   const [crisisAcknowledged, setCrisisAcknowledged] = useState(false);
-  const [planStatus, setPlanStatus] = useState<'idle' | 'saving' | 'approved'>('idle');
   const [regenStatus, setRegenStatus] = useState<'idle' | 'generating'>('idle');
   const [holisticVisibility, setHolisticVisibility] = useState<HolisticVisibility>(DEFAULT_HOLISTIC_VISIBILITY);
   const [weekStatuses, setWeekStatuses] = useState<Record<number, 'draft' | 'edited' | 'approved'>>(initialWeekStatuses);
@@ -379,7 +394,10 @@ export function PlanReviewClient({
   );
 
   const approvedCount = Object.values(weekStatuses).filter(s => s === 'approved').length;
-  const totalWeeks = plan.weeks.length;
+  const generatedWeekNumbers = new Set(plan.weeks.map(w => w.week));
+  const lockedWeekNumbers = Array.from({ length: PROGRAM_WEEKS }, (_, i) => i + 1).filter(
+    n => !generatedWeekNumbers.has(n),
+  );
 
   const regenerate = async () => {
     setRegenStatus('generating');
@@ -402,29 +420,6 @@ export function PlanReviewClient({
     }
   };
 
-  // Legacy full-plan approve (all weeks at once) — kept for backward compatibility
-  const approveAll = async () => {
-    setPlanStatus('saving');
-    const previewPlan = applyHolisticVisibility(plan, holisticVisibility);
-    const res = await fetch('/api/plans', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        planId,
-        counselorNotes: notes,
-        action: 'approve',
-        holisticVisibility,
-      }),
-    });
-    if (res.ok) {
-      void previewPlan;
-      setPlanStatus('approved');
-    } else {
-      setPlanStatus('idle');
-    }
-  };
-
   const toggleHolistic = (key: keyof HolisticVisibility) => {
     setHolisticVisibility(prev => ({ ...prev, [key]: !prev[key] }));
   };
@@ -437,18 +432,6 @@ export function PlanReviewClient({
   const handleWeekApproved = (weekNumber: number) => {
     setWeekStatuses(prev => ({ ...prev, [weekNumber]: 'approved' }));
   };
-
-  if (planStatus === 'approved') {
-    return (
-      <div style={{ padding: '20px 24px', border: '1px solid #c8e6c9', borderRadius: 16, background: '#f1f8e9', marginBottom: 16 }}>
-        <p style={{ margin: 0, fontWeight: 600, color: '#2e7d32' }}>✓ Plan approved for {clientEmail}</p>
-        <p style={{ margin: '4px 0 0', fontSize: 13, color: '#555' }}>The client will see their plan the next time they visit.</p>
-        <Link href={`/messages?with=${clientId}`} style={{ display: 'inline-block', marginTop: 12, fontSize: 13, color: '#333', textDecoration: 'underline' }}>
-          Message this client →
-        </Link>
-      </div>
-    );
-  }
 
   const previewPlan = applyHolisticVisibility(
     { ...plan, weeks: plan.weeks.map(w => weekData[w.week] ?? w) },
@@ -465,7 +448,7 @@ export function PlanReviewClient({
           <div>
             <p style={{ margin: 0, fontWeight: 700, color: '#111' }}>{clientEmail}</p>
             <p style={{ margin: '2px 0 0', fontSize: 13, color: '#666' }}>
-              Generated {createdAt} · {approvedCount}/{totalWeeks} weeks approved
+              Week 1 draft · Generated {createdAt} · {approvedCount}/{PROGRAM_WEEKS} weeks approved
             </p>
           </div>
           <button type="button" onClick={() => setExpanded(e => !e)} style={btnSecondary}>
@@ -474,9 +457,9 @@ export function PlanReviewClient({
         </div>
 
         {/* Progress bar */}
-        {expanded && totalWeeks > 0 && (
+        {expanded && (
           <div style={{ height: 4, background: '#f0f0f0' }}>
-            <div style={{ height: '100%', background: '#2e7d32', width: `${(approvedCount / totalWeeks) * 100}%`, transition: 'width 0.3s' }} />
+            <div style={{ height: '100%', background: '#2e7d32', width: `${(approvedCount / PROGRAM_WEEKS) * 100}%`, transition: 'width 0.3s' }} />
           </div>
         )}
 
@@ -556,7 +539,7 @@ export function PlanReviewClient({
 
             {/* Per-week editors */}
             <p style={{ margin: '0 0 12px', fontWeight: 600 }}>
-              6-week plan — click any field to edit
+              Week 1 draft — click any field to edit
               <span style={{ fontSize: 13, fontWeight: 400, color: '#888', marginLeft: 8 }}>Changes save automatically</span>
             </p>
             {previewPlan.weeks.map(w => (
@@ -570,39 +553,26 @@ export function PlanReviewClient({
                 onApproved={handleWeekApproved}
               />
             ))}
+            {lockedWeekNumbers.map(weekNumber => (
+              <LockedWeekCard key={weekNumber} weekNumber={weekNumber} clientId={clientId} />
+            ))}
 
-            {/* Counselor notes + legacy full-approve */}
             <div style={{ borderTop: '1px solid #eee', paddingTop: 20, marginTop: 20 }}>
-              <label style={{ display: 'block', fontWeight: 600, marginBottom: 8, fontSize: 14 }}>
-                Counselor notes <span style={{ fontWeight: 400, color: '#888' }}>(optional — visible to you only)</span>
-              </label>
               <p style={{ margin: '0 0 12px', fontSize: 13, color: '#555' }}>
-                Or approve all weeks at once using the button below. Individual per-week approvals above are recommended.
+                Approve Week 1 above to release it to the client. Later weeks are generated from the{' '}
+                <Link href={`/provider/clients/${clientId}?tab=plan`} style={{ color: '#333' }}>
+                  client workspace
+                </Link>
+                .
               </p>
-              <textarea
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                rows={3}
-                placeholder="Anything to remember about this client…"
-                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #ddd', fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 14, resize: 'vertical' }}
-              />
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={() => void approveAll()}
-                  disabled={planStatus === 'saving' || (hasCrisisNotes && !crisisAcknowledged)}
-                  title={hasCrisisNotes && !crisisAcknowledged ? 'Acknowledge crisis notes above first' : undefined}
-                  style={{ ...btnPrimary, opacity: (planStatus === 'saving' || (hasCrisisNotes && !crisisAcknowledged)) ? 0.4 : 1, cursor: (hasCrisisNotes && !crisisAcknowledged) ? 'not-allowed' : 'pointer' }}
-                >
-                  {planStatus === 'saving' ? 'Approving…' : 'Approve all weeks & send to client'}
-                </button>
                 <button
                   type="button"
                   onClick={() => void regenerate()}
                   disabled={regenStatus === 'generating'}
                   style={{ ...btnSecondary, opacity: regenStatus === 'generating' ? 0.7 : 1 }}
                 >
-                  {regenStatus === 'generating' ? 'Regenerating…' : 'Regenerate plan draft'}
+                  {regenStatus === 'generating' ? 'Regenerating…' : 'Regenerate Week 1 draft'}
                 </button>
                 <Link
                   href={`/messages?with=${clientId}`}

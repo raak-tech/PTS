@@ -1,7 +1,7 @@
 export const PLAN_GENERATION_STEPS = [
   'Reading latest intake…',
   'Calling AI (Claude via OpenRouter)…',
-  'Building your 6-week program…',
+  'Building Week 1 program…',
   'Adding Ayurveda, yoga & music blocks…',
   'Validating plan structure…',
 ] as const;

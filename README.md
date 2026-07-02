@@ -12,6 +12,9 @@ Therapy-focused product exploration + build scaffold.
   - `docs/` — specs, plans, decision log
 
 ## Immediate next steps
+
+**Pilot execution queue:** [`docs/PILOT_TODO.md`](docs/PILOT_TODO.md)
+
 1. Fill `docs/PROJECT_BRIEF.md` (who/what/why, initial use case: pain management).
 2. Add a **data/privacy** posture in `docs/SAFETY_PRIVACY.md`.
 3. Decide MVP slice in `docs/plans/` and build thin vertical slice.

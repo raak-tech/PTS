@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 import { getDb } from '@/db';
@@ -16,7 +16,8 @@ type UserLabelRow = {
 function displayLabel(user: { displayName: string | null; phone: string | null; email: string }) {
   if (user.displayName) return user.displayName;
   if (user.phone) return user.phone.replace('+91', '+91 ');
-  return user.email;
+  const [local, domain] = user.email.split('@');
+  return domain === 'phone.pts.local' ? `+${local.replace(/^91/, '91 ')}` : user.email;
 }
 
 export async function GET(request: Request) {
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
         .where(eq(clientCounselor.clientId, user.id))
         .limit(1);
 
-      if (!assignment) {
+      if (!assignment?.counselorId) {
         return NextResponse.json({ ok: true, counselor: null });
       }
 
@@ -54,30 +55,42 @@ export async function GET(request: Request) {
         return NextResponse.json({ ok: true, counselor: null });
       }
 
-      const [profile] = await db
-        .select({ calendlyUrl: counselorProfiles.calendlyUrl })
-        .from(counselorProfiles)
-        .where(eq(counselorProfiles.userId, counselor.id))
-        .limit(1);
+      let calendlyUrl: string | null = null;
+      try {
+        const [profile] = await db
+          .select({ calendlyUrl: counselorProfiles.calendlyUrl })
+          .from(counselorProfiles)
+          .where(eq(counselorProfiles.userId, counselor.id))
+          .limit(1);
+        calendlyUrl = profile?.calendlyUrl ?? null;
+      } catch (profileErr) {
+        logError('me_contacts_profile_error', profileErr, { counselorId: counselor.id });
+      }
 
-      const unread = await db
-        .select({ id: messages.id })
-        .from(messages)
-        .where(
-          and(
-            eq(messages.toUserId, user.id),
-            eq(messages.fromUserId, counselor.id),
-            isNull(messages.readAt),
-          ),
-        );
+      let unreadCount = 0;
+      try {
+        const unread = await db
+          .select({ id: messages.id })
+          .from(messages)
+          .where(
+            and(
+              eq(messages.toUserId, user.id),
+              eq(messages.fromUserId, counselor.id),
+              isNull(messages.readAt),
+            ),
+          );
+        unreadCount = unread.length;
+      } catch (unreadErr) {
+        logError('me_contacts_unread_error', unreadErr, { clientId: user.id, counselorId: counselor.id });
+      }
 
       return NextResponse.json({
         ok: true,
         counselor: {
           id: counselor.id,
           name: displayLabel(counselor),
-          unreadCount: unread.length,
-          calendlyUrl: profile?.calendlyUrl ?? null,
+          unreadCount,
+          calendlyUrl,
         },
       });
     }
@@ -98,18 +111,8 @@ export async function GET(request: Request) {
               email: users.email,
             })
             .from(users)
-            .where(eq(users.role, 'client'))) as UserLabelRow[])
-        : ((await db
-            .select({
-              id: users.id,
-              displayName: users.displayName,
-              phone: users.phone,
-              email: users.email,
-            })
-            .from(users)
-            .where(eq(users.role, 'client'))) as UserLabelRow[]);
-
-    const filtered = assignedIds.length > 0 ? clients.filter((c) => assignedIds.includes(c.id)) : clients;
+            .where(and(eq(users.role, 'client'), inArray(users.id, assignedIds)))) as UserLabelRow[])
+        : [];
 
     const unreadRows = await db
       .select({ fromUserId: messages.fromUserId })
@@ -129,7 +132,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      clients: filtered.map((client) => ({
+      clients: clients.map((client) => ({
         id: client.id,
         name: displayLabel(client),
         planStatus: planStatusByUser[client.id] ?? 'none',

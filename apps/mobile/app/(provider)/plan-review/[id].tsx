@@ -8,12 +8,10 @@ import { Card } from '@/components/Card';
 import { HitTarget } from '@/components/HitTarget';
 import { PlanGenerationOverlay } from '@/components/PlanGenerationOverlay';
 import { Screen } from '@/components/Screen';
-import { TextField } from '@/components/TextField';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import {
-  apiApprovePlan,
   apiApproveWeek,
   apiGetPlan,
   apiRegeneratePlan,
@@ -22,6 +20,7 @@ import {
 } from '@/lib/api';
 import { API_URL } from '@/config';
 import { HolisticWeekSection } from '@/components/holistic/HolisticCards';
+import { PROGRAM_WEEK_THEMES } from '@/lib/appTime';
 
 type HolisticVisibility = { ayurveda: boolean; yoga: boolean; music: boolean };
 
@@ -88,15 +87,46 @@ function WeekSummaryCard({
   );
 }
 
+// Locked placeholder for weeks not yet generated (Week-1-first model).
+function LockedWeekCard({ weekNumber, clientId }: { weekNumber: number; clientId: string }) {
+  const theme = PROGRAM_WEEK_THEMES[weekNumber - 1];
+  const styles = useThemedStyles((c) => ({
+    header: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, marginBottom: 8 },
+    weekLabel: { fontSize: 14, fontWeight: '700' as const, color: c.muted },
+    badge: { fontSize: 11, color: c.faint, backgroundColor: c.bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, overflow: 'hidden' as const },
+    theme: { fontSize: 14, color: c.muted, fontWeight: '600' as const, marginBottom: 4 },
+    note: { fontSize: 12, color: c.faint, marginTop: 6, lineHeight: 18 },
+    webLink: { fontSize: 13, color: '#f97316', marginTop: 10, fontWeight: '600' as const },
+  }));
+
+  return (
+    <Card>
+      <View style={styles.header}>
+        <Text style={styles.weekLabel}>🔒 Week {weekNumber}</Text>
+        <Text style={styles.badge}>Not generated yet</Text>
+      </View>
+      {theme ? <Text style={styles.theme}>{theme.theme}</Text> : null}
+      <Text style={styles.note}>
+        Approve Week {weekNumber - 1} first, then generate Week {weekNumber} from the web workspace after
+        saving your week comment.
+      </Text>
+      <Text
+        style={styles.webLink}
+        onPress={() => void Linking.openURL(`${API_URL}/provider/clients/${clientId}`)}
+      >
+        Open web workspace →
+      </Text>
+    </Card>
+  );
+}
+
 export default function PlanReviewScreen() {
   const router = useRouter();
   const { id, clientId } = useLocalSearchParams<{ id: string; clientId?: string }>();
   const { token } = useAuth();
   const { colors } = useTheme();
 
-  const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
-  const [approving, setApproving] = useState(false);
   const [approvingWeek1, setApprovingWeek1] = useState(false);
   const [week1Approved, setWeek1Approved] = useState(false);
   const [hasCrisisNotes, setHasCrisisNotes] = useState(false);
@@ -104,7 +134,6 @@ export default function PlanReviewScreen() {
   const [regenerating, setRegenerating] = useState(false);
   const [regenError, setRegenError] = useState('');
   const [approveError, setApproveError] = useState('');
-  const [legacyApproved, setLegacyApproved] = useState(false);
   const [allWeeks, setAllWeeks] = useState<GeneratedPlan['weeks']>([]);
   const [context, setContext] = useState('');
   const [holisticVisibility, setHolisticVisibility] = useState<HolisticVisibility>({
@@ -189,18 +218,6 @@ export default function PlanReviewScreen() {
     }
   };
 
-  // Legacy full-plan approval (kept for backward compat)
-  const onApproveLegacy = async () => {
-    if (!token || !id) return;
-    setApproving(true);
-    try {
-      await apiApprovePlan(token, id, notes.trim() || undefined, holisticVisibility);
-      setLegacyApproved(true);
-    } finally {
-      setApproving(false);
-    }
-  };
-
   const toggleHolistic = (key: keyof HolisticVisibility) => {
     setHolisticVisibility((prev) => ({ ...prev, [key]: !prev[key] }));
   };
@@ -214,12 +231,12 @@ export default function PlanReviewScreen() {
   }
 
   // Post-approval success screen
-  if (week1Approved || legacyApproved) {
+  if (week1Approved) {
     return (
       <Screen title="Week 1 approved" subtitle="Client can now see Week 1 in their app">
         <Card>
           <Text style={styles.body}>
-            Week 1 is live for this client. To approve Weeks 2–6 and edit the full plan, open the web workspace.
+            Week 1 is live for this client. Generate and approve later weeks from the web workspace after reviewing engagement data.
           </Text>
           <Text
             style={styles.webLinkText}
@@ -249,7 +266,7 @@ export default function PlanReviewScreen() {
   return (
     <>
       <PlanGenerationOverlay visible={regenerating} />
-      <Screen title="Review plan" subtitle={`Plan ${id?.slice(0, 8) ?? ''} · ${totalWeeks} weeks`}>
+      <Screen title="Review Week 1 draft" subtitle={`Plan ${id?.slice(0, 8) ?? ''} · Week 1 of 6`}>
 
         {/* Client context */}
         <Card title="Client context">
@@ -337,15 +354,6 @@ export default function PlanReviewScreen() {
               ))}
             </Card>
 
-            {/* Optional counselor note */}
-            <TextField
-              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12, minHeight: 80, backgroundColor: colors.bg }}
-              placeholder="Optional counselor note for this client"
-              multiline
-              value={notes}
-              onChangeText={setNotes}
-            />
-
             <Text style={styles.approveNote}>
               Approving Week 1 assigns you as this client's counselor and seeds their daily read-out and calendar template.
             </Text>
@@ -365,44 +373,35 @@ export default function PlanReviewScreen() {
           </>
         )}
 
-        {/* ── WEEKS 2–N — read-only summaries ── */}
-        {remainingWeeks.length > 0 && (
-          <>
-            <View style={styles.separator} />
-            <Text style={styles.sectionLabel}>Weeks 2–{totalWeeks} — review on web</Text>
-            <Text style={[styles.body, { marginBottom: 8 }]}>
-              These weeks are visible here for context. Edit and approve them from the web workspace after reviewing Week 1 engagement data.
-            </Text>
-            {remainingWeeks.map((week) => (
-              <WeekSummaryCard
-                key={week.week}
-                week={week}
-                clientId={clientId ?? ''}
-                planId={id ?? ''}
-              />
-            ))}
-          </>
-        )}
+        {/* ── WEEKS 2–6 — locked / review on web ── */}
+        <View style={styles.separator} />
+        <Text style={styles.sectionLabel}>Weeks 2–{PROGRAM_WEEK_THEMES.length}</Text>
+        <Text style={[styles.body, { marginBottom: 8 }]}>
+          Generated and approved one at a time from the web workspace after reviewing each week&apos;s engagement data.
+        </Text>
+        {Array.from({ length: PROGRAM_WEEK_THEMES.length - 1 }, (_, i) => i + 2).map((weekNumber) => {
+          const generated = remainingWeeks.find((w) => w.week === weekNumber);
+          return generated ? (
+            <WeekSummaryCard
+              key={weekNumber}
+              week={generated}
+              clientId={clientId ?? ''}
+              planId={id ?? ''}
+            />
+          ) : (
+            <LockedWeekCard key={weekNumber} weekNumber={weekNumber} clientId={clientId ?? ''} />
+          );
+        })}
 
         {/* Regenerate + legacy full approve */}
         <View style={styles.separator} />
         {regenError ? <Text style={styles.errorText}>{regenError}</Text> : null}
         <Button
-          label={regenerating ? 'Generating draft…' : 'Regenerate full plan draft'}
+          label={regenerating ? 'Generating draft…' : 'Regenerate Week 1 draft'}
           variant="secondary"
           onPress={() => void onRegenerate()}
           disabled={regenerating}
         />
-        <Button
-          label={approving ? 'Approving all…' : 'Approve all weeks at once'}
-          variant="ghost"
-          onPress={() => void onApproveLegacy()}
-          loading={approving}
-          disabled={hasCrisisNotes && !crisisAcknowledged}
-        />
-        <Text style={[styles.body, { marginTop: 4 }]}>
-          "Approve all" releases all weeks simultaneously — use only if you have reviewed the full plan.
-        </Text>
       </Screen>
     </>
   );

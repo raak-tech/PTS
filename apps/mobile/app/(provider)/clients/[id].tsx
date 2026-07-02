@@ -9,12 +9,14 @@ import * as FileSystem from 'expo-file-system';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Text, Pressable } from 'react-native';
+import { Text, Pressable, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { CounselorAudioPlayer } from '@/components/daily/CounselorAudioPlayer';
 import { CounselorReadOutEditor } from '@/components/daily/CounselorReadOutEditor';
 import { Screen } from '@/components/Screen';
+import { TextField } from '@/components/TextField';
 import { useAuth } from '@/context/AuthContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { API_URL } from '@/config';
@@ -23,13 +25,16 @@ import {
   apiCreateReinforcement,
   apiDeleteReinforcement,
   apiGetClientReinforcements,
+  apiGetProviderClientMeta,
   apiGetPlan,
   apiGetProviderEngagement,
   apiGetProviderQueue,
   apiGetWeeklySummary,
   apiRegenerateWeek,
+  apiSaveWeekComment,
   apiUpdateReinforcement,
   parseGeneratedPlan,
+  type GeneratedPlan,
 } from '@/lib/api';
 
 type ReadOutRow = {
@@ -38,6 +43,22 @@ type ReadOutRow = {
   bodyText: string;
   hasCounselorAudio?: boolean;
   isActive?: boolean;
+  latestResponse?: {
+    responseType: 'text' | 'voice' | string;
+    bodyText: string | null;
+    audioUrl: string | null;
+    submittedAt: string;
+  } | null;
+};
+
+type ClientUpdate = { id: string; title: string; bodyText: string; createdAt: string };
+
+type WeeklyData = {
+  painTrend: string | null;
+  readOutSummaries: string[];
+  latestWeeklyCheckIn: string | null;
+  morningCheckIns: { dateIso: string; painLevel: number; sleepQuality: string }[];
+  scheduleInsights: string[];
 };
 
 export default function ProviderClientScreen() {
@@ -54,7 +75,12 @@ export default function ProviderClientScreen() {
     holisticTotal: number;
   } | null>(null);
   const [holisticPreview, setHolisticPreview] = useState<string[]>([]);
-  const [weekly, setWeekly] = useState<string[]>([]);
+  const [weekly, setWeekly] = useState<WeeklyData | null>(null);
+  const [clientUpdates, setClientUpdates] = useState<ClientUpdate[]>([]);
+  const [planId, setPlanId] = useState<string | null>(null);
+  const [approvedCount, setApprovedCount] = useState(0);
+  const [weekComment, setWeekComment] = useState('');
+  const [savingComment, setSavingComment] = useState(false);
   const [readOutRows, setReadOutRows] = useState<ReadOutRow[]>([]);
   const [title, setTitle] = useState('');
   const [bodyText, setBodyText] = useState('');
@@ -133,8 +159,25 @@ export default function ProviderClientScreen() {
         });
       }
     });
+    void apiGetProviderClientMeta(token, id).then((meta) => {
+      if (meta.planId) setPlanId(meta.planId);
+      const approved = Object.values(meta.weekStatuses).filter((s) => s === 'approved').length;
+      setApprovedCount(approved);
+      setClientUpdates(meta.clientUpdates);
+    });
     void apiGetWeeklySummary(token, id).then((data) => {
-      setWeekly(data.summary.scheduleInsights.slice(0, 3));
+      const s = data.summary;
+      setWeekly({
+        painTrend: s.painTrend,
+        readOutSummaries: s.readOutSummaries ?? [],
+        latestWeeklyCheckIn: s.latestWeeklyCheckIn,
+        morningCheckIns: (s.morningCheckIns ?? []).map((c) => ({
+          dateIso: c.dateIso,
+          painLevel: c.painLevel,
+          sleepQuality: c.sleepQuality,
+        })),
+        scheduleInsights: s.scheduleInsights.slice(0, 3),
+      });
     });
     void loadReadOuts().then((list) => {
       const active = list.find((r) => r.isActive) ?? list[0];
@@ -225,16 +268,30 @@ export default function ProviderClientScreen() {
     recorder.record();
   };
 
-  const onGenerateWeek2 = async () => {
-    if (!token || !id) return;
+  const onSaveWeekComment = async () => {
+    if (!token || !planId || approvedCount === 0 || weekComment.trim().length < 3) return;
+    setSavingComment(true);
+    setWeekMessage('');
+    try {
+      await apiSaveWeekComment(token, planId, approvedCount, weekComment.trim());
+      setWeekMessage(`Comment saved for Week ${approvedCount}.`);
+    } catch (e) {
+      setWeekMessage(e instanceof Error ? e.message : 'Could not save comment.');
+    } finally {
+      setSavingComment(false);
+    }
+  };
+
+  const onGenerateNextWeek = async () => {
+    if (!token || !id || approvedCount === 0) return;
     setRegenWeek(true);
     setWeekMessage('');
     try {
-      const data = await apiRegenerateWeek(token, id, 1);
+      const data = await apiRegenerateWeek(token, id, approvedCount);
       setWeekDraft(data.weekDraft);
       setWeekMessage(`Week ${data.weekNumber} draft ready.`);
-    } catch {
-      setWeekMessage('Week generation failed.');
+    } catch (e) {
+      setWeekMessage(e instanceof Error ? e.message : 'Week generation failed.');
     } finally {
       setRegenWeek(false);
     }
@@ -254,6 +311,9 @@ export default function ProviderClientScreen() {
     }
   };
 
+  const activeReadOut = readOutRows.find((r) => r.id === activeReadOutId) ?? null;
+  const nextWeekNumber = approvedCount + 1;
+
   return (
     <Screen title={name} subtitle={`Plan status: ${planStatus}`}>
       <Card title="Summary">
@@ -261,9 +321,22 @@ export default function ProviderClientScreen() {
       </Card>
 
       <Button
-        label="Record read-out & plan next week on web workspace"
+        label="Open full web workspace"
+        variant="secondary"
         onPress={() => void Linking.openURL(`${API_URL}/provider/clients/${id}`)}
       />
+
+      {clientUpdates.length > 0 ? (
+        <Card title="Client updates">
+          {clientUpdates.map((u) => (
+            <View key={u.id} style={{ marginBottom: 12 }}>
+              <Text style={styles.rowTitle}>{u.title}</Text>
+              <Text style={styles.body}>{u.bodyText}</Text>
+              <Text style={styles.rowMeta}>{new Date(u.createdAt).toLocaleString()}</Text>
+            </View>
+          ))}
+        </Card>
+      ) : null}
 
       {engagement ? (
         <Card title="Today's engagement">
@@ -289,9 +362,23 @@ export default function ProviderClientScreen() {
         </Card>
       ) : null}
 
-      {weekly.length > 0 ? (
-        <Card title="Scheduling insights">
-          {weekly.map((line) => (
+      {weekly ? (
+        <Card title="This week's data">
+          {weekly.painTrend ? <Text style={styles.body}>Pain trend: {weekly.painTrend}</Text> : null}
+          {weekly.latestWeeklyCheckIn ? (
+            <Text style={styles.body}>Weekly check-in: {weekly.latestWeeklyCheckIn}</Text>
+          ) : null}
+          {weekly.morningCheckIns.slice(0, 3).map((c) => (
+            <Text key={c.dateIso} style={styles.body}>
+              {c.dateIso}: pain {c.painLevel}/10 · sleep {c.sleepQuality}
+            </Text>
+          ))}
+          {weekly.readOutSummaries.slice(0, 3).map((line) => (
+            <Text key={line} style={styles.body}>
+              • {line}
+            </Text>
+          ))}
+          {weekly.scheduleInsights.map((line) => (
             <Text key={line} style={styles.body}>
               • {line}
             </Text>
@@ -311,6 +398,7 @@ export default function ProviderClientScreen() {
             <Text style={styles.rowMeta}>
               {row.isActive ? 'Active this week' : 'Scheduled / past'}
               {row.hasCounselorAudio ? ' · audio' : ''}
+              {row.latestResponse ? ' · client responded' : ''}
             </Text>
           </Pressable>
         ))}
@@ -329,11 +417,70 @@ export default function ProviderClientScreen() {
           onSave={saveReadOut}
           onRecord={onRecord}
         />
+        {activeReadOut?.latestResponse ? (
+          <View style={{ marginTop: 12 }}>
+            <Text style={[styles.body, { fontWeight: '600' }]}>Latest client response</Text>
+            {activeReadOut.latestResponse.responseType === 'text' &&
+            activeReadOut.latestResponse.bodyText ? (
+              <Text style={styles.body}>{activeReadOut.latestResponse.bodyText}</Text>
+            ) : null}
+            {activeReadOut.latestResponse.responseType === 'voice' &&
+            activeReadOut.latestResponse.audioUrl ? (
+              <CounselorAudioPlayer
+                audioUrl={activeReadOut.latestResponse.audioUrl}
+                label="Play client voice response:"
+              />
+            ) : null}
+          </View>
+        ) : (
+          <Text style={[styles.body, { marginTop: 8 }]}>No client response yet for this read-out.</Text>
+        )}
       </Card>
 
-      <Card title="Week 2 planning (AI)">
-        <Text style={styles.body}>Generate Week 2 from this week&apos;s engagement data (1–2 min).</Text>
-        <Button label="Generate week 2 draft" variant="secondary" onPress={() => void onGenerateWeek2()} loading={regenWeek} />
+      <Card title={`Week ${nextWeekNumber} planning (AI)`}>
+        <Text style={styles.body}>
+          {approvedCount > 0
+            ? `Save a comment on Week ${approvedCount}, then generate Week ${nextWeekNumber} from engagement data.`
+            : 'Approve Week 1 on the plan review screen before generating Week 2.'}
+        </Text>
+        {approvedCount > 0 ? (
+          <>
+            <TextField
+              style={{
+                borderWidth: 1,
+                borderColor: styles.rowBtn.borderColor,
+                borderRadius: 12,
+                padding: 12,
+                minHeight: 80,
+                marginTop: 8,
+              }}
+              placeholder={`Comment on Week ${approvedCount} (required before Week ${nextWeekNumber})`}
+              multiline
+              value={weekComment}
+              onChangeText={setWeekComment}
+            />
+            <Button
+              label={savingComment ? 'Saving comment…' : `Save Week ${approvedCount} comment`}
+              variant="secondary"
+              onPress={() => void onSaveWeekComment()}
+              loading={savingComment}
+              disabled={weekComment.trim().length < 3}
+            />
+          </>
+        ) : null}
+        <Button
+          label={
+            regenWeek
+              ? `Generating Week ${nextWeekNumber}…`
+              : approvedCount > 0
+                ? `Generate Week ${nextWeekNumber} draft`
+                : 'Generate Week 2 draft'
+          }
+          variant="secondary"
+          onPress={() => void onGenerateNextWeek()}
+          loading={regenWeek}
+          disabled={approvedCount === 0}
+        />
         {weekDraft ? (
           <>
             <Text style={[styles.body, { marginTop: 12, fontWeight: '600' }]}>

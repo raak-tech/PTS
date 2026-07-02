@@ -52,14 +52,14 @@ export function useTodayPlan() {
     void apiGetPlan(token).then(({ plan }) => {
       if (!plan) return;
       const parsed = parseGeneratedPlan(plan.generatedContent);
-      const weekNumber = programTime?.weekNumber ?? 1;
+      const weekNumber = programTime?.contentWeekNumber ?? programTime?.weekNumber ?? 1;
       const week = parsed?.weeks.find((w) => w.week === weekNumber) ?? parsed?.weeks[weekNumber - 1];
       if (!week) return;
       setWeekTheme(week.theme);
       setPractices(week.dailyPractices);
       setReflection(week.weeklyReflection);
     });
-  }, [token, programTime?.weekNumber]);
+  }, [token, programTime?.contentWeekNumber, programTime?.weekNumber]);
 
   return { practices, weekTheme, reflection };
 }

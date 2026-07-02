@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { getDb } from '@/db';
 import { counselorNotes, users } from '@/db/schema';
 import { isAdminUser } from '@/lib/admin';
+import { recordAudit } from '@/lib/audit';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
 
@@ -71,6 +72,15 @@ export async function POST(request: Request, context: RouteContext) {
     };
 
     await db.insert(counselorNotes).values(note);
+
+    void recordAudit({
+      actorUserId: user!.id,
+      actorRole: user!.role,
+      action: 'admin_note',
+      targetType: 'client',
+      targetId: id,
+      metadata: { noteId: note.id },
+    });
 
     return NextResponse.json({ ok: true, note });
   } catch (err) {

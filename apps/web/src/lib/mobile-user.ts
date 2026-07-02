@@ -1,7 +1,8 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNotNull } from 'drizzle-orm';
 
 import { getDb } from '@/db';
-import { intakeResponses, plans, users } from '@/db/schema';
+import { intakeResponses, planWeeks, plans, users } from '@/db/schema';
+import { toDateIso } from '@/lib/program-calendar';
 
 export type MobileSessionUser = {
   id: string;
@@ -10,6 +11,8 @@ export type MobileSessionUser = {
   phone: string | null;
   intakeComplete: boolean;
   planApproved: boolean;
+  programAnchorDate?: string | null;
+  releasedWeeks?: number[];
 };
 
 export async function buildMobileSessionUser(userId: string): Promise<MobileSessionUser | null> {
@@ -24,11 +27,48 @@ export async function buildMobileSessionUser(userId: string): Promise<MobileSess
     .limit(1);
 
   const [plan] = await db
-    .select({ status: plans.status })
+    .select({
+      id: plans.id,
+      status: plans.status,
+      programAnchorDate: plans.programAnchorDate,
+      approvedAt: plans.approvedAt,
+    })
     .from(plans)
-    .where(and(eq(plans.userId, userId), eq(plans.status, 'approved')))
+    .where(eq(plans.userId, userId))
     .orderBy(desc(plans.createdAt))
     .limit(1);
+
+  const planApproved = plan?.status === 'approved';
+
+  let programAnchorDate: string | null = plan?.programAnchorDate ?? null;
+  if (!programAnchorDate && plan?.approvedAt) {
+    programAnchorDate = toDateIso(plan.approvedAt);
+  }
+
+  let releasedWeeks: number[] = [];
+  if (plan) {
+    const releasedRows: { weekNumber: number }[] = await db
+      .select({ weekNumber: planWeeks.weekNumber })
+      .from(planWeeks)
+      .where(and(eq(planWeeks.planId, plan.id), isNotNull(planWeeks.releasedAt)))
+      .orderBy(planWeeks.weekNumber);
+
+    releasedWeeks = releasedRows.map((r) => r.weekNumber);
+
+    if (releasedWeeks.length === 0 && plan.status === 'approved') {
+      const approvedRows: { weekNumber: number }[] = await db
+        .select({ weekNumber: planWeeks.weekNumber })
+        .from(planWeeks)
+        .where(and(eq(planWeeks.planId, plan.id), eq(planWeeks.status, 'approved')))
+        .orderBy(planWeeks.weekNumber);
+      releasedWeeks = approvedRows.map((r) => r.weekNumber);
+      // Week-1-first: never auto-unlock all six. Legacy approved plans with no
+      // plan_weeks rows fall back to Week 1 only.
+      if (releasedWeeks.length === 0) {
+        releasedWeeks = [1];
+      }
+    }
+  }
 
   return {
     id: user.id,
@@ -36,6 +76,8 @@ export async function buildMobileSessionUser(userId: string): Promise<MobileSess
     displayName: user.displayName,
     phone: user.phone,
     intakeComplete: Boolean(intake?.completedAt),
-    planApproved: Boolean(plan),
+    planApproved,
+    programAnchorDate,
+    releasedWeeks,
   };
 }

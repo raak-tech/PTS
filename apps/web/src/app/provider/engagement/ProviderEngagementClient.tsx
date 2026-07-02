@@ -13,6 +13,8 @@ type EngagementClient = {
   holisticDone?: number;
   holisticTotal?: number;
   needsAttention: boolean;
+  recentClientShareCount?: number;
+  hasRecentClientShare?: boolean;
 };
 
 export function ProviderEngagementClient() {
@@ -60,8 +62,26 @@ export function ProviderEngagementClient() {
                 background: c.needsAttention ? '#fffde7' : 'var(--surface-2)',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                <h2 style={{ margin: 0, fontSize: 16 }}>{c.name}</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <h2 style={{ margin: 0, fontSize: 16 }}>{c.name}</h2>
+                  {c.hasRecentClientShare ? (
+                    <span
+                      title="New client update in the last 7 days"
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: '#1565c0',
+                        background: '#e3f2fd',
+                        border: '1px solid #90caf9',
+                        borderRadius: 999,
+                        padding: '2px 8px',
+                      }}
+                    >
+                      💬 Client update{(c.recentClientShareCount ?? 0) > 1 ? ` ×${c.recentClientShareCount}` : ''}
+                    </span>
+                  ) : null}
+                </div>
                 {c.needsAttention ? (
                   <span style={{ fontSize: 12, fontWeight: 700, color: '#e65100' }}>Needs attention</span>
                 ) : (

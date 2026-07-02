@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -8,15 +9,17 @@ import { DevMenu } from '@/components/DevMenu';
 import { HitTarget } from '@/components/HitTarget';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
+import { API_URL, USE_MOCK_AUTH } from '@/config';
 import { useAuth } from '@/context/AuthContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
-import { USE_MOCK_AUTH } from '@/config';
 import { isValidIndianMobile, normalizePhone } from '@/lib/phone';
 import { spacing } from '@/theme';
 
+const PRIVACY_URL = `${API_URL}/privacy`;
+
 export default function LoginScreen() {
   const router = useRouter();
-  const { checkPhone, sendOtp, setPendingPhone } = useAuth();
+  const { checkPhone, sendOtp, setPendingPhone, signOutIfDifferentPhone } = useAuth();
   const [digits, setDigits] = useState('');
   const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -51,6 +54,7 @@ export default function LoginScreen() {
     checkboxOn: { backgroundColor: c.primary, borderColor: c.primary },
     checkMark: { color: c.onPrimary, fontWeight: '700' as const, fontSize: 14 },
     consentText: { flex: 1, fontSize: 13, color: c.muted, lineHeight: 19 },
+    policyLink: { color: c.accentDark, textDecorationLine: 'underline' as const, fontWeight: '600' as const },
     hint: { fontSize: 12, color: c.faint, textAlign: 'center' as const, lineHeight: 18 },
   }));
 
@@ -60,13 +64,14 @@ export default function LoginScreen() {
       return;
     }
     if (!consent) {
-      setError('Please agree to data retention to continue.');
+      setError('Please agree to the privacy policy to continue.');
       return;
     }
     setLoading(true);
     setError('');
     try {
       const phone = normalizePhone(digits);
+      await signOutIfDifferentPhone(phone);
       const { exists } = await checkPhone(phone);
       if (!exists) {
         router.push({ pathname: '/(auth)/not-registered', params: { phone } });
@@ -125,7 +130,11 @@ export default function LoginScreen() {
           {consent ? <Text style={styles.checkMark}>✓</Text> : null}
         </View>
         <Text style={styles.consentText}>
-          I agree that PTS may store my responses and reflections to support my recovery program.
+          I agree to the{' '}
+          <Text style={styles.policyLink} onPress={() => void Linking.openURL(PRIVACY_URL)}>
+            Privacy &amp; Data Policy
+          </Text>{' '}
+          and consent to PTS storing my responses to support my recovery program.
         </Text>
       </Pressable>
 

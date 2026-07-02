@@ -1,9 +1,8 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Modal, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
 import { CrisisBar } from '@/components/CrisisBar';
 import { IntakeStepContent } from '@/components/intake/IntakeStepContent';
 import { Screen } from '@/components/Screen';
@@ -11,7 +10,14 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { useIntakeDraft } from '@/hooks/useIntakeDraft';
-import { canAdvanceIntake, emptyIntake, INTAKE_STEPS, type IntakeFormData } from '@/lib/intake';
+import {
+  canAdvanceIntake,
+  emptyIntake,
+  hasIntakeDraftProgress,
+  INTAKE_STEPS,
+  type IntakeDraft,
+  type IntakeFormData,
+} from '@/lib/intake';
 import { spacing } from '@/theme';
 
 export default function IntakeScreen() {
@@ -24,7 +30,9 @@ export default function IntakeScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showAbandonmentModal, setShowAbandonmentModal] = useState(false);
-  const [draftInfo, setDraftInfo] = useState<{ step: number; startedAt: string } | null>(null);
+  const [savedDraft, setSavedDraft] = useState<IntakeDraft | null>(null);
+  const startedAtRef = useRef<string | null>(null);
+  const resumePromptedRef = useRef(false);
   const styles = useThemedStyles((c) => ({
     progressTrack: { height: 4, backgroundColor: c.border },
     progressFill: { height: 4, backgroundColor: c.accent },
@@ -34,15 +42,20 @@ export default function IntakeScreen() {
   }));
 
   useEffect(() => {
-    const checkDraft = async () => {
+    if (resumePromptedRef.current) return;
+    resumePromptedRef.current = true;
+
+    void (async () => {
       const draft = await draftStorage.loadDraft();
-      if (draft) {
-        setDraftInfo({ step: draft.step, startedAt: draft.startedAt });
-        setShowAbandonmentModal(true);
+      if (!draft || !hasIntakeDraftProgress(draft)) {
+        if (draft) await draftStorage.clearDraft();
+        return;
       }
-    };
-    checkDraft();
-  }, [draftStorage]);
+      startedAtRef.current = draft.startedAt;
+      setSavedDraft(draft);
+      setShowAbandonmentModal(true);
+    })();
+  }, [draftStorage.clearDraft, draftStorage.loadDraft]);
 
   const current = INTAKE_STEPS[step];
   const progress = ((step + 1) / INTAKE_STEPS.length) * 100;
@@ -51,13 +64,24 @@ export default function IntakeScreen() {
   const set = (partial: Partial<IntakeFormData>) => {
     const newData = { ...data, ...partial };
     setData(newData);
-    // Auto-save draft
-    draftStorage.saveDraft({ data: newData, step, startedAt: draftInfo?.startedAt ?? new Date().toISOString() });
+    if (!startedAtRef.current) startedAtRef.current = new Date().toISOString();
+    const draft: IntakeDraft = {
+      data: newData,
+      step,
+      startedAt: startedAtRef.current,
+    };
+    if (hasIntakeDraftProgress(draft)) {
+      void draftStorage.saveDraft(draft);
+    }
   };
 
   const onNext = async () => {
     if (step < INTAKE_STEPS.length - 1) {
-      setStep((s) => s + 1);
+      const nextStep = step + 1;
+      setStep(nextStep);
+      if (!startedAtRef.current) startedAtRef.current = new Date().toISOString();
+      const draft: IntakeDraft = { data, step: nextStep, startedAt: startedAtRef.current };
+      if (hasIntakeDraftProgress(draft)) void draftStorage.saveDraft(draft);
       return;
     }
     setLoading(true);
@@ -94,16 +118,21 @@ export default function IntakeScreen() {
             <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 8 }}>
               Resume your assessment?
             </Text>
-            {draftInfo && (
+            {savedDraft && (
               <Text style={{ fontSize: 14, color: colors.muted, marginBottom: 16, lineHeight: 20 }}>
-                Step {draftInfo.step + 1} of {INTAKE_STEPS.length} — started {daysSince(draftInfo.startedAt)} day{daysSince(draftInfo.startedAt) !== 1 ? 's' : ''} ago.
+                Step {savedDraft.step + 1} of {INTAKE_STEPS.length} — started {daysSince(savedDraft.startedAt)} day
+                {daysSince(savedDraft.startedAt) !== 1 ? 's' : ''} ago.
               </Text>
             )}
             <View style={{ gap: spacing.sm }}>
               <Button
                 label="Continue where I left off"
                 onPress={() => {
-                  if (draftInfo) setStep(draftInfo.step);
+                  if (savedDraft) {
+                    setStep(savedDraft.step);
+                    setData(savedDraft.data);
+                    startedAtRef.current = savedDraft.startedAt;
+                  }
                   setShowAbandonmentModal(false);
                 }}
               />
@@ -112,6 +141,8 @@ export default function IntakeScreen() {
                 variant="secondary"
                 onPress={async () => {
                   await draftStorage.clearDraft();
+                  startedAtRef.current = null;
+                  setSavedDraft(null);
                   setStep(0);
                   setData(emptyIntake);
                   setShowAbandonmentModal(false);

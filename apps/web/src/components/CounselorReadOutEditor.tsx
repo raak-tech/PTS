@@ -10,7 +10,63 @@ type ReadOutRow = {
   counselorAudioUrl?: string | null;
   isActive?: boolean;
   planWeek?: number | null;
+  latestResponse?: {
+    responseType: 'text' | 'voice' | string;
+    bodyText: string | null;
+    audioUrl: string | null;
+    submittedAt: string;
+  } | null;
 };
+
+function formatResponseDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function ClientResponsePanel({ response }: { response: ReadOutRow['latestResponse'] }) {
+  if (!response) {
+    return (
+      <p style={{ fontSize: 13, color: 'var(--muted)', margin: '12px 0 0' }}>
+        No client response yet.
+      </p>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        marginTop: 12,
+        padding: '12px 14px',
+        borderRadius: 10,
+        border: '1px solid var(--border)',
+        background: 'var(--surface-2, #f8f9fa)',
+      }}
+    >
+      <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+        Latest client response · {formatResponseDate(response.submittedAt)}
+      </p>
+      {response.responseType === 'text' && response.bodyText ? (
+        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: 'var(--text)', whiteSpace: 'pre-wrap' }}>
+          {response.bodyText}
+        </p>
+      ) : null}
+      {response.responseType === 'voice' && response.audioUrl ? (
+        <audio controls src={response.audioUrl} style={{ width: '100%' }} />
+      ) : null}
+      {response.responseType === 'voice' && !response.audioUrl ? (
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>Voice response recorded (playback unavailable).</p>
+      ) : null}
+    </div>
+  );
+}
 
 type Props = {
   clientId: string;
@@ -206,6 +262,8 @@ export function CounselorReadOutEditor({
     await saveText(base64);
   };
 
+  const selectedRow = selectedId ? rows.find((r) => r.id === selectedId) : null;
+
   return (
     <div>
       <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 0 }}>
@@ -244,6 +302,7 @@ export function CounselorReadOutEditor({
               <span style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
                 {row.isActive ? 'Active this week' : 'Scheduled / past'}
                 {row.hasCounselorAudio ? ' · audio attached' : ''}
+                {row.latestResponse ? ' · client responded' : ''}
               </span>
             </button>
           ))}
@@ -322,6 +381,9 @@ export function CounselorReadOutEditor({
           <audio controls src={previewUrl} style={{ width: '100%' }} />
         </div>
       ) : null}
+
+      <ClientResponsePanel response={selectedRow?.latestResponse} />
+
       {message ? <p role="status" style={{ fontSize: 14, color: 'var(--text)' }}>{message}</p> : null}
     </div>
   );

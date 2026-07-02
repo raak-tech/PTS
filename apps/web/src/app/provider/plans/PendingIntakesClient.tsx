@@ -40,7 +40,7 @@ export function PendingIntakesClient({ intakes }: PendingIntakesClientProps) {
         return;
       }
 
-      alert('Plan draft generated! Refreshing...');
+      alert('Week 1 draft generated! Refreshing...');
       window.location.reload();
     } catch (err) {
       console.error('Generate plan error:', err);
@@ -54,7 +54,10 @@ export function PendingIntakesClient({ intakes }: PendingIntakesClientProps) {
 
   return (
     <section style={{ marginBottom: 32 }}>
-      <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Pending intakes ({intakes.length})</h2>
+      <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>Pending intakes ({intakes.length})</h2>
+      <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>
+        AI generates a Week 1 draft (~2–4 min). You review and approve Week 1 before the client starts.
+      </p>
       <div style={{ display: 'grid', gap: 8 }}>
         {intakes.map(intake => (
           <div
@@ -104,7 +107,7 @@ export function PendingIntakesClient({ intakes }: PendingIntakesClientProps) {
                   opacity: generating === intake.userId ? 0.6 : 1,
                 }}
               >
-                {generating === intake.userId ? 'Generating...' : 'Generate plan'}
+                {generating === intake.userId ? 'Generating Week 1…' : 'Generate Week 1 draft'}
               </button>
             </div>
           </div>

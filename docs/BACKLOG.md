@@ -1,7 +1,10 @@
 # PTS Backlog
 
-**Last updated:** 2026-06-30
+**Last updated:** 2026-07-02  
 **Format:** Track → Item. Priority: 🔴 Pilot-critical · 🟠 Pre-launch · 🟡 Post-pilot
+
+> **Active pilot execution queue:** [`PILOT_TODO.md`](./PILOT_TODO.md) — dev runs, APK drops, and near-term fixes live there.  
+> This file is the **long-term strategic backlog** (all tracks). Do not duplicate pilot todos in both places.
 
 See `PROJECT_BRIEF.md` for full product context.
 
@@ -92,6 +95,8 @@ See `PROJECT_BRIEF.md` for full product context.
 - 🔴 Build daily practice UI (mobile-optimised): check-in, resource delivery, reflection capture
 - 🔴 Build "I'm struggling today" button — visible always, routes to immediate resource or counselor message
 - 🟠 Build progress tracker: visual streak, weekly completions, milestone markers
+- 🟠 **[Read-out voice] Client playback of own recording** — after voice read-out submit, show inline audio player so client can replay what they sent; extend `GET /api/reinforcements` to return today's `responseType`, `bodyText`, and `audioUrl` per read-out. Acceptance criteria: client sees "Recorded today" plus play control; replay works on Android APK.
+- 🟠 **[Read-out voice] Counselor response review in workspace** — in client workspace Overview or Read-outs tab, list today's (and recent) client responses with text preview and `<audio>` playback for voice submissions. Acceptance criteria: counselor can hear client read-out recording without admin dossier; response count in engagement rollup matches playable entries.
 - 🟠 Build milestone acknowledgement moments: completion of week 1, week 3, week 6
 - 🟠 Define what daily engagement data feeds back to counselor dashboard
 
@@ -221,19 +226,8 @@ The following exist and are production-deployed at https://pts-web-pied.vercel.a
 
 ---
 
-## Pilot Sprint Focus (updated 2026-06-30)
+## Pilot Sprint Focus (updated 2026-07-02)
 
-**Pre-code decision sprint (1 week — do first):**
-1. Complete Track 0 decisions (#17–#24) → `DECISIONS.md` — unblocks copy, credentialing, regulatory infra
-2. Resolve auth surface boundaries for pilot (mobile-only vs OTP-on-web)
-3. Agree weekly planning model (LLM-first with counselor editing) → update `PROVIDER_WORKFLOW.md`
+**Moved to [`PILOT_TODO.md`](./PILOT_TODO.md)** — see §1–§3 for current kickoff bar (Profile, client→counselor share, Week-1-first LLM model, read-out voice).
 
-**Minimum to run a meaningful pilot with real users and counselors:**
-1. `planWeeks` DB migration + per-week approval model (SCOPE-A) — foundational, blocks everything counselor-related
-2. Counselor inline plan editing on web (SCOPE-A)
-3. `dailyCheckIns` DB migration + morning check-in card on mobile (SCOPE-F)
-4. All 6 weeks visible in mobile plan review (SCOPE-D)
-5. Crisis notes acknowledgment gate (SCOPE-I patient safety)
-6. C7 safety screen split into 2 screens (SCOPE-I patient safety)
-7. Push notifications — at minimum: plan approved, counselor replied, morning check-in reminder
-8. Graduation screen + maintenance mode (SCOPE-E) — needed before any pilot client hits Week 6
+Historical note (2026-06-30): original sprint items included `planWeeks` migration, morning check-in, crisis gate, push notifications, graduation — track completion in `PILOT_TODO.md` §✅ and §5–§7.

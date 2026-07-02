@@ -5,7 +5,13 @@ import { Text, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 
-export function CounselorAudioPlayer({ audioUrl }: { audioUrl: string }) {
+export function CounselorAudioPlayer({
+  audioUrl,
+  label = 'Listen to your counselor first:',
+}: {
+  audioUrl: string;
+  label?: string;
+}) {
   const player = useAudioPlayer(audioUrl);
   const status = useAudioPlayerStatus(player);
   const [error, setError] = useState('');
@@ -33,7 +39,7 @@ export function CounselorAudioPlayer({ audioUrl }: { audioUrl: string }) {
 
   return (
     <View style={{ marginBottom: 12 }}>
-      <Text style={styles.meta}>Listen to your counselor first:</Text>
+      <Text style={styles.meta}>{label}</Text>
       <Button
         label={status.playing ? 'Pause counselor message' : 'Play counselor message'}
         variant="secondary"

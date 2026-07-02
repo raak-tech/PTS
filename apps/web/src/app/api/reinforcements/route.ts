@@ -63,15 +63,27 @@ export async function GET(request: Request) {
                 eq(reinforcementResponses.reinforcementId, row.id),
                 eq(reinforcementResponses.clientId, user.id),
               ),
-            )) as { submittedAt: Date }[];
-          const respondedToday = responses.some((r) => localDateIso(r.submittedAt) === dateIso);
+            )) as {
+            submittedAt: Date;
+            responseType: string;
+            bodyText: string | null;
+            audioUrl: string | null;
+          }[];
+          const todayResponse = responses.find((r) => localDateIso(r.submittedAt) === dateIso);
           return {
             id: row.id,
             title: row.title,
             bodyText: row.bodyText,
             counselorAudioUrl: row.counselorAudioUrl,
             planWeek: row.planWeek,
-            respondedToday,
+            respondedToday: Boolean(todayResponse),
+            todayResponse: todayResponse
+              ? {
+                  responseType: todayResponse.responseType as 'text' | 'voice',
+                  bodyText: todayResponse.bodyText,
+                  audioUrl: todayResponse.audioUrl,
+                }
+              : null,
           };
         }),
       );
@@ -111,8 +123,16 @@ export async function GET(request: Request) {
         const responses = (await db
           .select()
           .from(reinforcementResponses)
-          .where(eq(reinforcementResponses.reinforcementId, r.id))) as { submittedAt: Date }[];
+          .where(eq(reinforcementResponses.reinforcementId, r.id))) as {
+          submittedAt: Date;
+          responseType: string;
+          bodyText: string | null;
+          audioUrl: string | null;
+        }[];
         const respondedToday = responses.some((resp) => localDateIso(resp.submittedAt) === dateIso);
+        const latestResponse = responses.sort(
+          (a, b) => b.submittedAt.getTime() - a.submittedAt.getTime(),
+        )[0];
         return {
           id: r.id,
           title: r.title,
@@ -125,6 +145,14 @@ export async function GET(request: Request) {
           responseCount: responses.length,
           respondedToday,
           isActive: isDateInRange(dateIso, r.startDate, r.endDate),
+          latestResponse: latestResponse
+            ? {
+                responseType: latestResponse.responseType,
+                bodyText: latestResponse.bodyText,
+                audioUrl: latestResponse.audioUrl,
+                submittedAt: latestResponse.submittedAt.toISOString(),
+              }
+            : null,
         };
       }),
     );

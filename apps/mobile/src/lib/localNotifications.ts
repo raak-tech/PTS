@@ -16,6 +16,10 @@ const REMINDER_IDS = {
   evening: 'pts-evening',
 } as const;
 
+export type ReminderId = (typeof REMINDER_IDS)[keyof typeof REMINDER_IDS];
+
+export { REMINDER_IDS };
+
 export async function ensureNotificationPermission(): Promise<boolean> {
   if (Platform.OS === 'web') return false;
   const current = await Notifications.getPermissionsAsync();
@@ -71,6 +75,28 @@ export async function scheduleDailyReminders() {
 export async function cancelDailyReminders() {
   if (Platform.OS === 'web') return;
   await Notifications.cancelAllScheduledNotificationsAsync();
+}
+
+export async function cancelReminder(id: ReminderId) {
+  if (Platform.OS === 'web') return;
+  await Notifications.cancelScheduledNotificationAsync(id);
+}
+
+/** Cancel reminders whose linked Today tasks are already complete. */
+export async function syncRemindersForProgress(progress: {
+  checkInDone?: boolean;
+  readoutDone?: boolean;
+  eveningDone?: boolean;
+  allMorningDone?: boolean;
+}) {
+  if (Platform.OS === 'web') return;
+  if (progress.checkInDone) await cancelReminder(REMINDER_IDS.morning);
+  if (progress.readoutDone) await cancelReminder(REMINDER_IDS.midday);
+  if (progress.eveningDone) await cancelReminder(REMINDER_IDS.evening);
+  if (progress.allMorningDone) {
+    await cancelReminder(REMINDER_IDS.morning);
+    await cancelReminder(REMINDER_IDS.midday);
+  }
 }
 
 export async function registerPushTokenWithServer(authToken: string) {

@@ -39,6 +39,12 @@ export type IntakeFormData = {
   consentGiven: boolean;
 };
 
+export type IntakeDraft = {
+  data: IntakeFormData;
+  step: number;
+  startedAt: string;
+};
+
 export const emptyIntake: IntakeFormData = {
   painSource: '',
   painSourceOther: '',
@@ -68,6 +74,12 @@ export const emptyIntake: IntakeFormData = {
   isSafe: true,
   consentGiven: false,
 };
+
+/** True when a saved draft is worth offering resume (not an empty step-0 stub). */
+export function hasIntakeDraftProgress(draft: IntakeDraft): boolean {
+  if (draft.step > 0) return true;
+  return JSON.stringify(draft.data) !== JSON.stringify(emptyIntake);
+}
 
 export function canAdvanceIntake(step: number, data: IntakeFormData): boolean {
   switch (step) {

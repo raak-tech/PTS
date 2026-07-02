@@ -3,8 +3,10 @@ import { alias } from 'drizzle-orm/pg-core';
 
 import { getDb } from '@/db';
 import {
+  auditLog,
   clientCounselor,
   intakeResponses,
+  llmUsage,
   messages,
   plans,
   users,
@@ -22,6 +24,8 @@ export const METRIC_DETAIL_KINDS = [
   'messages',
   'red-flags',
   'unsafe',
+  'llm-usage',
+  'audit',
 ] as const;
 
 export type MetricDetailKind = (typeof METRIC_DETAIL_KINDS)[number];
@@ -398,6 +402,72 @@ export async function getMetricDetail(kind: MetricDetailKind) {
           hasRedFlags: r.hasRedFlags,
           isSafe: r.isSafe,
           completedAt: r.completedAt?.toISOString() ?? null,
+        })),
+      };
+    }
+
+    case 'llm-usage': {
+      const rows = (await db
+        .select()
+        .from(llmUsage)
+        .orderBy(desc(llmUsage.createdAt))
+        .limit(100)) as {
+        id: string;
+        createdAt: Date;
+        operation: string;
+        model: string;
+        userId: string | null;
+        costUsd: string | null;
+        status: string;
+        totalTokens: number | null;
+      }[];
+
+      return {
+        kind,
+        title: 'LLM usage (recent)',
+        rows: rows.map((r) => ({
+          id: r.id,
+          label: r.operation,
+          operation: r.operation,
+          model: r.model,
+          userId: r.userId,
+          costUsd: r.costUsd ? Number(r.costUsd) : null,
+          status: r.status,
+          totalTokens: r.totalTokens,
+          createdAt: r.createdAt.toISOString(),
+        })),
+      };
+    }
+
+    case 'audit': {
+      const rows = (await db
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.createdAt))
+        .limit(100)) as {
+        id: string;
+        createdAt: Date;
+        actorUserId: string;
+        actorRole: string;
+        action: string;
+        targetType: string;
+        targetId: string | null;
+        metadata: string | null;
+      }[];
+
+      return {
+        kind,
+        title: 'Audit log (recent)',
+        rows: rows.map((r) => ({
+          id: r.id,
+          label: r.action,
+          actorUserId: r.actorUserId,
+          actorRole: r.actorRole,
+          action: r.action,
+          targetType: r.targetType,
+          targetId: r.targetId,
+          metadata: r.metadata,
+          createdAt: r.createdAt.toISOString(),
         })),
       };
     }

@@ -1,8 +1,12 @@
 # PTS Project Status Review
 
-**Date:** 2026-06-30  
+**Date:** 2026-06-30 (gap analysis) · **Model update:** 2026-07-02  
 **Scope:** Full codebase + docs review — no code changes  
 **Audience:** Satheesh, Ramya  
+
+> **Execution todos:** consolidated in [`PILOT_TODO.md`](./PILOT_TODO.md). This doc is gap analysis / recommendations only.
+>
+> **2026-07-02 — Week-1-first model (canonical):** Initial LLM generate produces **Week 1 only**; Weeks 2–6 are gated per-week with counselor comment before each generate. Counselor approves **one week at a time** (no bulk approve). See `PROVIDER_WORKFLOW.md` v1.1 and `DECISIONS.md` 2026-07-02.
 
 ---
 

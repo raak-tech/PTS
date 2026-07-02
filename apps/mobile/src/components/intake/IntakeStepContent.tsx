@@ -23,21 +23,26 @@ function RadioOption({
       padding: spacing.sm,
       borderRadius: 10,
       borderWidth: 2,
-      borderColor: selected ? c.accent : c.border,
-      backgroundColor: selected ? c.surface : 'transparent',
+      borderColor: c.border,
+      backgroundColor: 'transparent',
       minHeight: 48,
       justifyContent: 'center' as const,
     },
-    text: { fontSize: 15, color: c.text, fontWeight: selected ? '700' as const : '400' as const },
+    rowSelected: {
+      borderColor: c.accent,
+      backgroundColor: c.successBg,
+    },
+    text: { fontSize: 15, color: c.text, fontWeight: '400' as const },
+    textSelected: { fontWeight: '700' as const, color: c.text },
   }));
   return (
     <HitTarget
-      style={styles.row}
+      style={[styles.row, selected ? styles.rowSelected : null]}
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityState={{ selected }}
     >
-      <Text style={styles.text}>{label}</Text>
+      <Text style={[styles.text, selected ? styles.textSelected : null]}>{label}</Text>
     </HitTarget>
   );
 }
@@ -56,21 +61,26 @@ function CheckboxOption({
       padding: spacing.sm,
       borderRadius: 10,
       borderWidth: 2,
-      borderColor: checked ? c.accent : c.border,
-      backgroundColor: checked ? c.surface : 'transparent',
+      borderColor: c.border,
+      backgroundColor: 'transparent',
       minHeight: 48,
       justifyContent: 'center' as const,
     },
-    text: { fontSize: 15, color: c.text, fontWeight: checked ? '700' as const : '400' as const },
+    rowSelected: {
+      borderColor: c.accent,
+      backgroundColor: c.successBg,
+    },
+    text: { fontSize: 15, color: c.text, fontWeight: '400' as const },
+    textSelected: { fontWeight: '700' as const, color: c.text },
   }));
   return (
     <HitTarget
-      style={styles.row}
+      style={[styles.row, checked ? styles.rowSelected : null]}
       onPress={onPress}
       accessibilityRole="checkbox"
       accessibilityState={{ checked }}
     >
-      <Text style={styles.text}>{label}</Text>
+      <Text style={[styles.text, checked ? styles.textSelected : null]}>{label}</Text>
     </HitTarget>
   );
 }

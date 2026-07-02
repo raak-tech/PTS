@@ -21,10 +21,20 @@ type EngagementRow = {
 };
 
 type WeeklySummary = {
+  weekStart: string;
+  weekEnd: string;
   reinforcementResponses: number;
   blocksCompleted: number;
+  blocksPartial?: number;
   blocksSkipped: number;
   scheduleInsights: string[];
+  painTrend: string | null;
+  morningCheckIns: { dateIso: string; painLevel: number; sleepQuality: string; intention: string | null }[];
+  readOutSummaries: string[];
+  eveningReflectionSamples: string[];
+  clientShares: string[];
+  latestWeeklyCheckIn: string | null;
+  holisticCompletions?: { activityType: string; count: number }[];
 };
 
 type WeekDraft = {
@@ -40,8 +50,9 @@ type WeekDraft = {
 };
 
 type WeekStatus = 'draft' | 'edited' | 'approved';
+type WeekDisplayStatus = WeekStatus | 'not_started';
 
-type ArtifactRow = { id: string; kind: string; title: string; createdAt: string };
+type ArtifactRow = { id: string; kind: string; title: string; bodyText?: string; createdAt: string };
 
 type OverviewProps = {
   registered: string;
@@ -125,8 +136,15 @@ export function ProviderClientWorkspaceClient({
   const [scheduleCompletedAt, setScheduleCompletedAt] = useState<string | null>(null);
   const [togglingSchedule, setTogglingSchedule] = useState(false);
   const [currentWeekContent, setCurrentWeekContent] = useState<WeekDraft | null>(null);
+  const [weekComment, setWeekComment] = useState('');
+  const [savingWeekComment, setSavingWeekComment] = useState(false);
 
   const approvedCount = Object.values(weekStatuses).filter((s) => s === 'approved').length;
+  const nextWeekNumber = approvedCount + 1;
+  const clientShares = overview.artifacts.filter((a) => a.kind === 'counselor-share');
+
+  const weekDisplayStatus = (weekNum: number): WeekDisplayStatus =>
+    weekStatuses[weekNum] ?? 'not_started';
 
   useEffect(() => {
     void Promise.all([
@@ -218,6 +236,7 @@ export function ProviderClientWorkspaceClient({
     setRegenWeek(true);
     setMessage('');
     setWeekDraft(null);
+    const sourceWeek = approvedCount > 0 ? approvedCount : 1;
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 320_000);
@@ -225,13 +244,18 @@ export function ProviderClientWorkspaceClient({
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ weekNumber: 1 }),
+        body: JSON.stringify({ weekNumber: sourceWeek }),
         signal: controller.signal,
       });
       clearTimeout(timer);
       const data = await res.json();
       if (!res.ok) {
-        const err = data.error === 'forbidden' ? 'Not linked to this client yet.' : data.detail ?? data.error ?? 'Week generation failed';
+        const err =
+          data.error === 'counselor_comment_required'
+            ? data.detail
+            : data.error === 'forbidden'
+              ? 'Not linked to this client yet.'
+              : data.detail ?? data.error ?? 'Week generation failed';
         setMessage(err);
         return;
       }
@@ -240,6 +264,31 @@ export function ProviderClientWorkspaceClient({
       setMessage(`Week ${data.weekNumber} draft ready — review below, then apply to the client's live plan.`);
     } finally {
       setRegenWeek(false);
+    }
+  };
+
+  const onSaveWeekComment = async () => {
+    if (!planId || approvedCount === 0) {
+      setMessage('Approve at least one week before saving a comment for the next generation.');
+      return;
+    }
+    setSavingWeekComment(true);
+    setMessage('');
+    try {
+      const res = await fetch(`/api/provider/plans/${planId}/week/${approvedCount}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ counselorWeekComment: weekComment }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setMessage(data.error ?? 'Could not save week comment');
+        return;
+      }
+      setMessage(`Comment saved for Week ${approvedCount} — you can now generate Week ${approvedCount + 1}.`);
+    } finally {
+      setSavingWeekComment(false);
     }
   };
 
@@ -294,16 +343,18 @@ export function ProviderClientWorkspaceClient({
     }
   };
 
-  const statusColour: Record<WeekStatus, string> = {
+  const statusColour: Record<WeekDisplayStatus, string> = {
     draft: 'var(--muted)',
     edited: 'var(--warning)',
     approved: 'var(--success)',
+    not_started: 'var(--muted)',
   };
 
-  const statusLabel: Record<WeekStatus, string> = {
+  const statusLabel: Record<WeekDisplayStatus, string> = {
     draft: 'Draft',
     edited: 'Edited',
     approved: '✓ Approved',
+    not_started: 'Not started',
   };
 
   return (
@@ -507,19 +558,78 @@ export function ProviderClientWorkspaceClient({
         {weekly ? (
           <section className="provider-panel">
             <h2>This week&apos;s data</h2>
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--muted)' }}>
+              {weekly.weekStart} — {weekly.weekEnd}
+            </p>
+            {weekly.painTrend ? (
+              <p style={{ margin: '0 0 12px', fontSize: 14 }}>
+                <strong>Pain trend:</strong> {weekly.painTrend}
+              </p>
+            ) : null}
+            {weekly.latestWeeklyCheckIn ? (
+              <p style={{ margin: '0 0 12px', fontSize: 14, lineHeight: 1.6 }}>
+                <strong>Latest weekly check-in:</strong> {weekly.latestWeeklyCheckIn}
+              </p>
+            ) : null}
             <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.7 }}>
               <li>
                 <strong>Read-out responses:</strong> {weekly.reinforcementResponses}
               </li>
               <li>
                 <strong>Calendar blocks done:</strong> {weekly.blocksCompleted}
+                {weekly.blocksPartial ? ` (+ ${weekly.blocksPartial} partial)` : ''}
               </li>
               <li>
                 <strong>Blocks skipped:</strong> {weekly.blocksSkipped}
               </li>
             </ul>
+            {weekly.morningCheckIns.length > 0 ? (
+              <div style={{ marginTop: 14 }}>
+                <p style={{ fontWeight: 600, marginBottom: 8 }}>Morning check-ins</p>
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.6 }}>
+                  {weekly.morningCheckIns.slice(0, 7).map((c) => (
+                    <li key={c.dateIso}>
+                      {c.dateIso}: pain {c.painLevel}/10 · sleep {c.sleepQuality}
+                      {c.intention ? ` · ${c.intention}` : ''}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {weekly.readOutSummaries.length > 0 ? (
+              <div style={{ marginTop: 14 }}>
+                <p style={{ fontWeight: 600, marginBottom: 8 }}>Read-out samples</p>
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.6 }}>
+                  {weekly.readOutSummaries.slice(0, 5).map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {weekly.eveningReflectionSamples.length > 0 ? (
+              <div style={{ marginTop: 14 }}>
+                <p style={{ fontWeight: 600, marginBottom: 8 }}>Evening reflections</p>
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.6 }}>
+                  {weekly.eveningReflectionSamples.slice(0, 3).map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {weekly.holisticCompletions && weekly.holisticCompletions.length > 0 ? (
+              <div style={{ marginTop: 14 }}>
+                <p style={{ fontWeight: 600, marginBottom: 8 }}>Holistic completions</p>
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
+                  {weekly.holisticCompletions.map((h) => (
+                    <li key={h.activityType}>
+                      {h.activityType}: {h.count}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
             {weekly.scheduleInsights.length > 0 ? (
-              <div style={{ marginTop: 12 }}>
+              <div style={{ marginTop: 14 }}>
                 <p style={{ fontWeight: 600, marginBottom: 8 }}>Scheduling feedback</p>
                 <ul style={{ margin: 0, paddingLeft: 18 }}>
                   {weekly.scheduleInsights.slice(0, 5).map((line) => (
@@ -530,6 +640,46 @@ export function ProviderClientWorkspaceClient({
                 </ul>
               </div>
             ) : null}
+            {weekly.clientShares.length > 0 ? (
+              <div style={{ marginTop: 14 }}>
+                <p style={{ fontWeight: 600, marginBottom: 8 }}>Client shares (for next week LLM)</p>
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.6 }}>
+                  {weekly.clientShares.slice(0, 5).map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+                {clientShares.length > 0 ? (
+                  <p style={{ margin: '10px 0 0', fontSize: 13, color: 'var(--muted)' }}>
+                    Full messages are in Client updates below.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+
+        {clientShares.length > 0 ? (
+          <section className="provider-panel">
+            <h2>Client updates</h2>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {clientShares.map((a) => (
+                <div
+                  key={a.id}
+                  style={{
+                    border: '1px solid var(--border-light)',
+                    borderRadius: 12,
+                    padding: '12px 16px',
+                    background: 'var(--surface-2)',
+                  }}
+                >
+                  <div style={{ fontWeight: 600, marginBottom: 6 }}>{a.title}</div>
+                  <div style={{ fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{a.bodyText}</div>
+                  <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: 8 }}>
+                    {new Date(a.createdAt).toLocaleString()}
+                  </div>
+                </div>
+              ))}
+            </div>
           </section>
         ) : null}
 
@@ -620,8 +770,9 @@ export function ProviderClientWorkspaceClient({
 
           <div style={{ display: 'grid', gap: 8 }}>
             {Array.from({ length: totalWeeks }, (_, i) => i + 1).map((weekNum) => {
-              const status = weekStatuses[weekNum] ?? 'draft';
+              const status = weekDisplayStatus(weekNum);
               const isApproving = approvingWeek === weekNum;
+              const canApprove = status === 'draft' || status === 'edited';
               return (
                 <div
                   key={weekNum}
@@ -633,8 +784,14 @@ export function ProviderClientWorkspaceClient({
                     flexWrap: 'wrap',
                     padding: '10px 14px',
                     borderRadius: 10,
-                    border: `1px solid ${status === 'approved' ? 'rgba(155, 196, 168, 0.45)' : 'var(--border-light)'}`,
-                    background: status === 'approved' ? 'rgba(155, 196, 168, 0.1)' : 'var(--surface-2)',
+                    border: `1px solid ${status === 'approved' ? 'rgba(155, 196, 168, 0.45)' : status === 'not_started' ? 'var(--border-light)' : 'var(--border-light)'}`,
+                    background:
+                      status === 'approved'
+                        ? 'rgba(155, 196, 168, 0.1)'
+                        : status === 'not_started'
+                          ? 'transparent'
+                          : 'var(--surface-2)',
+                    opacity: status === 'not_started' ? 0.85 : 1,
                   }}
                 >
                   <div>
@@ -642,8 +799,13 @@ export function ProviderClientWorkspaceClient({
                     <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 600, color: statusColour[status] }}>
                       {statusLabel[status]}
                     </span>
+                    {status === 'not_started' ? (
+                      <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+                        Generate from Plan tab after prior week is approved.
+                      </p>
+                    ) : null}
                   </div>
-                  {status !== 'approved' ? (
+                  {canApprove ? (
                     <button
                       type="button"
                       disabled={isApproving || !planId}
@@ -652,9 +814,9 @@ export function ProviderClientWorkspaceClient({
                     >
                       {isApproving ? 'Approving…' : `Approve Week ${weekNum}`}
                     </button>
-                  ) : (
+                  ) : status === 'approved' ? (
                     <span style={{ fontSize: 12, color: 'var(--success)' }}>Client can see this week ✓</span>
-                  )}
+                  ) : null}
                 </div>
               );
             })}
@@ -672,10 +834,36 @@ export function ProviderClientWorkspaceClient({
         <section className="provider-panel">
           <h2>Next week planning (AI)</h2>
           <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 0 }}>
-            Uses this week&apos;s engagement data to draft the next week with holistic blocks. Takes 1–2 minutes.
+            Save a clinical comment on the current approved week, then generate the next week using engagement data.
           </p>
-          <button type="button" onClick={() => void onRegenerateWeek()} disabled={regenWeek}>
-            {regenWeek ? 'Generating next week draft…' : 'Generate next week draft'}
+          {approvedCount > 0 ? (
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+                Comment on Week {approvedCount} (required before Week {approvedCount + 1})
+              </label>
+              <textarea
+                value={weekComment}
+                onChange={(e) => setWeekComment(e.target.value)}
+                rows={4}
+                placeholder="Clinical framing, adjustments, what to emphasize next week…"
+                style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid var(--border-light)' }}
+              />
+              <button
+                type="button"
+                style={{ marginTop: 8 }}
+                onClick={() => void onSaveWeekComment()}
+                disabled={savingWeekComment || weekComment.trim().length < 3}
+              >
+                {savingWeekComment ? 'Saving…' : `Save Week ${approvedCount} comment`}
+              </button>
+            </div>
+          ) : null}
+          <button type="button" onClick={() => void onRegenerateWeek()} disabled={regenWeek || approvedCount === 0}>
+            {regenWeek
+              ? `Generating Week ${nextWeekNumber} draft…`
+              : approvedCount > 0
+                ? `Generate Week ${nextWeekNumber} draft`
+                : 'Approve Week 1 before generating Week 2'}
           </button>
           {weekSuggestions.length > 0 ? (
             <ul style={{ marginTop: 12, lineHeight: 1.6 }}>

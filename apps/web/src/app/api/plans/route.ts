@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { getDb } from '@/db';
 import { clientCounselor, plans, users } from '@/db/schema';
 import { sendPushToUser } from '@/lib/expo-push';
+import { recordAudit } from '@/lib/audit';
 import { logError } from '@/lib/logger';
 import {
   applyHolisticVisibility,
@@ -156,9 +157,18 @@ export async function POST(request: Request) {
       void sendPushToUser(
         clientUser?.expoPushToken,
         'Your personalized plan is ready 🎯',
-        'Your counselor has approved your 6-week recovery program. Open the app to start.',
+        'Your counselor has approved your Week 1 program. Open the app to start.',
         { action: 'plan_approved', planId: planRow.id },
       );
+
+      void recordAudit({
+        actorUserId: user.id,
+        actorRole: user.role,
+        action: 'approve_plan',
+        targetType: 'plan',
+        targetId: parsed.data.planId,
+        metadata: { clientId: planRow.userId },
+      });
 
       return NextResponse.json({ ok: true });
     }
@@ -178,6 +188,15 @@ export async function POST(request: Request) {
       if (!planId) {
         return NextResponse.json({ error: 'intake_missing' }, { status: 400 });
       }
+
+      void recordAudit({
+        actorUserId: user.id,
+        actorRole: user.role,
+        action: 'regenerate_plan',
+        targetType: 'plan',
+        targetId: planId,
+        metadata: { clientId: planRow.userId },
+      });
 
       return NextResponse.json({ ok: true, status: 'draft', planId });
     }

@@ -14,7 +14,7 @@ import { useProgramTime } from '@/hooks/useProgramTime';
 export function useHolisticWeek() {
   const { token } = useAuth();
   const programTime = useProgramTime();
-  const weekNumber = programTime?.weekNumber ?? 1;
+  const weekNumber = programTime?.contentWeekNumber ?? programTime?.weekNumber ?? 1;
 
   const [week, setWeek] = useState<GeneratedPlan['weeks'][number] | null>(null);
   const [completed, setCompleted] = useState<Record<HolisticActivityType, boolean>>({

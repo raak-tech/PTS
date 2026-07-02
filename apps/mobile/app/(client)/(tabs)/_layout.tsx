@@ -1,20 +1,26 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { StrugglingFab } from '@/components/StrugglingFab';
 import { TestTimeBanner } from '@/components/TestTimeBanner';
 import { TabBarIcon } from '@/components/navigation/TabBarIcon';
+import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useUnreadCounts } from '@/hooks/useUnreadCounts';
 
 export default function ClientTabsLayout() {
+  const { user, loading } = useAuth();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { total: unreadTotal } = useUnreadCounts();
 
   // Badge lifecycle:
   // - Messages: shows unread count, clears after opening a thread, re-badges on new messages
+
+  if (!loading && user?.role === 'client' && !user.planApproved) {
+    return <Redirect href="/(client)/waiting-plan" />;
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>

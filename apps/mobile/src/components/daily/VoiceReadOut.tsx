@@ -5,7 +5,7 @@ import {
   useAudioRecorder,
   useAudioRecorderState,
 } from 'expo-audio';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useEffect, useState } from 'react';
 import { Platform, Text, View } from 'react-native';
 
@@ -63,10 +63,10 @@ export function VoiceReadOut({ disabled, onSubmitVoice }: Props) {
       if (!uri) throw new Error('No recording');
 
       const base64 = await FileSystem.readAsStringAsync(uri, {
-        encoding: 'base64',
+        encoding: FileSystem.EncodingType.Base64,
       });
       await onSubmitVoice(base64);
-      setMessage('✓ Voice response saved');
+      setMessage('✓ Recorded today');
       await FileSystem.deleteAsync(uri, { idempotent: true });
     } catch {
       setMessage('Could not save voice response. Try text instead.');

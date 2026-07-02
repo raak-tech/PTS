@@ -11,6 +11,7 @@ import {
   apiSubmitIntake,
   apiVerifyOtp,
 } from '@/lib/api';
+import { clearIntakeDraft } from '@/hooks/useIntakeDraft';
 import type { IntakeFormData } from '@/lib/intake';
 import { normalizePhone } from '@/lib/phone';
 import { findAccountByPhone, MOCK_OTP } from '@/mock/data';
@@ -20,7 +21,9 @@ const TOKEN_KEY = 'pts_session_token';
 const USER_KEY = 'pts_session_user';
 
 function withProgramClock(user: SessionUser): SessionUser {
-  if (user.role !== 'client' || !user.planApproved || user.programStartedAt) return user;
+  if (user.role !== 'client' || !user.planApproved || user.programAnchorDate || user.programStartedAt) {
+    return user;
+  }
   return { ...user, programStartedAt: new Date().toISOString() };
 }
 
@@ -29,6 +32,8 @@ function mapApiUser(user: SessionUser): SessionUser {
     ...user,
     displayName: user.displayName || 'User',
     phone: user.phone || '',
+    programAnchorDate: user.programAnchorDate ?? null,
+    releasedWeeks: user.releasedWeeks ?? [],
   });
 }
 
@@ -71,6 +76,7 @@ type AuthContextValue = {
   completeIntake: (data: IntakeFormData) => Promise<void>;
   refreshUser: () => Promise<void>;
   signOut: () => Promise<void>;
+  signOutIfDifferentPhone: (phone: string) => Promise<void>;
   devSignInAs: (user: SessionUser) => Promise<void>;
   resetProgramClock: () => Promise<void>;
 };
@@ -114,6 +120,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(storedToken);
         setUser(sessionUser);
         await persistSession(storedToken, sessionUser);
+        try {
+          const { scheduleDailyReminders, registerPushTokenWithServer } = await import('@/lib/localNotifications');
+          await scheduleDailyReminders();
+          await registerPushTokenWithServer(storedToken);
+        } catch {
+          /* optional */
+        }
       } catch {
         await clearSession();
       } finally {
@@ -157,6 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         programStartedAt: account.programStartedAt,
       });
       const mockToken = `mock-${account.id}`;
+      await clearIntakeDraft();
       await persistSession(mockToken, sessionUser);
       setToken(mockToken);
       setUser(sessionUser);
@@ -166,6 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { token: sessionToken, user: apiUser } = await apiVerifyOtp(normalized, code, dataStorageConsent);
     const sessionUser = mapApiUser(apiUser);
+    await clearIntakeDraft();
     await persistSession(sessionToken, sessionUser);
     setToken(sessionToken);
     setUser(sessionUser);
@@ -213,11 +228,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // ignore
       }
     }
+    try {
+      const { cancelDailyReminders } = await import('@/lib/localNotifications');
+      await cancelDailyReminders();
+    } catch {
+      /* optional */
+    }
+    await clearIntakeDraft();
     await clearSession();
     setUser(null);
     setToken(null);
     setPendingPhone(null);
   }, [token]);
+
+  const signOutIfDifferentPhone = useCallback(
+    async (phone: string) => {
+      if (!user?.phone) return;
+      const current = normalizePhone(user.phone);
+      const next = normalizePhone(phone);
+      if (current !== next) {
+        await signOut();
+      }
+    },
+    [user?.phone, signOut],
+  );
 
   const devSignInAs = useCallback(async (next: SessionUser) => {
     const sessionUser = withProgramClock(next);
@@ -229,10 +263,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resetProgramClock = useCallback(async () => {
     if (!user || user.role !== 'client' || !user.planApproved) return;
+    if (user.programAnchorDate) {
+      await refreshUser();
+      return;
+    }
     const updated = { ...user, programStartedAt: new Date().toISOString() };
     setUser(updated);
     if (token) await persistSession(token, updated);
-  }, [user, token]);
+  }, [user, token, refreshUser]);
 
   const value = useMemo(
     () => ({
@@ -247,10 +285,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       completeIntake,
       refreshUser,
       signOut,
+      signOutIfDifferentPhone,
       devSignInAs,
       resetProgramClock,
     }),
-    [user, token, loading, pendingPhone, checkPhone, sendOtp, verifyOtp, completeIntake, refreshUser, signOut, devSignInAs, resetProgramClock],
+    [user, token, loading, pendingPhone, checkPhone, sendOtp, verifyOtp, completeIntake, refreshUser, signOut, signOutIfDifferentPhone, devSignInAs, resetProgramClock],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

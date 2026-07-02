@@ -94,7 +94,7 @@ export default async function ProviderPlansPage() {
   return (
     <>
       <h1 className="provider-page-title">Plan review</h1>
-      <p className="provider-page-subtitle">Approve drafts and edit week content before clients see it.</p>
+      <p className="provider-page-subtitle">Review Week 1 drafts and approve each week before clients see it.</p>
 
       {/* Pending intakes section */}
       <PendingIntakesClient

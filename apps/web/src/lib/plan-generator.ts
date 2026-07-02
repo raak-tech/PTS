@@ -1,4 +1,9 @@
 import { logError, log } from './logger';
+import {
+  parseOpenRouterUsage,
+  recordLlmUsage,
+  type LlmUsageContext,
+} from '@/lib/llm-usage';
 
 export type YogaTrial = {
   principle: string;
@@ -103,9 +108,11 @@ AYURVEDA-INFORMED PREFERENCES (adjunct only — not medical treatment):
     }
   }
 
-  return `You are an experienced counseling program designer creating a personalised 6-week recovery support plan.
+  return `You are an experienced counseling program designer creating the **first week** of a personalised recovery support plan.
 The plan uses counseling principles (acceptance-based, values-focused, practically oriented) to help someone recover their quality of life after pain from injury.
 This is NOT a medical or physiotherapy plan. It is psychological and practical support.
+
+After intake, generate **Week 1 only**. The counselor will review Week 1 with the client before later weeks are created one at a time.
 
 CLIENT INTAKE SUMMARY:
 - Age: ${intake.ageRange ?? 'not specified'}
@@ -187,9 +194,8 @@ Generate a JSON object (only JSON, no markdown, no explanation) with this exact 
   ]
 }
 
-Weeks 1-2: stabilisation (grounding, understanding, safe foundation)
-Weeks 3-4: building (reconnecting with values, gentle re-engagement)
-Weeks 5-6: consolidation (sustainable habits, preparing for continuation)
+Generate **only Week 1** in the weeks array (one object). Weeks 2–6 will be created later by the counselor after reviewing client progress.
+Week 1 focus: stabilisation (grounding, understanding, safe foundation).
 
 Make the daily practices specific to this person's situation and goal.
 Yoga trial is SEPARATE from dailyPractices — focus on principles and tiny confidence-building movement, not a workout plan.
@@ -198,14 +204,19 @@ Keep language warm, non-clinical, and empowering. Avoid jargon.
 Return only valid JSON.`;
 }
 
-export async function generatePlan(intake: IntakeData): Promise<GeneratedPlan> {
+export async function generatePlan(
+  intake: IntakeData,
+  context?: LlmUsageContext,
+): Promise<GeneratedPlan> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error('OPENROUTER_API_KEY not configured');
 
+  const model = 'anthropic/claude-sonnet-4.6';
   log('plan_generation_start', { painSource: intake.painSource });
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 270_000);
+  const startedAt = Date.now();
 
   let response: Response;
   try {
@@ -219,46 +230,92 @@ export async function generatePlan(intake: IntakeData): Promise<GeneratedPlan> {
         'X-Title': 'PTS Plan Generator',
       },
       body: JSON.stringify({
-        model: 'anthropic/claude-sonnet-4.6',
+        model,
         messages: [{ role: 'user', content: buildPrompt(intake) }],
         temperature: 0.7,
-        max_tokens: 16000,
+        max_tokens: 8000,
+        usage: { include: true },
       }),
     });
+  } catch (err) {
+    const latencyMs = Date.now() - startedAt;
+    await recordLlmUsage({
+      operation: 'plan_generation',
+      model,
+      context,
+      status: 'error',
+      latencyMs,
+      errorText: err instanceof Error ? err.message : 'request_failed',
+    });
+    throw err;
   } finally {
     clearTimeout(timeout);
   }
 
+  const latencyMs = Date.now() - startedAt;
+
   if (!response.ok) {
     const err = await response.text();
     logError('plan_generation_llm_error', new Error(err));
+    await recordLlmUsage({
+      operation: 'plan_generation',
+      model,
+      context,
+      status: 'error',
+      latencyMs,
+      errorText: `HTTP ${response.status}: ${err.slice(0, 500)}`,
+    });
     throw new Error(`LLM API error ${response.status}: ${err}`);
   }
 
   type OpenRouterResponse = {
+    id?: string;
     choices: { message: { content: string }; finish_reason?: string }[];
-    usage?: { completion_tokens?: number; prompt_tokens?: number };
+    usage?: unknown;
   };
   const data = await response.json() as OpenRouterResponse;
+  const usage = parseOpenRouterUsage(data.usage);
   const raw = data.choices[0]?.message?.content ?? '';
   const finishReason = data.choices[0]?.finish_reason;
 
   log('plan_generation_complete', {
     finishReason,
-    completionTokens: data.usage?.completion_tokens,
+    completionTokens: usage?.completion_tokens,
+    costUsd: usage?.cost,
   });
 
   // Strip markdown code fences if the model wrapped the JSON
   const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
 
   try {
-    return JSON.parse(cleaned) as GeneratedPlan;
+    const plan = JSON.parse(cleaned) as GeneratedPlan;
+    plan.weeks = plan.weeks.slice(0, 1);
+    await recordLlmUsage({
+      operation: 'plan_generation',
+      model,
+      context,
+      usage,
+      status: 'success',
+      latencyMs,
+      requestId: data.id ?? null,
+    });
+    return plan;
   } catch {
     logError('plan_generation_parse_error', new Error('Invalid JSON from LLM'), {
       finishReason,
       rawLength: cleaned.length,
       raw: cleaned.slice(0, 200),
       rawTail: cleaned.slice(-120),
+    });
+    await recordLlmUsage({
+      operation: 'plan_generation',
+      model,
+      context,
+      usage,
+      status: 'error',
+      latencyMs,
+      requestId: data.id ?? null,
+      errorText: finishReason === 'length' ? 'truncated_json' : 'invalid_json',
     });
     if (finishReason === 'length') {
       throw new Error('Plan generation truncated — increase max_tokens or simplify plan schema');

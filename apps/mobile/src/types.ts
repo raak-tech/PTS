@@ -7,7 +7,11 @@ export type SessionUser = {
   displayName: string;
   intakeComplete: boolean;
   planApproved: boolean;
-  /** When the 6-week client program clock started (ISO). */
+  /** Calendar anchor (YYYY-MM-DD) — Week 1 release = Day 1. */
+  programAnchorDate?: string | null;
+  /** Counselor-released week numbers the client may access. */
+  releasedWeeks?: number[];
+  /** Mock / legacy test clock (ISO). Used when no programAnchorDate. */
   programStartedAt?: string;
 };
 

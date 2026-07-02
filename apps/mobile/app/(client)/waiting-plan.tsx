@@ -9,13 +9,16 @@ import { useAuth } from '@/context/AuthContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { apiGetContacts, apiGetPlan } from '@/lib/api';
 
+type PlanStatus = 'loading' | 'none' | 'draft' | 'approved';
+
 export default function WaitingPlanScreen() {
   const router = useRouter();
   const { token, refreshUser } = useAuth();
-  const [planStatus, setPlanStatus] = useState<'draft' | 'none' | 'approved'>('draft');
+  const [planStatus, setPlanStatus] = useState<PlanStatus>('loading');
   const styles = useThemedStyles((c) => ({
     line: { fontSize: 15, color: c.text, lineHeight: 24 },
     muted: { fontSize: 15, color: c.faint, lineHeight: 24 },
+    active: { fontSize: 15, color: c.text, lineHeight: 24, fontWeight: '600' as const },
   }));
 
   const [counselorId, setCounselorId] = useState<string | null>(null);
@@ -44,16 +47,32 @@ export default function WaitingPlanScreen() {
     return () => clearInterval(interval);
   }, [token, refreshUser, router]);
 
+  const reviewLine =
+    planStatus === 'none'
+      ? '◉ Waiting for counselor to create your plan'
+      : planStatus === 'draft'
+        ? '◉ Under counselor review'
+        : '✓ Under counselor review';
+
+  const readyLine =
+    planStatus === 'approved'
+      ? '✓ Plan ready'
+      : planStatus === 'draft'
+        ? '○ Plan ready'
+        : '○ Plan ready — not started yet';
+
   return (
-    <Screen title="Your counselor is preparing your plan" subtitle="Submitted → Under review → Ready">
+    <Screen title="Your counselor is preparing your plan" subtitle="Submitted → Plan created → Approved → Ready">
       <Card title="Status">
         <Text style={styles.line}>✓ Assessment submitted</Text>
-        <Text style={styles.line}>
-          {planStatus === 'draft' ? '◉ Under counselor review' : '✓ Under counselor review'}
-        </Text>
-        <Text style={planStatus === 'approved' ? styles.line : styles.muted}>
-          {planStatus === 'approved' ? '✓ Plan ready' : '○ Plan ready'}
-        </Text>
+        <Text style={planStatus === 'none' ? styles.active : styles.line}>{reviewLine}</Text>
+        <Text style={planStatus === 'approved' ? styles.line : styles.muted}>{readyLine}</Text>
+        {planStatus === 'none' ? (
+          <Text style={[styles.muted, { marginTop: 8 }]}>
+            Your counselor will review your assessment and build your personalised program. You&apos;ll get a
+            notification when it&apos;s ready.
+          </Text>
+        ) : null}
       </Card>
       <Button
         label="Message counselor"
@@ -64,6 +83,11 @@ export default function WaitingPlanScreen() {
         }
       />
       <Button label="Review intake summary" variant="secondary" onPress={() => router.push('/(client)/intake')} />
+      <Button
+        label="Profile & settings"
+        variant="secondary"
+        onPress={() => router.push('/(client)/profile')}
+      />
     </Screen>
   );
 }

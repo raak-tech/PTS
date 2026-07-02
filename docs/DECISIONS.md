@@ -94,3 +94,21 @@ Use this to record decisions that affect architecture, product scope, safety/pri
 - **Why:** Standalone mental health apps currently fall outside CDSCO regulatory framework in India — no legal review needed for a small controlled pilot. US data residency is acceptable given the current unregulated environment and small pilot scale.
 - **Alternatives considered:** Legal review before launch (rejected — adds timeline without clear regulatory requirement at this stage); India-based data residency (deferred — not required for pilot, revisit at scale).
 - **Consequences / follow-ups:** Revisit data residency decision before any public launch or B2B employer contracts. The SCOPE-B-DEPENDENCY hold on the Singapore region (sin1) in Track 9 is now resolved — confirm Neon database region and set Vercel function region to match. Verify production DATABASE_URL is correctly set in Vercel dashboard.
+
+- **Date:** 2026-07-02
+- **Decision:** Pilot dev workflow: **Analyze → Document → Review → Build** (`DEV_WORKFLOW.md`). Multi-surface or multi-role changes require a feature spec in `docs/plans/` and review gate approval before coding. `PILOT_TODO.md` links specs; completion updates both spec and todo.
+- **Why:** Build 11 exposed counselor web lagging client/API because implementation preceded cross-role analysis. Prevents misaligned surfaces and duplicate rework.
+- **Alternatives considered:** Code-first with post-hoc docs (rejected — caused §9 gaps); heavy PRD for every bugfix (rejected — workflow scoped to multi-surface work).
+- **Consequences / follow-ups:** Section 9 uses `docs/plans/2026-07-02-section-9-counselor-alignment.md`. Agents and autopilot follow `DEV_WORKFLOW.md` for pilot items. Amend `AUTOPILOT_POLICY.md` plan-first rule to reference this doc.
+
+- **Date:** 2026-07-02
+- **Decision:** **Amend SCOPE-G (2026-06-30):** Initial LLM plan generation after intake produces **Week 1 only**. Weeks 2–6 are generated one at a time after counselor week comment + `regenerate-week`. The 2026-06-30 wording (“AI generates full 6-week plan draft”) applies only to the **program arc**, not the first API response.
+- **Why:** Clinical gate: counselor reviews Week 1 before client starts; each subsequent week uses enriched engagement data. Implemented in build 11 API; counselor UI alignment is §9.
+- **Alternatives considered:** Keep generating 6 weeks on intake (rejected — contradicts product rule agreed in pilot todo §3).
+- **Consequences / follow-ups:** Update `PROVIDER_WORKFLOW.md` (§9.8). Plan review queue copy and generation progress strings must match. Legacy 6-week JSON in DB for already-approved clients is read-only history — **no bulk “approve all weeks” UI** going forward.
+
+- **Date:** 2026-07-02
+- **Decision:** **No “Approve all weeks”** in the program process. Counselors approve **one week at a time** only (Week 1, then Week 2, …). Remove bulk-approve UI from counselor web plan review and counselor mobile plan review.
+- **Why:** Week-1-first model requires counselor review and comment between weeks; bulk approve bypasses clinical gates and releases content the client should not see yet.
+- **Alternatives considered:** Hide bulk approve for new plans only (rejected — user confirmed never in process).
+- **Consequences / follow-ups:** §9.1 removes `approveAll` from `PlanReviewClient.tsx` and mobile `plan-review/[id].tsx`. Per-week approve via `POST /api/provider/plans/{planId}/week/{n}` remains the only release path.

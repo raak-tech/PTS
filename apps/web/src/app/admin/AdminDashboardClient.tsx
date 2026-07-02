@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 
+import { AdminNav } from '@/components/admin/AdminNav';
 import type { MetricDetailKind } from '@/lib/admin-metric-details';
 
 type Metrics = {
@@ -26,6 +27,10 @@ type Metrics = {
   recentActivity: {
     intakes: number;
     messages: number;
+  };
+  observability?: {
+    llmSpend30d: number;
+    activeUsers7d: number;
   };
   timestamp: string;
 };
@@ -378,8 +383,11 @@ export function AdminDashboardClient() {
     { key: 'unsafe', label: 'Unsafe reports', value: safety.unsafeUsers, alert: safety.unsafeUsers > 0 },
   ];
 
+  const obs = metrics.observability;
+
   return (
     <div style={{ padding: '24px', maxWidth: 1100, margin: '0 auto', fontFamily: 'inherit' }}>
+      <AdminNav current="/admin" />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Admin dashboard</h1>
@@ -387,17 +395,9 @@ export function AdminDashboardClient() {
             Platform overview · updated {new Date(metrics.timestamp).toLocaleString()}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <Link href="/admin/music" style={{ fontSize: 14, color: '#555' }}>
-            Music catalog
-          </Link>
-          <Link href="/provider/metrics" style={{ fontSize: 14, color: '#555' }}>
-            Counselor metrics
-          </Link>
-          <Link href="/" style={{ fontSize: 14, color: '#555' }}>
-            ← Home
-          </Link>
-        </div>
+        <Link href="/provider/metrics" style={{ fontSize: 14, color: '#555' }}>
+          Counselor metrics
+        </Link>
       </div>
 
       {(safety.redFlags > 0 || safety.unsafeUsers > 0) && (
@@ -409,6 +409,43 @@ export function AdminDashboardClient() {
           </p>
         </div>
       )}
+
+      {obs ? (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+          <Link
+            href="/admin/costs"
+            style={{
+              textDecoration: 'none',
+              color: 'inherit',
+              flex: '1 1 180px',
+              border: '1px solid #eee',
+              borderRadius: 12,
+              padding: 16,
+              background: 'white',
+            }}
+          >
+            <div style={{ fontSize: 12, color: '#888' }}>LLM spend (30d)</div>
+            <div style={{ fontSize: 28, fontWeight: 700 }}>${obs.llmSpend30d.toFixed(4)}</div>
+            <div style={{ fontSize: 11, color: '#999', marginTop: 8 }}>OpenRouter actual · view costs →</div>
+          </Link>
+          <Link
+            href="/admin/analytics"
+            style={{
+              textDecoration: 'none',
+              color: 'inherit',
+              flex: '1 1 180px',
+              border: '1px solid #eee',
+              borderRadius: 12,
+              padding: 16,
+              background: 'white',
+            }}
+          >
+            <div style={{ fontSize: 12, color: '#888' }}>Active users (7d)</div>
+            <div style={{ fontSize: 28, fontWeight: 700 }}>{obs.activeUsers7d}</div>
+            <div style={{ fontSize: 11, color: '#999', marginTop: 8 }}>Check-ins, holistic, read-outs · analytics →</div>
+          </Link>
+        </div>
+      ) : null}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
         {cards.map((card) => (

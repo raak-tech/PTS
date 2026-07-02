@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -11,9 +11,18 @@ import { NRSFaceScale } from '@/components/daily/NRSFaceScale';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { useAuth } from '@/context/AuthContext';
-import { HolisticWeekSection } from '@/components/holistic/HolisticCards';
-import { useCounselorContact, useTodayPlan } from '@/hooks/useClientData';
-import { apiGetEveningReflection, apiSubmitEveningReflection, apiSubmitDailyCheckIn, apiGetDailyCheckIn, apiGetClientSchedule } from '@/lib/api';
+import { AyurvedaCard, MusicMomentCard, YogaTrialCard } from '@/components/holistic/HolisticCards';
+import { useCounselorContact, useMusicCatalog, useTodayPlan } from '@/hooks/useClientData';
+import {
+  apiGetDailyNote,
+  apiGetEveningReflection,
+  apiGetScheduleFeedback,
+  apiSubmitEveningReflection,
+  apiSubmitDailyCheckIn,
+  apiGetDailyCheckIn,
+  apiGetClientSchedule,
+  apiSaveArtifact,
+} from '@/lib/api';
 import { useDailyCalendar, useTodayReinforcement } from '@/hooks/useDailyLayer';
 import { useHolisticWeek } from '@/hooks/useHolisticWeek';
 import { useProgramTime } from '@/hooks/useProgramTime';
@@ -21,6 +30,15 @@ import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { TodayTaskQueue, type TodayTask } from '@/components/daily/TodayTaskQueue';
 import { greetingForDayProgress } from '@/lib/appTime';
 import type { CalendarBlock, HolisticActivityType, TodayReinforcement } from '@/lib/api';
+
+function purposeToTag(purpose: string): string {
+  const p = purpose.toLowerCase();
+  if (p.includes('flare')) return 'flare';
+  if (p.includes('evening') || p.includes('wind')) return 'evening';
+  if (p.includes('reflect')) return 'reflection';
+  if (p.includes('activ') || p.includes('morning')) return 'morning';
+  return 'reflection';
+}
 
 function BlockRow({
   block,
@@ -110,7 +128,15 @@ function ReadOutCards({
           {item.counselorAudioUrl ? <CounselorAudioPlayer audioUrl={item.counselorAudioUrl} /> : null}
           <Text style={styles.meta}>{item.bodyText}</Text>
           {item.respondedToday ? (
-            <Text style={styles.done}>✓ Recorded today</Text>
+            <>
+              <Text style={styles.done}>✓ Recorded today</Text>
+              {item.todayResponse?.responseType === 'text' && item.todayResponse.bodyText ? (
+                <Text style={styles.meta}>{item.todayResponse.bodyText}</Text>
+              ) : null}
+              {item.todayResponse?.responseType === 'voice' && item.todayResponse.audioUrl ? (
+                <CounselorAudioPlayer audioUrl={item.todayResponse.audioUrl} label="Replay your read-out:" />
+              ) : null}
+            </>
           ) : (
             <>
               <TextField
@@ -162,6 +188,7 @@ export default function TodayScreen() {
   const { reinforcements, submitResponse, submitVoice } = useTodayReinforcement();
   const { blocks, updateBlockStatus, saveBlocks, submitFeedback } = useDailyCalendar();
   const { week: holisticWeek, completed: holisticCompleted, markComplete } = useHolisticWeek();
+  const musicCatalog = useMusicCatalog();
   const [holisticSaving, setHolisticSaving] = useState<HolisticActivityType | null>(null);
   const router = useRouter();
   const [practiceDone, setPracticeDone] = useState(false);
@@ -182,11 +209,39 @@ export default function TodayScreen() {
   const [savingCheckIn, setSavingCheckIn] = useState(false);
   const [yesterdayPainLevel, setYesterdayPainLevel] = useState<number | undefined>();
   const [scheduleRequired, setScheduleRequired] = useState(false);
-  const [eveningSheetOpen, setEveningSheetOpen] = useState(false);
+  const [feedbackSaved, setFeedbackSaved] = useState(false);
+  const [scheduleSaved, setScheduleSaved] = useState(false);
+  const [dailyNotes, setDailyNotes] = useState('');
+  const [notesSaved, setNotesSaved] = useState(false);
+  const [savingNotes, setSavingNotes] = useState(false);
   const styles = useThemedStyles((c) => ({
     practice: { fontSize: 16, fontWeight: '700' as const, color: c.text },
     meta: { fontSize: 14, color: c.muted, lineHeight: 20 },
     done: { fontSize: 14, color: c.success, fontWeight: '600' as const },
+    banner: {
+      fontSize: 14,
+      color: c.text,
+      lineHeight: 21,
+      backgroundColor: c.accent + '22',
+      padding: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: c.accent + '44',
+    },
+    sleepChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: c.border,
+      fontSize: 13,
+      color: c.text,
+    },
+    sleepChipActive: {
+      borderColor: c.primary,
+      backgroundColor: c.surface,
+      fontWeight: '600' as const,
+    },
     input: {
       borderWidth: 1,
       borderColor: c.border,
@@ -293,38 +348,75 @@ export default function TodayScreen() {
     void apiGetClientSchedule(token).then((data) => {
       setScheduleRequired(data.scheduleRequired);
     });
+    void apiGetDailyNote(token).then((data) => {
+      if (data.artifact?.bodyText) {
+        setDailyNotes(data.artifact.bodyText);
+        setNotesSaved(true);
+      }
+    });
+    void apiGetScheduleFeedback(token).then((data) => {
+      if (data.feedback) {
+        setWorkedText(data.feedback.workedText ?? '');
+        setDidntWorkText(data.feedback.didntWorkText ?? '');
+        if (data.feedback.workedText || data.feedback.didntWorkText) {
+          setFeedbackSaved(true);
+        }
+      }
+    });
   }, [token]);
 
   useEffect(() => {
-    if (isEvening) setEveningSheetOpen(true);
-  }, [isEvening]);
-
-  const holisticDone = useMemo(() => {
-    if (!holisticWeek) return true;
-    const checks: boolean[] = [];
-    if (holisticWeek.ayurvedaBlock) checks.push(holisticCompleted.ayurveda);
-    if (holisticWeek.yogaTrial) checks.push(holisticCompleted.yoga);
-    if (holisticWeek.musicMoment) checks.push(holisticCompleted.music);
-    return checks.length === 0 || checks.every(Boolean);
-  }, [holisticWeek, holisticCompleted]);
+    if (blocks.length > 0) setScheduleSaved(true);
+  }, [blocks.length]);
 
   const readoutDone = reinforcements.length === 0 || reinforcements.every((r) => r.respondedToday);
-  const scheduleDone = blocks.length > 0;
-  const eveningFeedbackDone = Boolean(workedText.trim() || didntWorkText.trim());
+  const scheduleDone = scheduleSaved && blocks.length > 0;
+  const eveningFeedbackDone = feedbackSaved;
   const eveningDone = reflectionSaved && eveningFeedbackDone;
 
   const morningTasks = useMemo((): TodayTask[] => {
-    const tasks: TodayTask[] = [
-      { id: 'checkin', label: 'Morning check-in', done: checkInSaved },
-      { id: 'holistic', label: 'Holistic focus', done: holisticDone },
-      { id: 'readout', label: 'Daily read-out', done: readoutDone },
-    ];
+    const tasks: TodayTask[] = [{ id: 'checkin', label: 'Morning check-in', done: checkInSaved }];
+    if (holisticWeek?.ayurvedaBlock) {
+      tasks.push({ id: 'ayurveda', label: 'Ayurveda wellness', done: holisticCompleted.ayurveda });
+    }
+    if (holisticWeek?.yogaTrial) {
+      tasks.push({ id: 'yoga', label: 'Yoga trial', done: holisticCompleted.yoga });
+    }
+    if (holisticWeek?.musicMoment) {
+      tasks.push({ id: 'music', label: 'Music moment', done: holisticCompleted.music });
+    }
+    tasks.push({ id: 'readout', label: 'Daily read-out', done: readoutDone });
     if (scheduleRequired) {
       tasks.push({ id: 'schedule', label: 'Plan my day', done: scheduleDone });
     }
     tasks.push({ id: 'practice', label: "Today's practice", done: practiceDone });
     return tasks;
-  }, [checkInSaved, holisticDone, readoutDone, scheduleRequired, scheduleDone, practiceDone]);
+  }, [
+    checkInSaved,
+    holisticWeek,
+    holisticCompleted,
+    readoutDone,
+    scheduleRequired,
+    scheduleDone,
+    practiceDone,
+  ]);
+
+  const allMorningDone = useMemo(
+    () => morningTasks.every((t) => t.done),
+    [morningTasks],
+  );
+
+  useEffect(() => {
+    void (async () => {
+      const { syncRemindersForProgress } = await import('@/lib/localNotifications');
+      await syncRemindersForProgress({
+        checkInDone: checkInSaved,
+        readoutDone,
+        eveningDone,
+        allMorningDone,
+      });
+    })();
+  }, [checkInSaved, readoutDone, eveningDone, allMorningDone]);
 
   const eveningTasks = useMemo((): TodayTask[] => {
     return [
@@ -341,9 +433,30 @@ export default function TodayScreen() {
     setSavingFeedback(true);
     try {
       await submitFeedback(workedText.trim(), didntWorkText.trim());
+      setFeedbackSaved(true);
     } finally {
       setSavingFeedback(false);
     }
+  };
+
+  const onSaveDailyNotes = async () => {
+    if (!token || !dailyNotes.trim()) return;
+    setSavingNotes(true);
+    try {
+      await apiSaveArtifact(token, {
+        kind: 'daily',
+        title: "Today's notes",
+        bodyText: dailyNotes.trim(),
+      });
+      setNotesSaved(true);
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
+  const onSaveBlocks = async (next: CalendarBlock[]) => {
+    await saveBlocks(next);
+    if (next.length > 0) setScheduleSaved(true);
   };
 
   const onHolisticComplete = async (type: HolisticActivityType) => {
@@ -373,17 +486,10 @@ export default function TodayScreen() {
                 <Text
                   key={sq}
                   onPress={() => setCheckInSleepQuality(sq)}
-                  style={{
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 999,
-                    borderWidth: 1,
-                    borderColor: checkInSleepQuality === sq ? styles.input.borderColor : 'var(--border)',
-                    backgroundColor: checkInSleepQuality === sq ? 'var(--bg)' : 'transparent',
-                    color: 'var(--text)',
-                    fontSize: 13,
-                    fontWeight: checkInSleepQuality === sq ? '600' as const : '400' as const,
-                  }}
+                  style={[
+                    styles.sleepChip,
+                    checkInSleepQuality === sq ? styles.sleepChipActive : null,
+                  ]}
                 >
                   {sq[0]?.toUpperCase()}
                   {sq.slice(1)}
@@ -403,15 +509,39 @@ export default function TodayScreen() {
             />
           </>
         );
-      case 'holistic':
-        return (
-          <HolisticWeekSection
-            week={holisticWeek}
-            completed={holisticCompleted}
-            onComplete={(type) => void onHolisticComplete(type)}
-            saving={holisticSaving}
+      case 'ayurveda':
+        return holisticWeek?.ayurvedaBlock ? (
+          <AyurvedaCard
+            embedded
+            block={holisticWeek.ayurvedaBlock}
+            completed={holisticCompleted.ayurveda}
+            onComplete={() => void onHolisticComplete('ayurveda')}
+            loading={holisticSaving === 'ayurveda'}
           />
-        );
+        ) : null;
+      case 'yoga':
+        return holisticWeek?.yogaTrial ? (
+          <YogaTrialCard
+            embedded
+            trial={holisticWeek.yogaTrial}
+            completed={holisticCompleted.yoga}
+            onComplete={() => void onHolisticComplete('yoga')}
+            loading={holisticSaving === 'yoga'}
+          />
+        ) : null;
+      case 'music':
+        return holisticWeek?.musicMoment ? (
+          <MusicMomentCard
+            embedded
+            moment={holisticWeek.musicMoment}
+            completed={holisticCompleted.music}
+            onComplete={() => void onHolisticComplete('music')}
+            loading={holisticSaving === 'music'}
+            curatedSpotifyUrl={
+              musicCatalog[purposeToTag(holisticWeek.musicMoment.purpose)]?.spotifyUri
+            }
+          />
+        ) : null;
       case 'readout':
         return (
           <ReadOutCards
@@ -426,7 +556,10 @@ export default function TodayScreen() {
       case 'schedule':
         return (
           <>
-            <CalendarBuilder blocks={blocks} onChange={saveBlocks} />
+            <CalendarBuilder blocks={blocks} onChange={(next) => void onSaveBlocks(next)} />
+            {scheduleSaved && blocks.length > 0 ? (
+              <Text style={[styles.done, { marginTop: 8 }]}>✓ Day plan saved for today</Text>
+            ) : null}
             {blocks.length > 0 ? (
               <>
                 <Text style={[styles.meta, { marginTop: 16, marginBottom: 8 }]}>Mark what you did:</Text>
@@ -515,6 +648,7 @@ export default function TodayScreen() {
               onPress={() => void onSubmitFeedback()}
               loading={savingFeedback}
             />
+            {feedbackSaved ? <Text style={styles.done}>✓ Feedback saved for today</Text> : null}
           </>
         );
       case 'reflection':
@@ -573,6 +707,40 @@ export default function TodayScreen() {
         </Card>
       ) : null}
 
+      <Card title="Today's notes">
+        <Text style={styles.meta}>Jot thoughts, wins, or questions for your counselor.</Text>
+        <TextField
+          style={[styles.input, { minHeight: 100 }]}
+          multiline
+          placeholder="What's on your mind today?"
+          value={dailyNotes}
+          onChangeText={(t) => {
+            setDailyNotes(t);
+            setNotesSaved(false);
+          }}
+        />
+        <Button
+          label={savingNotes ? 'Saving…' : 'Save notes'}
+          variant="secondary"
+          onPress={() => void onSaveDailyNotes()}
+          loading={savingNotes}
+          disabled={!dailyNotes.trim()}
+        />
+        {notesSaved ? <Text style={styles.done}>✓ Saved for today</Text> : null}
+      </Card>
+
+      {scheduleRequired && !isEvening && !scheduleDone ? (
+        <View style={styles.banner}>
+          <Text style={{ fontSize: 14, fontWeight: '600' as const, marginBottom: 4 }}>
+            Schedule requested
+          </Text>
+          <Text style={styles.meta}>
+            Your counselor asked you to plan today. Open <Text style={{ fontWeight: '700' as const }}>Plan my day</Text>{' '}
+            in the checklist below.
+          </Text>
+        </View>
+      ) : null}
+
       {!isEvening ? (
         <TodayTaskQueue
           tasks={morningTasks}
@@ -581,36 +749,8 @@ export default function TodayScreen() {
         />
       ) : (
         <>
-          <Card title="Evening check-in">
-            <Text style={styles.meta}>
-              {eveningDone
-                ? '✓ Evening check-in complete'
-                : 'Wrap up your day — feedback and reflection.'}
-            </Text>
-            <Button
-              label={eveningSheetOpen ? 'Close evening sheet' : 'Open evening sheet'}
-              variant="secondary"
-              onPress={() => setEveningSheetOpen((v) => !v)}
-            />
-          </Card>
-          <Modal visible={eveningSheetOpen} animationType="slide" transparent>
-            <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }}>
-              <View
-                style={{
-                  maxHeight: '88%',
-                  backgroundColor: 'var(--surface)',
-                  borderTopLeftRadius: 20,
-                  borderTopRightRadius: 20,
-                  padding: 16,
-                }}
-              >
-                <Pressable onPress={() => setEveningSheetOpen(false)} style={{ alignSelf: 'flex-end', padding: 8 }}>
-                  <Text style={{ fontSize: 16, color: 'var(--muted)' }}>Close</Text>
-                </Pressable>
-                <TodayTaskQueue tasks={eveningTasks} renderExpanded={renderEveningTask} />
-              </View>
-            </View>
-          </Modal>
+          <SectionLabel>Evening check-in</SectionLabel>
+          <TodayTaskQueue tasks={eveningTasks} renderExpanded={renderEveningTask} />
         </>
       )}
 

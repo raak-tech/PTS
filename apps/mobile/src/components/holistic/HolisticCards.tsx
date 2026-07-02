@@ -15,12 +15,14 @@ export function AyurvedaCard({
   onComplete,
   loading,
   readOnly,
+  embedded,
 }: {
   block: NonNullable<Week['ayurvedaBlock']>;
   completed: boolean;
   onComplete: () => void;
   loading?: boolean;
   readOnly?: boolean;
+  embedded?: boolean;
 }) {
   const styles = useThemedStyles((c) => ({
     title: { fontSize: 15, fontWeight: '700' as const, color: c.text, marginTop: 8 },
@@ -29,7 +31,24 @@ export function AyurvedaCard({
     disclaimer: { fontSize: 12, color: c.faint, marginTop: 8, fontStyle: 'italic' as const },
   }));
 
-  return (
+  return embedded ? (
+    <View>
+      <Text style={styles.body}>{block.rhythmNote}</Text>
+      {block.practices.map((p) => (
+        <Text key={p} style={styles.body}>
+          • {p}
+        </Text>
+      ))}
+      <Text style={styles.disclaimer}>
+        {block.disclaimer ?? 'Supportive wellness only — not medical treatment. Stop if pain increases.'}
+      </Text>
+      {readOnly ? null : completed ? (
+        <Text style={styles.done}>✓ Practiced today</Text>
+      ) : (
+        <Button label="Mark practiced today" variant="secondary" onPress={onComplete} loading={loading} />
+      )}
+    </View>
+  ) : (
     <Card title="Ayurveda-informed wellness">
       <Text style={styles.body}>{block.rhythmNote}</Text>
       {block.practices.map((p) => (
@@ -55,12 +74,14 @@ export function YogaTrialCard({
   onComplete,
   loading,
   readOnly,
+  embedded,
 }: {
   trial: NonNullable<Week['yogaTrial']>;
   completed: boolean;
   onComplete: () => void;
   loading?: boolean;
   readOnly?: boolean;
+  embedded?: boolean;
 }) {
   const styles = useThemedStyles((c) => ({
     principle: { fontSize: 16, fontWeight: '700' as const, color: c.text },
@@ -70,8 +91,8 @@ export function YogaTrialCard({
     done: { fontSize: 14, color: c.success, fontWeight: '600' as const, marginTop: 8 },
   }));
 
-  return (
-    <Card title="Yoga principle trial">
+  const body = (
+    <>
       <Text style={styles.principle}>{trial.principle}</Text>
       <Text style={styles.body}>{trial.applicability}</Text>
       <Text style={styles.movement}>
@@ -84,8 +105,10 @@ export function YogaTrialCard({
       ) : (
         <Button label="Mark trial done today" onPress={onComplete} loading={loading} />
       )}
-    </Card>
+    </>
   );
+
+  return embedded ? <View>{body}</View> : <Card title="Yoga principle trial">{body}</Card>;
 }
 
 export function MusicMomentCard({
@@ -95,6 +118,7 @@ export function MusicMomentCard({
   loading,
   readOnly,
   curatedSpotifyUrl,
+  embedded,
 }: {
   moment: NonNullable<Week['musicMoment']>;
   completed: boolean;
@@ -102,6 +126,7 @@ export function MusicMomentCard({
   loading?: boolean;
   readOnly?: boolean;
   curatedSpotifyUrl?: string | null;
+  embedded?: boolean;
 }) {
   const styles = useThemedStyles((c) => ({
     purpose: {
@@ -126,13 +151,13 @@ export function MusicMomentCard({
   const searchQuery = playlist?.spotifySearchQuery ?? playlist?.title ?? moment.purpose;
   const openUrl = curatedSpotifyUrl ? spotifyOpenUrl(curatedSpotifyUrl) : spotifySearchUrl(searchQuery);
 
-  return (
-    <Card title="Music moment">
+  const inner = (
+    <>
       <Text style={styles.purpose}>{moment.purpose}</Text>
       <Text style={styles.body}>{moment.suggestion}</Text>
       {playlist ? (
         <View style={{ marginTop: 10 }}>
-          <Text style={{ fontSize: 15, fontWeight: '700', color: '#111' }}>{playlist.title}</Text>
+          <Text style={[styles.track, { fontWeight: '700' }]}>{playlist.title}</Text>
           <Text style={styles.body}>{playlist.description}</Text>
           {playlist.tracks.map((t) => (
             <View key={`${t.title}-${t.artist}`}>
@@ -165,8 +190,10 @@ export function MusicMomentCard({
           <Button label="Mark listened today" onPress={onComplete} loading={loading} />
         )}
       </View>
-    </Card>
+    </>
   );
+
+  return embedded ? <View>{inner}</View> : <Card title="Music moment">{inner}</Card>;
 }
 
 export function HolisticWeekSection({

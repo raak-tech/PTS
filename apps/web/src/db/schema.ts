@@ -286,6 +286,7 @@ export const planWeeks = pgTable("plan_weeks", {
   releasedAt: timestamp("released_at", { mode: "date", withTimezone: true }),
   editedAt: timestamp("edited_at", { mode: "date", withTimezone: true }),
   counselorId: text("counselor_id"),
+  counselorWeekComment: text("counselor_week_comment"),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
 
@@ -299,4 +300,35 @@ export const dailyCheckIns = pgTable("daily_check_ins", {
   sleepQuality: text("sleep_quality").notNull(), // 'poor' | 'ok' | 'good'
   intention: text("intention"),
   submittedAt: timestamp("submitted_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+// LLM API usage tracking for admin cost dashboards.
+export const llmUsage = pgTable("llm_usage", {
+  id: text("id").primaryKey(),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+  operation: text("operation").notNull(), // 'plan_generation' | 'week_generation'
+  model: text("model").notNull(),
+  userId: text("user_id"),
+  planId: text("plan_id"),
+  weekNumber: integer("week_number"),
+  promptTokens: integer("prompt_tokens"),
+  completionTokens: integer("completion_tokens"),
+  totalTokens: integer("total_tokens"),
+  costUsd: text("cost_usd"), // stored as string for numeric precision
+  status: text("status").notNull(), // 'success' | 'error'
+  latencyMs: integer("latency_ms"),
+  requestId: text("request_id"),
+  errorText: text("error_text"),
+});
+
+// Admin/counselor action audit trail.
+export const auditLog = pgTable("audit_log", {
+  id: text("id").primaryKey(),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+  actorUserId: text("actor_user_id").notNull(),
+  actorRole: text("actor_role").notNull(),
+  action: text("action").notNull(),
+  targetType: text("target_type").notNull(),
+  targetId: text("target_id"),
+  metadata: text("metadata"), // JSON
 });

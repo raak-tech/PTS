@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { getDb } from '@/db';
 import { counselorProfiles, users } from '@/db/schema';
 import { isAdminUser } from '@/lib/admin';
+import { recordAudit } from '@/lib/audit';
 import { logError } from '@/lib/logger';
 import { isValidIndianMobile, normalizePhone, phoneToEmail } from '@/lib/phone';
 import { getUserFromRequest } from '@/lib/session';
@@ -120,6 +121,15 @@ export async function POST(request: Request) {
         createdAt: now,
       });
     }
+
+    void recordAudit({
+      actorUserId: admin!.id,
+      actorRole: admin!.role,
+      action: 'create_user',
+      targetType: 'user',
+      targetId: userId,
+      metadata: { role, phone: `***${phone.slice(-4)}` },
+    });
 
     return NextResponse.json({
       ok: true,

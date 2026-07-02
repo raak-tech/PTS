@@ -58,11 +58,14 @@ export async function generateAndSavePlanForUser(
   }
 
   try {
-    const generated = await generatePlan({
-      ...saved,
-      hasDependents:
-        saved.hasDependents == null ? null : saved.hasDependents ? 'yes' : 'no',
-    });
+    const generated = await generatePlan(
+      {
+        ...saved,
+        hasDependents:
+          saved.hasDependents == null ? null : saved.hasDependents ? 'yes' : 'no',
+      },
+      { userId },
+    );
     const isCrisis = flags.hasRedFlags || !flags.isSafe;
     const crisisNote = isCrisis
       ? '🚨 CRISIS: RED FLAGS OR SAFETY CONCERN — REQUIRES IMMEDIATE REVIEW'

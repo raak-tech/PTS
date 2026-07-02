@@ -52,12 +52,13 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
     .where(eq(userConsents.userId, id))
     .limit(1);
 
-  const artifacts: Array<{ id: string; kind: string; title: string; createdAt: Date }> = consent?.dataStorageEnabled
+  const artifacts: Array<{ id: string; kind: string; title: string; bodyText: string; createdAt: Date }> = consent?.dataStorageEnabled
     ? await db
         .select({
           id: supportArtifacts.id,
           kind: supportArtifacts.kind,
           title: supportArtifacts.title,
+          bodyText: supportArtifacts.bodyText,
           createdAt: supportArtifacts.createdAt,
         })
         .from(supportArtifacts)
@@ -89,6 +90,8 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
     weekStatusRows.map((r) => [r.weekNumber, r.status as 'draft' | 'edited' | 'approved']),
   );
 
+  const PROGRAM_WEEKS = 6;
+
   const [intake] = await db
     .select({
       painSource: intakeResponses.painSource,
@@ -109,7 +112,7 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
       clientLabel={formatClientLabel(client)}
       planId={latestPlan?.id}
       initialWeekStatuses={weekStatuses}
-      totalWeeks={weekStatusRows.length > 0 ? Math.max(...weekStatusRows.map((r) => r.weekNumber)) : 6}
+      totalWeeks={PROGRAM_WEEKS}
       initialTab={initialTab}
       intake={
         intake
@@ -132,6 +135,7 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
           id: a.id,
           kind: a.kind,
           title: a.title,
+          bodyText: a.bodyText,
           createdAt: a.createdAt.toISOString(),
         })),
       }}

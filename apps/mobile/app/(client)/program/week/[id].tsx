@@ -9,6 +9,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { HolisticWeekSection } from '@/components/holistic/HolisticCards';
 import { useHolisticWeek } from '@/hooks/useHolisticWeek';
+import { useProgramTime } from '@/hooks/useProgramTime';
 import type { HolisticActivityType } from '@/lib/api';
 import { apiGetPlan, parseGeneratedPlan } from '@/lib/api';
 import { PROGRAM_WEEK_THEMES } from '@/lib/appTime';
@@ -17,8 +18,11 @@ export default function WeekDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
   const { colors } = useTheme();
+  const programTime = useProgramTime();
   const weekIndex = Math.max(1, Math.min(Number(id) || 1, PROGRAM_WEEK_THEMES.length)) - 1;
   const fallback = PROGRAM_WEEK_THEMES[weekIndex];
+  const weekStatus = programTime?.weeks.find((w) => w.id === String(weekIndex + 1))?.status;
+  const isLocked = weekStatus === 'locked';
   const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useState<string>(fallback.theme);
   const [focus, setFocus] = useState<string>(fallback.focus);
@@ -32,7 +36,7 @@ export default function WeekDetailScreen() {
   }));
 
   useEffect(() => {
-    if (!token) {
+    if (!token || isLocked) {
       setLoading(false);
       return;
     }
@@ -47,7 +51,23 @@ export default function WeekDetailScreen() {
       }
       setLoading(false);
     });
-  }, [token, weekIndex]);
+  }, [token, weekIndex, isLocked]);
+
+  if (isLocked) {
+    return (
+      <Screen title={`Week ${id}: ${fallback.theme}`} subtitle="Coming soon">
+        <Card title="Not available yet">
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <Text style={{ fontSize: 20 }}>🔒</Text>
+            <Text style={[styles.body, { flex: 1 }]}>
+              Your counselor will release this week after reviewing your progress. You&apos;ll get a
+              notification when it&apos;s ready.
+            </Text>
+          </View>
+        </Card>
+      </Screen>
+    );
+  }
 
   if (loading) {
     return (

@@ -73,7 +73,14 @@ export type TodayReinforcement = {
   counselorAudioUrl: string | null;
   planWeek: number | null;
   respondedToday: boolean;
+  todayResponse?: {
+    responseType: 'text' | 'voice';
+    bodyText: string | null;
+    audioUrl: string | null;
+  } | null;
 };
+
+export type CounselorShareCategory = 'update' | 'question' | 'win';
 
 async function fetchWithTimeout(input: string, init?: RequestInit, timeoutMs = REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
@@ -147,13 +154,56 @@ export async function apiGetClientSchedule(token: string) {
 
 export async function apiSaveArtifact(
   token: string,
-  payload: { title: string; bodyText: string; kind?: string },
+  payload: { title: string; bodyText: string; kind?: 'intake' | 'plan' | 'daily' | 'check-in' | 'counselor-share'; date?: string },
 ) {
   return parseJson<{ ok: boolean }>(
     await fetchWithTimeout(`${API_URL}/api/support/artifacts`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        kind: payload.kind ?? 'daily',
+        title: payload.title,
+        bodyText: payload.bodyText,
+        date: payload.date,
+      }),
+    }),
+  );
+}
+
+export async function apiGetDailyNote(token: string, date?: string) {
+  const q = date ? `?date=${encodeURIComponent(date)}&kind=daily` : '?kind=daily';
+  return parseJson<{ ok: boolean; artifact: { id: string; title: string; bodyText: string } | null }>(
+    await fetchWithTimeout(`${API_URL}/api/support/artifacts${q}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
+}
+
+export async function apiShareWithCounselor(
+  token: string,
+  payload: { category: CounselorShareCategory; bodyText: string },
+) {
+  return parseJson<{ ok: boolean; id: string }>(
+    await fetchWithTimeout(`${API_URL}/api/support/artifacts`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({
+        kind: 'counselor-share',
+        title: payload.category,
+        bodyText: payload.bodyText,
+      }),
+    }),
+  );
+}
+
+export async function apiGetScheduleFeedback(token: string, date?: string) {
+  const q = date ? `?date=${encodeURIComponent(date)}` : '';
+  return parseJson<{
+    ok: boolean;
+    feedback: { workedText: string | null; didntWorkText: string | null } | null;
+  }>(
+    await fetchWithTimeout(`${API_URL}/api/daily/feedback${q}`, {
+      headers: { Authorization: `Bearer ${token}` },
     }),
   );
 }
@@ -388,21 +438,61 @@ export async function apiSubmitScheduleFeedback(
 }
 
 export async function apiRegenerateWeek(token: string, clientId: string, weekNumber: number) {
-  return parseJson<{
+  const res = await fetchWithTimeout(
+    `${API_URL}/api/provider/clients/${clientId}/regenerate-week`,
+    {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ weekNumber }),
+    },
+    320_000,
+  );
+  const data = (await res.json()) as {
+    ok?: boolean;
+    error?: string;
+    detail?: string;
+    weekNumber?: number;
+    weekDraft?: GeneratedPlan['weeks'][number];
+    suggestions?: string[];
+  };
+  if (!res.ok) {
+    throw new Error(
+      typeof data.detail === 'string' ? data.detail : data.error ?? `http-${res.status}`,
+    );
+  }
+  return data as {
     ok: boolean;
     weekNumber: number;
     weekDraft: GeneratedPlan['weeks'][number];
     suggestions: string[];
+  };
+}
+
+export async function apiGetProviderClientMeta(token: string, clientId: string) {
+  return parseJson<{
+    ok: boolean;
+    planId: string | null;
+    weekStatuses: Record<number, 'draft' | 'edited' | 'approved'>;
+    clientUpdates: { id: string; title: string; bodyText: string; createdAt: string }[];
   }>(
-    await fetchWithTimeout(
-      `${API_URL}/api/provider/clients/${clientId}/regenerate-week`,
-      {
-        method: 'POST',
-        headers: authHeaders(token),
-        body: JSON.stringify({ weekNumber }),
-      },
-      320_000,
-    ),
+    await fetchWithTimeout(`${API_URL}/api/provider/clients/${clientId}/plan-meta`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
+}
+
+export async function apiSaveWeekComment(
+  token: string,
+  planId: string,
+  weekNumber: number,
+  counselorWeekComment: string,
+) {
+  return parseJson<{ ok: boolean }>(
+    await fetchWithTimeout(`${API_URL}/api/provider/plans/${planId}/week/${weekNumber}`, {
+      method: 'PATCH',
+      headers: authHeaders(token),
+      body: JSON.stringify({ counselorWeekComment }),
+    }),
   );
 }
 
@@ -486,6 +576,12 @@ export async function apiGetClientReinforcements(token: string, clientId: string
       bodyText: string;
       isActive?: boolean;
       hasCounselorAudio?: boolean;
+      latestResponse?: {
+        responseType: 'text' | 'voice' | string;
+        bodyText: string | null;
+        audioUrl: string | null;
+        submittedAt: string;
+      } | null;
     }[];
   }>(
     await fetchWithTimeout(`${API_URL}/api/reinforcements?clientId=${encodeURIComponent(clientId)}`, {
@@ -554,6 +650,13 @@ export async function apiGetWeeklySummary(token: string, clientId: string) {
       blocksCompleted: number;
       blocksSkipped: number;
       scheduleInsights: string[];
+      painTrend: string | null;
+      morningCheckIns: { dateIso: string; painLevel: number; sleepQuality: string; intention: string | null }[];
+      readOutSummaries: string[];
+      eveningReflectionSamples: string[];
+      clientShares: string[];
+      latestWeeklyCheckIn: string | null;
+      holisticCompletions?: { activityType: string; count: number }[];
     };
   }>(
     await fetchWithTimeout(`${API_URL}/api/provider/clients/${clientId}/weekly-summary`, {

@@ -14,7 +14,8 @@ function unauthorized() {
 }
 
 const patchSchema = z.object({
-  content: z.string().min(1),
+  content: z.string().min(1).optional(),
+  counselorWeekComment: z.string().max(4000).optional(),
 });
 
 // PATCH /api/provider/plans/[planId]/week/[weekNumber]
@@ -36,11 +37,16 @@ export async function PATCH(
     const parsed = patchSchema.safeParse(await request.json());
     if (!parsed.success) return NextResponse.json({ error: 'invalid' }, { status: 400 });
 
-    // Validate JSON shape before saving
-    try {
-      JSON.parse(parsed.data.content);
-    } catch {
-      return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
+    if (!parsed.data.content && parsed.data.counselorWeekComment === undefined) {
+      return NextResponse.json({ error: 'invalid' }, { status: 400 });
+    }
+
+    if (parsed.data.content) {
+      try {
+        JSON.parse(parsed.data.content);
+      } catch {
+        return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
+      }
     }
 
     const db = getDb();
@@ -69,13 +75,20 @@ export async function PATCH(
       await db
         .update(planWeeks)
         .set({
-          content: parsed.data.content,
-          status: 'edited',
-          editedAt: now,
-          counselorId: user.id,
+          ...(parsed.data.content
+            ? {
+                content: parsed.data.content,
+                status: 'edited',
+                editedAt: now,
+                counselorId: user.id,
+              }
+            : {}),
+          ...(parsed.data.counselorWeekComment !== undefined
+            ? { counselorWeekComment: parsed.data.counselorWeekComment.trim() || null }
+            : {}),
         })
         .where(and(eq(planWeeks.planId, planId), eq(planWeeks.weekNumber, weekNum)));
-    } else {
+    } else if (parsed.data.content) {
       const { randomUUID } = await import('node:crypto');
       await db.insert(planWeeks).values({
         id: randomUUID(),
@@ -85,8 +98,11 @@ export async function PATCH(
         status: 'edited',
         editedAt: now,
         counselorId: user.id,
+        counselorWeekComment: parsed.data.counselorWeekComment?.trim() || null,
         createdAt: now,
       });
+    } else {
+      return NextResponse.json({ error: 'week_not_found' }, { status: 404 });
     }
 
     return NextResponse.json({ ok: true });

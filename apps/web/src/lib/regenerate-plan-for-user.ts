@@ -6,6 +6,7 @@ import { getDb } from '@/db';
 import { intakeResponses, plans } from '@/db/schema';
 import { log, logError } from '@/lib/logger';
 import { generatePlan } from '@/lib/plan-generator';
+import { seedDraftPlanWeeks } from '@/lib/seed-plan-weeks';
 
 export async function regeneratePlanDraftForUser(userId: string): Promise<string | null> {
   const db = getDb();
@@ -21,11 +22,14 @@ export async function regeneratePlanDraftForUser(userId: string): Promise<string
   }
 
   try {
-    const generated = await generatePlan({
-      ...saved,
-      hasDependents:
-        saved.hasDependents == null ? null : saved.hasDependents ? 'yes' : 'no',
-    });
+    const generated = await generatePlan(
+      {
+        ...saved,
+        hasDependents:
+          saved.hasDependents == null ? null : saved.hasDependents ? 'yes' : 'no',
+      },
+      { userId },
+    );
 
     const isCrisis = saved.hasRedFlags || !saved.isSafe;
     const crisisNote = isCrisis
@@ -42,6 +46,8 @@ export async function regeneratePlanDraftForUser(userId: string): Promise<string
       counselorNotes: crisisNote,
       createdAt: new Date(),
     });
+
+    await seedDraftPlanWeeks(planId, generated);
 
     log('plan_regenerated', { userId, planId });
     return planId;

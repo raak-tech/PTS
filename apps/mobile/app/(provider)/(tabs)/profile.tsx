@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Text } from 'react-native';
 
+import { AppBuildInfo } from '@/components/AppBuildInfo';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { useAuth } from '@/context/AuthContext';
@@ -27,6 +28,7 @@ export default function ProviderProfileScreen() {
           router.replace('/(auth)/login');
         }}
       />
+      <AppBuildInfo />
     </Screen>
   );
 }

@@ -3,6 +3,11 @@ import {
   PROGRAM_WEEK_COUNT,
   REAL_MS_PER_APP_WEEK,
 } from '@/config/testTime';
+import {
+  calendarDaysBetween,
+  dayProgressFromClock,
+  msUntilNextWeekBoundary,
+} from '@/lib/program-calendar';
 
 export type WeekStatus = 'complete' | 'current' | 'locked';
 
@@ -15,11 +20,13 @@ export type ProgramWeek = {
 
 export type ProgramTimeState = {
   weekNumber: number;
+  /** Week used for plan content (released weeks capped by calendar). */
+  contentWeekNumber: number;
   dayInWeek: number;
   theme: string;
   focus: string;
   programComplete: boolean;
-  completedAt?: string; // ISO date when program completed
+  completedAt?: string;
   weeks: ProgramWeek[];
   subtitle: string;
   dayProgress: number;
@@ -28,6 +35,7 @@ export type ProgramTimeState = {
   elapsedRealMs: number;
   msUntilNextWeek: number;
   testModeLabel: string;
+  usesCalendarWeeks: boolean;
 };
 
 export const PROGRAM_WEEK_THEMES = [
@@ -39,26 +47,87 @@ export const PROGRAM_WEEK_THEMES = [
   { theme: 'Moving Forward', focus: 'Sustaining progress beyond the program' },
 ] as const;
 
-export function computeProgramTime(programStartedAt: Date, now = new Date()): ProgramTimeState {
+function effectiveContentWeek(calendarWeek: number, released: number[]): number {
+  if (released.length === 0) return Math.min(calendarWeek, PROGRAM_WEEK_COUNT);
+  const available = released.filter((w) => w <= calendarWeek).sort((a, b) => b - a);
+  return available[0] ?? released[0] ?? 1;
+}
+
+export function computeCalendarProgramTime(
+  anchorIso: string,
+  releasedWeeks: number[],
+  now = new Date(),
+): ProgramTimeState {
+  const daysSinceAnchor = calendarDaysBetween(anchorIso, now);
+  const calendarWeekNumber = Math.min(Math.floor(daysSinceAnchor / APP_DAYS_PER_WEEK) + 1, PROGRAM_WEEK_COUNT);
+  const dayInWeek = Math.min((daysSinceAnchor % APP_DAYS_PER_WEEK) + 1, APP_DAYS_PER_WEEK);
+  const programComplete = daysSinceAnchor >= PROGRAM_WEEK_COUNT * APP_DAYS_PER_WEEK;
+  const contentWeekNumber = effectiveContentWeek(calendarWeekNumber, releasedWeeks);
+  const current = PROGRAM_WEEK_THEMES[contentWeekNumber - 1] ?? PROGRAM_WEEK_THEMES[0];
+
+  const weeks: ProgramWeek[] = PROGRAM_WEEK_THEMES.map((entry, index) => {
+    const weekNum = index + 1;
+    const released = releasedWeeks.includes(weekNum);
+    let status: WeekStatus = 'locked';
+    if (released && weekNum < calendarWeekNumber) status = 'complete';
+    else if (released && weekNum === calendarWeekNumber) status = 'current';
+    return { id: String(weekNum), theme: entry.theme, focus: entry.focus, status };
+  });
+
+  const dayProgress = dayProgressFromClock(now);
+  const msUntilNextWeek = msUntilNextWeekBoundary(anchorIso, now);
+
+  return {
+    weekNumber: calendarWeekNumber,
+    contentWeekNumber,
+    dayInWeek,
+    theme: current.theme,
+    focus: current.focus,
+    programComplete,
+    weeks,
+    subtitle: programComplete
+      ? `Program complete — ${current.theme}`
+      : `Week ${calendarWeekNumber} · Day ${dayInWeek} — ${current.theme}`,
+    dayProgress,
+    eveningReflectionAvailable: dayProgress >= 0.75,
+    weeklyCheckInDue: dayInWeek === APP_DAYS_PER_WEEK && dayProgress >= 0.5,
+    elapsedRealMs: daysSinceAnchor * 86_400_000,
+    msUntilNextWeek,
+    testModeLabel: `Calendar program · Next week in ${formatDuration(msUntilNextWeek)}`,
+    usesCalendarWeeks: true,
+  };
+}
+
+export function computeProgramTime(
+  programStartedAt: Date,
+  releasedWeeks: number[] = [],
+  now = new Date(),
+): ProgramTimeState {
   const elapsedRealMs = Math.max(0, now.getTime() - programStartedAt.getTime());
   const msPerDay = REAL_MS_PER_APP_WEEK / APP_DAYS_PER_WEEK;
   const weekIndex = Math.floor(elapsedRealMs / REAL_MS_PER_APP_WEEK);
-  const weekNumber = Math.min(weekIndex + 1, PROGRAM_WEEK_COUNT);
+  const calendarWeekNumber = Math.min(weekIndex + 1, PROGRAM_WEEK_COUNT);
   const dayInWeek = Math.min(Math.floor((elapsedRealMs % REAL_MS_PER_APP_WEEK) / msPerDay) + 1, APP_DAYS_PER_WEEK);
   const dayProgress = (elapsedRealMs % msPerDay) / msPerDay;
   const programComplete = elapsedRealMs >= PROGRAM_WEEK_COUNT * REAL_MS_PER_APP_WEEK;
+  // Gate content by counselor-released weeks (Week-1-first). Empty list = no gate
+  // (legacy / mock test accounts) so existing test flows keep working.
+  const gate = releasedWeeks.length > 0;
+  const weekNumber = gate ? effectiveContentWeek(calendarWeekNumber, releasedWeeks) : calendarWeekNumber;
   const current = PROGRAM_WEEK_THEMES[weekNumber - 1];
 
   const weeks: ProgramWeek[] = PROGRAM_WEEK_THEMES.map((entry, index) => {
     const id = String(index + 1);
+    const weekNum = index + 1;
+    const released = !gate || releasedWeeks.includes(weekNum);
     let status: WeekStatus = 'locked';
-    if (index + 1 < weekNumber) status = 'complete';
-    else if (index + 1 === weekNumber) status = 'current';
+    if (released && weekNum < calendarWeekNumber) status = 'complete';
+    else if (released && weekNum === calendarWeekNumber) status = 'current';
     return { id, theme: entry.theme, focus: entry.focus, status };
   });
 
   const msUntilNextWeek =
-    weekNumber >= PROGRAM_WEEK_COUNT
+    calendarWeekNumber >= PROGRAM_WEEK_COUNT
       ? 0
       : REAL_MS_PER_APP_WEEK - (elapsedRealMs % REAL_MS_PER_APP_WEEK);
 
@@ -66,6 +135,7 @@ export function computeProgramTime(programStartedAt: Date, now = new Date()): Pr
 
   return {
     weekNumber,
+    contentWeekNumber: weekNumber,
     dayInWeek,
     theme: current.theme,
     focus: current.focus,
@@ -81,6 +151,7 @@ export function computeProgramTime(programStartedAt: Date, now = new Date()): Pr
     elapsedRealMs,
     msUntilNextWeek,
     testModeLabel: `Test time: 1 hour = 1 week · Next week in ${formatDuration(msUntilNextWeek)}`,
+    usesCalendarWeeks: false,
   };
 }
 

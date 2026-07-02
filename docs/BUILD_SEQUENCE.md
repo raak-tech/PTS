@@ -2,7 +2,9 @@
 
 **Purpose:** Step-by-step build order with exact prompts to give Claude, which model to use, and token budget for each batch. Follow this top to bottom — each batch depends on the one above it being done first.
 
-**Before starting any batch:** confirm `--dangerouslySkipPermissions` is set or `.claude/settings.json` allowlist is active (already done).
+> **Current execution queue:** [`PILOT_TODO.md`](./PILOT_TODO.md). This guide is a historical build playbook.
+
+**Before starting any batch:**
 
 **Model switching:** type `/model haiku`, `/model sonnet`, or `/model opus` in the Claude Code prompt before starting each batch. Takes 2 seconds.
 

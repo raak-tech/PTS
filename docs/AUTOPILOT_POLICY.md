@@ -3,7 +3,7 @@
 Goal: keep the loop moving **without waiting for Satheesh approval** for routine steps.
 
 ## Default behavior
-- **Plan first, then execute (serious mode).** Before changing code, ensure there is a plan doc under `docs/plans/` and that the work references it.
+- **Plan first, then execute (serious mode).** Before changing code, ensure there is a plan doc under `docs/plans/` and that the work references it. For pilot execution items in `PILOT_TODO.md`, follow **`docs/DEV_WORKFLOW.md`** (Analyze → Document → Review → Build).
   - Allowed exceptions are rare and must be recorded first in an autopilot report as: `PLAN_WAIVED: <reason>`.
 - **Act first, document always.** If something is ambiguous, pick the safest reasonable default, proceed, and record assumptions in the autopilot report.
 - If a task needs a decision that can’t be safely assumed, **file a GitHub issue with the exact question** and then switch to the next best task.

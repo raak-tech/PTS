@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, gte } from 'drizzle-orm';
 
 import { getDb } from '@/db';
 import {
@@ -7,6 +7,7 @@ import {
   dailyReinforcements,
   holisticCompletions,
   reinforcementResponses,
+  supportArtifacts,
   users,
 } from '@/db/schema';
 import { isDateInRange, localDateIso, parseCalendarBlocks } from '@/lib/daily-layer';
@@ -29,6 +30,8 @@ export type ClientEngagementRow = {
   completedTaskCount: number;
   completionPct: number;
   needsAttention: boolean;
+  recentClientShareCount: number;
+  hasRecentClientShare: boolean;
 };
 
 type UserLabelRow = {
@@ -55,6 +58,8 @@ export async function buildEngagementForClients(
     .from(users)) as UserLabelRow[];
 
   const profileById = Object.fromEntries(clientUsers.map((u) => [u.id, u]));
+
+  const shareWindowStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   return Promise.all(
     clientIds.map(async (clientId) => {
@@ -116,6 +121,18 @@ export async function buildEngagementForClients(
 
       const checkInDone = Boolean(checkIn);
 
+      const recentShares = (await db
+        .select({ id: supportArtifacts.id })
+        .from(supportArtifacts)
+        .where(
+          and(
+            eq(supportArtifacts.userId, clientId),
+            eq(supportArtifacts.kind, 'counselor-share'),
+            gte(supportArtifacts.createdAt, shareWindowStart),
+          ),
+        )) as { id: string }[];
+      const recentClientShareCount = recentShares.length;
+
       let assignedTaskCount = 0;
       let completedTaskCount = 0;
 
@@ -155,6 +172,8 @@ export async function buildEngagementForClients(
         completedTaskCount,
         completionPct,
         needsAttention: assignedTaskCount > 0 && completionPct < 50,
+        recentClientShareCount,
+        hasRecentClientShare: recentClientShareCount > 0,
       };
     }),
   );

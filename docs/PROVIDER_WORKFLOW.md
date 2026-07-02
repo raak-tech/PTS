@@ -1,8 +1,8 @@
 # Counselor Workflow — Pain to Strength
 
-**Version:** 1.0 (supersedes v0)  
-**Last updated:** 2026-06-30  
-**Status:** Agreed — see `DECISIONS.md` entry dated 2026-06-30 (SCOPE-G)
+**Version:** 1.1 (supersedes v1.0)  
+**Last updated:** 2026-07-02  
+**Status:** Agreed — see `DECISIONS.md` entries dated 2026-06-30 (SCOPE-G) and 2026-07-02 (Week-1-first amendment)
 
 ---
 
@@ -10,9 +10,9 @@
 
 **AI is the first draft. The counselor is the author.**
 
-The LLM generates a full 6-week plan from the client's intake. The counselor reviews each week, edits any content inline, and approves it — releasing that week to the client. The client sees a week only after their counselor has reviewed and approved it.
+After intake, the LLM generates **Week 1 only**. The counselor reviews Week 1, edits any content inline, and approves it — releasing Week 1 to the client. Weeks 2–6 are generated **one at a time** after the counselor reviews that week's engagement data, saves a **week comment**, and clicks Generate Week N+1. Each week is approved individually before the client sees it. There is no bulk "approve all weeks" step.
 
-This is what makes Pain to Strength scalable: AI handles drafting so counselors can hold more clients; counselors apply clinical judgment so every client gets a personalised, human-reviewed program.
+The program is a 6-week arc, but content is released week by week. This is what makes Pain to Strength scalable: AI handles drafting so counselors can hold more clients; counselors apply clinical judgment so every client gets a personalised, human-reviewed program.
 
 ---
 
@@ -29,7 +29,7 @@ Counselors use both. Mobile for quick actions; web for clinical authoring.
 
 ## Workflow 1 — New client plan review (Week 1)
 
-Triggered when a client completes intake and the AI generates a plan draft.
+Triggered when a client completes intake and the AI generates a **Week 1 draft** (~2–4 minutes).
 
 ### Step 1: Counselor receives alert
 Push notification (mobile) or work queue item (web): *"New plan ready for review — [Client name]"*
@@ -76,8 +76,10 @@ On the web workspace, the counselor reviews:
 - Morning check-in pain trend (sparkline over the week)
 - Scheduling insights (patterns in when the client engages or misses)
 
-### Step 2: Generate Week N+1 draft
-Click "Generate Week N+1 draft" — the AI uses this week's engagement data plus the client's original intake to produce a tailored next-week draft, including any Ayurveda, yoga, and music blocks.
+### Step 2: Save week comment, then generate Week N+1 draft
+Before generating the next week, the counselor **must save a week comment** on the approved week (clinical notes for the AI — what to emphasise, adjust, or watch for). The API blocks generation without this comment.
+
+Click "Generate Week N+1" — the AI uses the week comment, this week's engagement data (pain check-ins, read-out responses, client shares, calendar adherence), and the original intake to produce a tailored next-week draft, including any Ayurveda, yoga, and music blocks.
 
 This takes 1–2 minutes. The counselor does not need to wait — they can read the current week data while it generates.
 
