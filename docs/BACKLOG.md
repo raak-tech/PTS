@@ -1,9 +1,10 @@
 # PTS Backlog
 
-**Last updated:** 2026-07-02  
+**Last updated:** 2026-07-03  
 **Format:** Track → Item. Priority: 🔴 Pilot-critical · 🟠 Pre-launch · 🟡 Post-pilot
 
 > **Active pilot execution queue:** [`PILOT_TODO.md`](./PILOT_TODO.md) — dev runs, APK drops, and near-term fixes live there.  
+> **Latest ship:** build 14 (Runs D–H, 2026-07-03). Remaining pilot work is mostly **device QA** (§5) and go-live infra (MSG91, Sentry).  
 > This file is the **long-term strategic backlog** (all tracks). Do not duplicate pilot todos in both places.
 
 See `PROJECT_BRIEF.md` for full product context.

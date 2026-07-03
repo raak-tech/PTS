@@ -1,8 +1,8 @@
 # Counselor Workflow — Pain to Strength
 
-**Version:** 1.1 (supersedes v1.0)  
-**Last updated:** 2026-07-02  
-**Status:** Agreed — see `DECISIONS.md` entries dated 2026-06-30 (SCOPE-G) and 2026-07-02 (Week-1-first amendment)
+**Version:** 1.2 (supersedes v1.1)  
+**Last updated:** 2026-07-03  
+**Status:** Agreed — see `DECISIONS.md` entries dated 2026-06-30 (SCOPE-G), 2026-07-02 (Week-1-first), and 2026-07-03 (counselor claim)
 
 ---
 
@@ -24,6 +24,8 @@ The program is a 6-week arc, but content is released week by week. This is what 
 | **Web workspace** (`/provider`) | Deep work — inline plan editing, audio read-out recording, AI week regeneration, full engagement data. |
 
 Counselors use both. Mobile for quick actions; web for clinical authoring.
+
+**Counselor–client assignment:** The first counselor to generate Week 1, edit a week, or approve a week **claims** the client (`client_counselor` table). Queues show unclaimed clients plus the counselor's own clients only. See `PROVIDER_ASSIGNMENT.md`.
 
 ---
 
@@ -55,7 +57,8 @@ The counselor changes what needs changing. AI-generated content they're happy wi
 Counselor clicks "Approve Week 1". Client immediately sees Week 1 in their app.
 
 - If the plan has crisis notes: acknowledgment step required before approve is enabled.
-- On approval: counselor is assigned to the client; Week 1 daily read-out and calendar template are seeded automatically.
+- On approval: Week 1 daily read-out and calendar template are seeded automatically.
+- Counselor is assigned to the client on **first action** (generate Week 1, week edit, or week approve) — not only on approve. First claim wins.
 
 ### Step 5: Record a daily read-out (optional but recommended)
 From the web workspace, the counselor can record a short voice message that the client hears as part of their morning routine. Even 30 seconds in the counselor's own voice significantly increases client engagement.

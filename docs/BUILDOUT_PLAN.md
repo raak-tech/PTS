@@ -1,11 +1,11 @@
 # PTS — Unified Buildout Plan
 
 **Status:** Draft for review  
-**Last updated:** 2026-06-29  
+**Last updated:** 2026-07-03  
 **Audience:** Satheesh (product), Ramya (clinical), Engineering  
 **Purpose:** One document tying together web, mobile, admin, API, pilot, and the new holistic recovery features (Ayurveda, music psychology, daily reinforcement, scheduling).
 
-> **Execution todos:** [`PILOT_TODO.md`](./PILOT_TODO.md). Mobile APK is shipping (Expo); some sections below are dated.
+> **Execution todos:** [`PILOT_TODO.md`](./PILOT_TODO.md). **Build 14** mobile APK shipped; web live at pts-web-pied.vercel.app.
 
 ---
 
@@ -35,13 +35,17 @@ PTS is a counseling-led pain recovery platform moving toward:
 | Area | Status |
 |------|--------|
 | Web core (intake → LLM plan → approve → messages) | Live at pts-web-pied.vercel.app |
-| Phase 1 web quick wins (FAQ, PWA, admin, badges, crisis banner) | Built locally, uncommitted |
-| Mobile clickable prototype (`apps/mobile`) | ~31 screens, mock auth, running on web preview |
-| OTP / Bearer / phone auth | Planned, not built |
-| Admin create-user | Planned, not built |
+| Week-1-first plan model + per-week approval | Shipped (API + counselor web + mobile) |
+| Counselor claim-on-first-action (`client_counselor`) | Shipped — generate Week 1 / week edit / week approve |
+| Super admin panel (costs, analytics, explorer, audit, SLA) | Shipped at `/admin` |
+| Mobile app (Expo) — client + counselor OTP | **APK build 14** sideloaded; production API |
+| OTP / Bearer / phone auth | Built; **MSG91 deferred** — `OTP_TEST_MODE` pilot |
+| Admin create-user + mobile register | Shipped at `/admin` |
+| Post–Week 6 graduation + monthly check-ins | Shipped (migration 0024) |
+| 90-day intake cleanup cron | Built; needs `CRON_SECRET` on Vercel to activate |
 | Phase 0 manual E2E | Not completed |
 | `MOBILE_APP_UX.md` formal approval | Open checklist |
-| Unified plan (this doc) | **New** |
+| Unified plan (this doc) | Reference — see PILOT_TODO for current queue |
 
 **Key existing docs (still valid, referenced here):**
 

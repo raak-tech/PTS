@@ -1,8 +1,15 @@
 # PTS Pilot — Consolidated Todo (single source of truth)
 
-**Last updated:** 2026-07-03 (Runs D–H: mapping, enrichment, SLA, post-week-6, infra)  
+**Last updated:** 2026-07-03 (session end — Runs D–H shipped, APK 14 on device)  
 **Purpose:** One execution queue for dev runs, APK drops, and counselor pilot.  
 **Rule:** Add new work here. Other docs keep product context only — link here instead of duplicating todos.
+
+**Session snapshot (2026-07-03 evening):**
+- **Git:** `69405c9` on `master` (1 commit ahead of `origin/master` — push when ready).
+- **Web:** production at https://pts-web-pied.vercel.app (deployed after polish).
+- **Mobile:** APK **build 14** (`versionCode=14`) at `apps/mobile/dist/pts-mobile-release.apk` — installed on Pixel 7 (`2A101FDH200DWJ`).
+- **DB:** migration `0024_monthly_check_ins.sql` applied (local + production via build migrate).
+- **Deferred:** MSG91 go-live, `CRON_SECRET` (optional until 90-day intake cleanup cron is wanted), Sentry/staging.
 
 **Process (required before multi-surface code):** [`DEV_WORKFLOW.md`](DEV_WORKFLOW.md) — Analyze → Document → Review → Build  
 **Related (not execution queues):** `PROJECT_BRIEF.md`, `PROVIDER_WORKFLOW.md`, `MOBILE_APP_UX.md`, `DECISIONS.md`  
@@ -12,7 +19,7 @@
 
 ## Kickoff bar for next dev run
 
-**Build 14 (client) shipped (Runs D–H).** Counselor mapping, enrichment, SLA, post-week-6, infra cron. **§5 device QA** still pending (crisis gate, C7, OTP autofill).
+**Build 14 (client) on device.** Runs D–H complete (mapping, enrichment, SLA, post-week-6, infra). **Next:** §5 device QA pass on Pixel 7 (crisis gate, C7, OTP autofill).
 
 | # | Must-have | Status |
 |---|---|---|
@@ -21,7 +28,7 @@
 | 3 | Initial LLM → **Week 1 only** + counselor comment gate before Week 2+ (§3) | ✅ API + workspace Plan tab |
 | 4 | At least one read-out voice item (client replay **or** counselor playback) | ✅ client + counselor web + mobile |
 | 5 | `/api/me/contacts` 500 fixed | ✅ deployed |
-| **Next** | **§5 Run C shipped** (APK 13) → **device QA pass** (5a/5b/5g/5h); admin panel live at `/admin` | ✅ code shipped |
+| **Next** | **§5 device QA** on APK 14 (5a crisis gate, 5b C7, 5g weekly check-in, 5h OTP autofill) | 📋 QA |
 
 ---
 
@@ -146,7 +153,7 @@
 
 - [ ] **Real MSG91 OTP** — code aligned to proven integration; set `MSG91_AUTH_KEY` + `MSG91_TEMPLATE_ID` on Vercel and remove `OTP_TEST_MODE` (keys not in sibling `.env` — set manually).
 - [x] **Production admin via `ADMIN_EMAILS`** — admin panel + observability shipped.
-- [x] **90-day intake cleanup job** — Vercel cron `/api/cron/intake-cleanup` + `CRON_SECRET` (Run H).
+- [x] **90-day intake cleanup job** — Vercel cron `/api/cron/intake-cleanup` + optional `CRON_SECRET` env (Run H). Without `CRON_SECRET`, cron returns 401 and does nothing (safe default).
 - [ ] **Sentry + staging environment** — deferred (needs account/DSN).
 - [ ] **Vercel `sin1` region** — optional / regulatory (skipped).
 - [x] **Doc hygiene** — PILOT_TODO updated (Run H).
@@ -172,7 +179,7 @@ Build 11 shipped client + API. **Run A + Run B (2026-07-02)** aligned counselor 
 | Enriched weekly summary | ✅ | ✅ panel | ✅ summary card | — |
 | Client share | ✅ | ✅ updates panel | ✅ | ✅ |
 | Client read-out replay | ✅ | ✅ playback | ✅ playback | ✅ |
-| Locked weeks 2–6 UI | — | ✅ plan queue + workspace | ⚠️ | ❌ |
+| Locked weeks 2–6 UI | — | ✅ plan queue + workspace | ✅ locked cards (APK 13) | ✅ teaser cards (APK 13) |
 | Workflow docs | — | ✅ | — | — |
 
 *C-web / C-mobile = counselor web / counselor mobile*
@@ -209,7 +216,7 @@ Build 11 shipped client + API. **Run A + Run B (2026-07-02)** aligned counselor 
 
 ---
 
-## ✅ Done (through build 11)
+## ✅ Done (through build 14)
 
 - [x] Intake selection highlight fix
 - [x] Intake resume modal loop fix
@@ -222,7 +229,8 @@ Build 11 shipped client + API. **Run A + Run B (2026-07-02)** aligned counselor 
 - [x] Enriched weekly summary for Week N+1 generation
 - [x] Client read-out replay (text + voice) on Today
 - [x] `/api/me/contacts` 500 fixed (production verified)
-- [x] APK build 11 at `apps/mobile/dist/pts-mobile-release.apk` (install when device connected)
+- [x] **Runs D–H (build 14):** counselor claim-on-first-action, scoped queues, Message-counselor gating, inline plan editing, pain sparklines, admin SLA panel, monthly check-ins + graduation, intake cleanup cron, pending-intake waiting UX
+- [x] APK build 14 at `apps/mobile/dist/pts-mobile-release.apk` — installed on Pixel 7 2026-07-03
 
 ---
 
@@ -244,7 +252,7 @@ OTP (pilot): `123456` for test numbers.
 |----------|----------|
 | **`PILOT_TODO.md`** | **← Active execution queue (this file)** |
 | **`DEV_WORKFLOW.md`** | **← Analyze → Document → Review → Build (required before §9 code)** |
-| `docs/plans/2026-07-02-section-9-counselor-alignment.md` | **§9 feature spec (review gate pending)** |
+| `docs/plans/2026-07-02-section-9-counselor-alignment.md` | **§9 feature spec (shipped Run A–C)** |
 | `BACKLOG.md` | Long-term product backlog by track |
 | `DEV_RUN_TODO.md` | Redirect → this file |
 | `PROJECT_STATUS_REVIEW.md` | Gap analysis / recommendations (reference) |

@@ -1,10 +1,12 @@
 # PTS Project Status Review
 
-**Date:** 2026-06-30 (gap analysis) · **Model update:** 2026-07-02  
+**Date:** 2026-06-30 (gap analysis) · **Model update:** 2026-07-02 · **Pilot ship:** 2026-07-03 (build 14)  
 **Scope:** Full codebase + docs review — no code changes  
 **Audience:** Satheesh, Ramya  
 
 > **Execution todos:** consolidated in [`PILOT_TODO.md`](./PILOT_TODO.md). This doc is gap analysis / recommendations only.
+>
+> **2026-07-03 — Pilot backlog shipped:** Runs D–H complete. Counselor claim-on-first-action, scoped queues, provider enrichment (inline edit, pain sparklines, SLA panel), post–Week 6 monthly check-ins, intake cleanup cron. APK 14 on Pixel 7; web at pts-web-pied.vercel.app. **Remaining:** §5 device QA, MSG91 go-live, optional `CRON_SECRET`.
 >
 > **2026-07-02 — Week-1-first model (canonical):** Initial LLM generate produces **Week 1 only**; Weeks 2–6 are gated per-week with counselor comment before each generate. Counselor approves **one week at a time** (no bulk approve). See `PROVIDER_WORKFLOW.md` v1.1 and `DECISIONS.md` 2026-07-02.
 
@@ -24,9 +26,9 @@ The web app is live and functional for a controlled pilot. It has:
 - Admin dashboard: platform metrics, client dossier, safety flags, music catalog management
 - Safety infrastructure: crisis banner on every page, red-flag gating, consent-gated artifact storage
 
-### What exists in the mobile app (apps/mobile — Expo, not yet shipped)
+### What exists in the mobile app (apps/mobile — Expo, **build 14 shipped**)
 
-The Expo app is scaffolded and has meaningful code built. It covers:
+The Expo app is built and sideloaded for pilot (APK 14, production API). It covers:
 
 **Client role:**
 - OTP phone login (phone check → OTP → session with JWT bearer)

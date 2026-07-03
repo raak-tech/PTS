@@ -112,3 +112,9 @@ Use this to record decisions that affect architecture, product scope, safety/pri
 - **Why:** Week-1-first model requires counselor review and comment between weeks; bulk approve bypasses clinical gates and releases content the client should not see yet.
 - **Alternatives considered:** Hide bulk approve for new plans only (rejected — user confirmed never in process).
 - **Consequences / follow-ups:** §9.1 removes `approveAll` from `PlanReviewClient.tsx` and mobile `plan-review/[id].tsx`. Per-week approve via `POST /api/provider/plans/{planId}/week/{n}` remains the only release path.
+
+- **Date:** 2026-07-03
+- **Decision:** **Counselor claim-on-first-action:** `client_counselor` row is created when a counselor first generates Week 1, edits a week, or approves a week. `onConflictDoNothing()` — first claim wins. Counselor queues scope to unclaimed-or-mine clients.
+- **Why:** Pilot showed global counselor queues and clients messaging counselors before any mapping existed. Claim ties ownership to clinical action; scoping reduces queue noise.
+- **Alternatives considered:** Admin-assigned mapping only (rejected — adds ops overhead); invite-code linking (rejected — superseded demo model).
+- **Consequences / follow-ups:** Mobile hides "Message counselor" until mapped. `PROVIDER_ASSIGNMENT.md` documents the model. Push on new `counselor-share` goes to assigned counselor only.

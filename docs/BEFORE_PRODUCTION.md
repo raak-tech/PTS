@@ -163,10 +163,17 @@ Before real clients and counselors onboard:
 
 ## 5. Mobile app (Expo / EAS)
 
-- [ ] `EXPO_PUBLIC_API_URL` in `eas.json` points to production API (`https://pts-web-pied.vercel.app`)
-- [ ] `EXPO_PUBLIC_USE_MOCK_AUTH` is **not** set in EAS build profiles
-- [ ] Rebuild APK/AAB after API auth changes: `cd apps/mobile && npm run build:apk` (preview) or production profile for store
+- [x] `EXPO_PUBLIC_API_URL` in `eas.json` points to production API (`https://pts-web-pied.vercel.app`)
+- [x] **Build 14** (`versionCode=14`) at `apps/mobile/dist/pts-mobile-release.apk` — sideload via `adb install -r`
+- [ ] `EXPO_PUBLIC_USE_MOCK_AUTH` is **not** set in EAS build profiles (verify on next EAS build)
+- [ ] Rebuild APK after API auth changes if not using local Gradle
 - [ ] Distribute new build to counselors; old APKs with cached sessions may need re-login
+
+**Local install (when device connected):**
+```bash
+adb devices -l
+adb install -r apps/mobile/dist/pts-mobile-release.apk
+```
 
 ---
 
@@ -184,6 +191,7 @@ Confirm these are set on Vercel **Production** (see also `apps/web/.env.example`
 | `MSG91_AUTH_KEY` | Yes (go-live) | SMS OTP |
 | `MSG91_TEMPLATE_ID` | Yes (go-live) | SMS OTP |
 | `OTP_TEST_MODE` | **No** | Remove before go-live |
+| `CRON_SECRET` | Optional | Protects `/api/cron/intake-cleanup` (90-day intake delete). Without it, cron returns 401 — safe default. |
 | Email (`EMAIL_*`) | Optional | Password reset via SMTP |
 
 ---
@@ -196,7 +204,7 @@ Confirm these are set on Vercel **Production** (see also `apps/web/.env.example`
 | MSG91 live + test SMS | | | [ ] |
 | `OTP_TEST_MODE` removed | | | [ ] |
 | Pilot data cleared | | | [ ] |
-| New mobile build distributed | | | [ ] |
+| New mobile build distributed | | 2026-07-03 | [x] build 14 on Pixel 7 |
 | Ramya clinical sign-off on flows | | | [ ] |
 | Internal smoke test (client + counselor E2E) | | | [ ] |
 

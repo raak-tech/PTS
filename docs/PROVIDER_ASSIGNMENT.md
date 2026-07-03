@@ -1,29 +1,53 @@
-# Provider assignment
+# Provider assignment (counselor ↔ client)
 
-## Goal
+**Last updated:** 2026-07-03  
+**Canonical queue:** [`PILOT_TODO.md`](./PILOT_TODO.md) §4
 
-Link a client to a provider using a simple invite-code flow.
+---
 
-## Current pilot model
+## Pilot model (current)
 
-- Providers generate an invite code.
-- Clients enter that code on a join page.
-- A successful match links the client to the provider in the local demo state.
-- The provider console shows the linked clients and the audit trail.
+Counselors are linked to clients via the **`client_counselor`** table. There is **no invite-code flow** in production.
 
-## Defaults
+### When assignment happens
 
-- Auto-assignment is off by default.
-- Invite-code linking is the only enabled path in this slice.
-- The demo keeps data in browser storage only. No server persistence.
+The **first counselor who acts** on a client claims them:
 
-## Edge cases
+| Counselor action | Claims client? |
+|------------------|----------------|
+| Generate Week 1 draft (`POST /api/provider/generate-plan`) | Yes |
+| Edit a plan week (`PATCH …/week/{n}`) | Yes |
+| Approve a plan week (`POST …/week/{n}`) | Yes |
+| Legacy full-plan approve (`POST /api/plans`) | Yes (insert-if-absent) |
 
-- Wrong code: reject with a clear message.
-- Empty code or name: reject.
-- Rotating the invite code starts a fresh assignment cohort.
-- Unlinking removes the client from the current cohort and records the action.
+Implementation: `apps/web/src/lib/claim-client-counselor.ts` — `onConflictDoNothing()` so the **first claim wins**.
 
-## Future extension
+### Queue scoping
 
-If we later enable parameter-based auto-assignment, it should stay behind a config flag and use explicit rules. No silent assignment.
+Counselor lists (pending intakes, plans queue, clients, engagement) show clients that are:
+
+- **Unclaimed** (no `client_counselor` row), or  
+- **Assigned to the signed-in counselor**
+
+Other counselors do not see claimed clients in their queues.
+
+### Client-facing effects
+
+- **Message counselor** (Today, waiting-plan, StrugglingFab) is hidden until a counselor is mapped.
+- **Push notification** to the assigned counselor when the client submits a `counselor-share` artifact.
+
+---
+
+## Test accounts
+
+| Phone | Role | Assignment |
+|-------|------|------------|
+| `9998887776` | Client (new intake) | Unmapped until a counselor generates Week 1 |
+| `9988776655` | Client (approved plan) | Mapped to counselor who approved |
+| `9900000002` | Counselor | Sees unclaimed + own clients only |
+
+---
+
+## Historical note
+
+An earlier demo used browser-local invite codes. That slice is **not** the production model. See `DECISIONS.md` 2026-07-03 for claim-on-first-action.
