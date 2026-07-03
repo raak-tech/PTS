@@ -5,8 +5,10 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getDb } from '../../../../db';
-import { supportArtifacts, userConsents } from '../../../../db/schema';
+import { supportArtifacts, userConsents, users } from '../../../../db/schema';
 import { localDateIso } from '../../../../lib/daily-layer';
+import { getAssignedCounselorId } from '@/lib/client-access';
+import { sendPushToUser } from '@/lib/expo-push';
 import { logError } from '../../../../lib/logger';
 import { getUserFromRequest } from '../../../../lib/session';
 
@@ -135,6 +137,23 @@ export async function POST(request: Request) {
       reflectionEncryptionMeta: parsed.data.reflectionEncryptionMeta ?? null,
       createdAt: now,
     });
+
+    if (parsed.data.kind === 'counselor-share') {
+      const counselorId = await getAssignedCounselorId(user.id);
+      if (counselorId) {
+        const [counselor] = await db
+          .select({ expoPushToken: users.expoPushToken })
+          .from(users)
+          .where(eq(users.id, counselorId))
+          .limit(1);
+        void sendPushToUser(
+          counselor?.expoPushToken,
+          'Client update',
+          `New share: ${title}`,
+          { action: 'client_share', clientId: user.id },
+        );
+      }
+    }
 
     return NextResponse.json({ ok: true, id });
   } catch (err) {

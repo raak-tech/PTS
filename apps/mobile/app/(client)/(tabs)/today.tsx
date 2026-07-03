@@ -761,15 +761,13 @@ export default function TodayScreen() {
         </Card>
       ) : null}
 
-      <Button
-        label="Message counselor"
-        variant="secondary"
-        onPress={() =>
-          counselorId
-            ? router.push(`/(client)/messages/${counselorId}`)
-            : router.push('/(client)/(tabs)/messages')
-        }
-      />
+      {counselorId ? (
+        <Button
+          label="Message counselor"
+          variant="secondary"
+          onPress={() => router.push(`/(client)/messages/${counselorId}`)}
+        />
+      ) : null}
     </Screen>
   );
 }

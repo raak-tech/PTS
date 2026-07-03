@@ -4,6 +4,8 @@ import { z } from 'zod';
 
 import { getDb } from '@/db';
 import { planWeeks, plans, users } from '@/db/schema';
+import { claimClientCounselor } from '@/lib/claim-client-counselor';
+import { recordAudit } from '@/lib/audit';
 import { sendPushToUser } from '@/lib/expo-push';
 import { logError } from '@/lib/logger';
 import { toDateIso } from '@/lib/program-calendar';
@@ -53,7 +55,7 @@ export async function PATCH(
 
     // Verify the plan exists and belongs to a client assigned to this counselor
     const [planRow] = await db
-      .select({ id: plans.id })
+      .select({ id: plans.id, userId: plans.userId })
       .from(plans)
       .where(eq(plans.id, planId))
       .limit(1);
@@ -105,6 +107,17 @@ export async function PATCH(
       return NextResponse.json({ error: 'week_not_found' }, { status: 404 });
     }
 
+    await claimClientCounselor(planRow.userId, user.id);
+
+    void recordAudit({
+      actorUserId: user.id,
+      actorRole: user.role,
+      action: 'edit_week',
+      targetType: 'plan_week',
+      targetId: planId,
+      metadata: { clientId: planRow.userId, weekNumber: weekNum },
+    });
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     logError('provider_plan_week_patch_error', err);
@@ -131,7 +144,7 @@ export async function POST(
     const db = getDb();
 
     const [planRow] = await db
-      .select({ id: plans.id })
+      .select({ id: plans.id, userId: plans.userId })
       .from(plans)
       .where(eq(plans.id, planId))
       .limit(1);
@@ -168,6 +181,17 @@ export async function POST(
         .set({ programAnchorDate: toDateIso(now) })
         .where(eq(plans.id, planId));
     }
+
+    await claimClientCounselor(planRow.userId, user.id);
+
+    void recordAudit({
+      actorUserId: user.id,
+      actorRole: user.role,
+      action: 'approve_week',
+      targetType: 'plan_week',
+      targetId: planId,
+      metadata: { clientId: planRow.userId, weekNumber: weekNum },
+    });
 
     // Count how many weeks are now approved for this plan
     const approvedWeeks = await db

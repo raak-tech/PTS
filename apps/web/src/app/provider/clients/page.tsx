@@ -5,6 +5,7 @@ import { and, desc, eq, isNull } from 'drizzle-orm';
 
 import { getDb } from '@/db';
 import { counselorNotes, intakeResponses, messages, plans, users } from '@/db/schema';
+import { getClientCounselorMap, isClientVisibleToProvider } from '@/lib/client-access';
 import { formatClientLabel } from '@/lib/provider-display';
 import { getUserFromCookieHeader } from '@/lib/session';
 import { ProviderClientsListClient } from '@/components/provider/ProviderClientsListClient';
@@ -16,6 +17,7 @@ export default async function ProviderClientsPage() {
   if (!user) redirect('/login/mobile?next=/provider/clients');
 
   const db = getDb();
+  const assignmentMap = user ? await getClientCounselorMap() : {};
 
   const clients: {
     id: string;
@@ -35,7 +37,11 @@ export default async function ProviderClientsPage() {
     .where(eq(users.role, 'client'))
     .orderBy(desc(users.createdAt));
 
-  const clientIds = clients.map((c) => c.id);
+  const visibleClients = user
+    ? clients.filter((c) => isClientVisibleToProvider(c.id, user.id, assignmentMap))
+    : clients;
+
+  const clientIds = visibleClients.map((c) => c.id);
 
   const allPlans: { userId: string; status: string; createdAt: Date }[] =
     clientIds.length > 0
@@ -85,7 +91,7 @@ export default async function ProviderClientsPage() {
     noteCountByClient[row.clientId] = (noteCountByClient[row.clientId] ?? 0) + 1;
   }
 
-  const rows = clients.map((client) => {
+  const rows = visibleClients.map((client) => {
     const hasRedFlag = Boolean(flagByClient[client.id]?.hasRedFlags) || flagByClient[client.id]?.isSafe === false;
     const unreadCount = unreadByClient[client.id] ?? 0;
     const noteCount = noteCountByClient[client.id] ?? 0;

@@ -13,6 +13,7 @@ import {
   supportArtifacts,
   users,
   weeklyCheckIns,
+  monthlyCheckIns,
 } from '@/db/schema';
 
 export const EXPLORER_TABLES = [
@@ -25,6 +26,7 @@ export const EXPLORER_TABLES = [
   'daily_check_ins',
   'holistic_completions',
   'weekly_check_ins',
+  'monthly_check_ins',
   'llm_usage',
   'audit_log',
 ] as const;
@@ -271,6 +273,25 @@ export async function queryExplorerTable(
         .limit(limit)
         .offset(offset);
       const all = await db.select({ id: weeklyCheckIns.id }).from(weeklyCheckIns);
+      return {
+        rows: rows.map((r: (typeof rows)[number]) => ({
+          ...r,
+          submittedAt: r.submittedAt.toISOString(),
+        })),
+        total: all.length,
+        page,
+        pageSize: limit,
+      };
+    }
+
+    case 'monthly_check_ins': {
+      const rows = await db
+        .select()
+        .from(monthlyCheckIns)
+        .orderBy(desc(monthlyCheckIns.submittedAt))
+        .limit(limit)
+        .offset(offset);
+      const all = await db.select({ id: monthlyCheckIns.id }).from(monthlyCheckIns);
       return {
         rows: rows.map((r: (typeof rows)[number]) => ({
           ...r,

@@ -33,12 +33,14 @@ export default function ProgramScreen() {
     const checkMonthly = async () => {
       try {
         const data = await apiGetMonthlyCheckIn(token);
-        setMonthlyCheckInSubmitted(data.checkIn !== null);
+        const now = new Date();
+        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        setMonthlyCheckInSubmitted(data.checkIn?.yearMonth === currentMonth);
       } catch {
         // Ignore
       }
     };
-    checkMonthly();
+    void checkMonthly();
   }, [token, programTime?.programComplete]);
 
   const daysElapsed = programTime?.completedAt ? daysSinceProgramComplete(programTime.completedAt) : 0;

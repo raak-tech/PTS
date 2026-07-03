@@ -74,14 +74,12 @@ export default function WaitingPlanScreen() {
           </Text>
         ) : null}
       </Card>
-      <Button
-        label="Message counselor"
-        onPress={() =>
-          counselorId
-            ? router.push(`/(client)/messages/${counselorId}`)
-            : router.push('/(client)/(tabs)/messages')
-        }
-      />
+      {counselorId ? (
+        <Button
+          label="Message counselor"
+          onPress={() => router.push(`/(client)/messages/${counselorId}`)}
+        />
+      ) : null}
       <Button label="Review intake summary" variant="secondary" onPress={() => router.push('/(client)/intake')} />
       <Button
         label="Profile & settings"

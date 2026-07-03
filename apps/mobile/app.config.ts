@@ -17,7 +17,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: 'com.pts.mobile',
-    versionCode: 13,
+    versionCode: 14,
     adaptiveIcon: {
       backgroundColor: '#3D4F44',
       foregroundImage: './assets/android-icon-foreground.png',

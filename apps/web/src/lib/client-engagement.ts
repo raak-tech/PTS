@@ -32,6 +32,7 @@ export type ClientEngagementRow = {
   needsAttention: boolean;
   recentClientShareCount: number;
   hasRecentClientShare: boolean;
+  painLevels: { dateIso: string; painLevel: number }[];
 };
 
 type UserLabelRow = {
@@ -133,6 +134,14 @@ export async function buildEngagementForClients(
         )) as { id: string }[];
       const recentClientShareCount = recentShares.length;
 
+      const painRows = (await db
+        .select({ dateIso: dailyCheckIns.dateIso, painLevel: dailyCheckIns.painLevel })
+        .from(dailyCheckIns)
+        .where(eq(dailyCheckIns.clientId, clientId))
+        .orderBy(desc(dailyCheckIns.dateIso))
+        .limit(7)) as { dateIso: string; painLevel: number }[];
+      const painLevels = [...painRows].reverse();
+
       let assignedTaskCount = 0;
       let completedTaskCount = 0;
 
@@ -174,6 +183,7 @@ export async function buildEngagementForClients(
         needsAttention: assignedTaskCount > 0 && completionPct < 50,
         recentClientShareCount,
         hasRecentClientShare: recentClientShareCount > 0,
+        painLevels,
       };
     }),
   );

@@ -109,10 +109,12 @@ export function StrugglingFab() {
                   <Text style={styles.optionText}>Grounding breath</Text>
                   <Text style={styles.optionHint}>2-minute pause — no outcome promised</Text>
                 </HitTarget>
-                <HitTarget style={styles.option} onPress={messageCounselor}>
-                  <Text style={styles.optionText}>Message counselor</Text>
-                  <Text style={styles.optionHint}>Share what feels hard right now</Text>
-                </HitTarget>
+                {counselorId ? (
+                  <HitTarget style={styles.option} onPress={messageCounselor}>
+                    <Text style={styles.optionText}>Message counselor</Text>
+                    <Text style={styles.optionHint}>Share what feels hard right now</Text>
+                  </HitTarget>
+                ) : null}
                 <HitTarget
                   style={styles.option}
                   onPress={() => {

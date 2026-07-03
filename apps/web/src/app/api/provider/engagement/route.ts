@@ -1,9 +1,8 @@
-import { desc, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 import { getDb } from '@/db';
-import { clientCounselor, users } from '@/db/schema';
 import { buildEngagementForClients } from '@/lib/client-engagement';
+import { getVisibleClientIdsForProvider } from '@/lib/client-access';
 import { localDateIso } from '@/lib/daily-layer';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
@@ -25,22 +24,7 @@ export async function GET(request: Request) {
     if (clientIdParam) {
       clientIds = [clientIdParam];
     } else {
-      const assigned = (await db
-        .select({ clientId: clientCounselor.clientId })
-        .from(clientCounselor)
-        .where(eq(clientCounselor.counselorId, user.id))) as { clientId: string }[];
-
-      const assignedIds = assigned.map((a) => a.clientId);
-
-      // Pilot: also include all registered clients so the counselor console is not empty.
-      const allClients = (await db
-        .select({ id: users.id })
-        .from(users)
-        .where(eq(users.role, 'client'))
-        .orderBy(desc(users.createdAt))) as { id: string }[];
-
-      const merged = new Set<string>([...assignedIds, ...allClients.map((c) => c.id)]);
-      clientIds = [...merged];
+      clientIds = await getVisibleClientIdsForProvider(user.id);
     }
 
     const clients = await buildEngagementForClients(clientIds, today);

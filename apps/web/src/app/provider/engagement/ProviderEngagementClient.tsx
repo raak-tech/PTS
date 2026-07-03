@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+import { PainSparkline } from '@/components/PainSparkline';
+
 type EngagementClient = {
   clientId: string;
   name: string;
@@ -15,6 +17,7 @@ type EngagementClient = {
   needsAttention: boolean;
   recentClientShareCount?: number;
   hasRecentClientShare?: boolean;
+  painLevels?: { dateIso: string; painLevel: number }[];
 };
 
 export function ProviderEngagementClient() {
@@ -105,6 +108,16 @@ export function ProviderEngagementClient() {
                   <strong>Holistic cards:</strong> {c.holisticDone ?? 0}/{c.holisticTotal ?? 3} (Ayurveda, yoga, music)
                 </li>
               </ul>
+              {(c.painLevels?.length ?? 0) >= 2 ? (
+                <div style={{ marginTop: 10 }}>
+                  <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>Pain (7d)</span>
+                  <PainSparkline
+                    points={(c.painLevels ?? []).map((p) => ({ value: p.painLevel, label: p.dateIso }))}
+                    width={140}
+                    height={28}
+                  />
+                </div>
+              ) : null}
               <div style={{ marginTop: 12, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <Link href={`/provider/clients/${c.clientId}`} className="actionLink secondary">
                   Client workspace

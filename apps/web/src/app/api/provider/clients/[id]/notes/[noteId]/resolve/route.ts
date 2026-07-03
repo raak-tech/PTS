@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { getDb } from '@/db';
 import { counselorNotes } from '@/db/schema';
 import { assertCounselorForClient } from '@/lib/client-access';
+import { recordAudit } from '@/lib/audit';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
 
@@ -33,6 +34,15 @@ export async function POST(request: Request, context: RouteContext) {
     if (!updated) {
       return NextResponse.json({ error: 'not_found' }, { status: 404 });
     }
+
+    void recordAudit({
+      actorUserId: user.id,
+      actorRole: user.role,
+      action: 'resolve_note',
+      targetType: 'counselor_note',
+      targetId: noteId,
+      metadata: { clientId: id },
+    });
 
     return NextResponse.json({ ok: true });
   } catch (err) {

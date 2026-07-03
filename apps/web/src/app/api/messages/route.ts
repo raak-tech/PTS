@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { getDb } from '@/db';
 import { messages, users } from '@/db/schema';
 import { sendPushToUser } from '@/lib/expo-push';
+import { recordAudit } from '@/lib/audit';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
 
@@ -98,6 +99,15 @@ export async function POST(request: Request) {
       parsed.data.body.slice(0, 120),
       { action: 'new_message', fromUserId: user.id },
     );
+
+    void recordAudit({
+      actorUserId: user.id,
+      actorRole: user.role,
+      action: 'send_message',
+      targetType: 'message',
+      targetId: parsed.data.toUserId,
+      metadata: { isUrgent: parsed.data.isUrgent ?? false },
+    });
 
     return NextResponse.json({ ok: true });
   } catch (err) {

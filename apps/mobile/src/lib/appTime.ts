@@ -62,6 +62,12 @@ export function computeCalendarProgramTime(
   const calendarWeekNumber = Math.min(Math.floor(daysSinceAnchor / APP_DAYS_PER_WEEK) + 1, PROGRAM_WEEK_COUNT);
   const dayInWeek = Math.min((daysSinceAnchor % APP_DAYS_PER_WEEK) + 1, APP_DAYS_PER_WEEK);
   const programComplete = daysSinceAnchor >= PROGRAM_WEEK_COUNT * APP_DAYS_PER_WEEK;
+  const anchorStart = new Date(`${anchorIso}T00:00:00`);
+  const completedAt = programComplete
+    ? new Date(
+        anchorStart.getTime() + PROGRAM_WEEK_COUNT * APP_DAYS_PER_WEEK * 86_400_000,
+      ).toISOString()
+    : undefined;
   const contentWeekNumber = effectiveContentWeek(calendarWeekNumber, releasedWeeks);
   const current = PROGRAM_WEEK_THEMES[contentWeekNumber - 1] ?? PROGRAM_WEEK_THEMES[0];
 
@@ -84,6 +90,7 @@ export function computeCalendarProgramTime(
     theme: current.theme,
     focus: current.focus,
     programComplete,
+    completedAt,
     weeks,
     subtitle: programComplete
       ? `Program complete — ${current.theme}`

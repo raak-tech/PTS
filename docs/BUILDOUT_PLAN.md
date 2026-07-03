@@ -344,16 +344,16 @@ New or materially changed screens on top of `MOBILE_APP_UX.md`:
 
 ---
 
-### Phase C — Core mobile wired (3 weeks) ⬜
+### Phase C — Core mobile wired (3 weeks) ✅ **shipped (pilot APK 14, Jul 2026)**
 
 | # | Task |
 |---|------|
-| C.1 | Intake → API (7 steps) |
-| C.2 | Plan view (approved) + waiting state |
-| C.3 | Counselor work queue + plan approve |
-| C.4 | Messages (live API, unread badges) |
-| C.5 | Profile + crisis + safety |
-| C.6 | Android APK via EAS Build (internal testing) |
+| C.1 | Intake → API (7 steps) ✅ |
+| C.2 | Plan view (approved) + waiting state ✅ |
+| C.3 | Counselor work queue + plan approve ✅ |
+| C.4 | Messages (live API, unread badges) ✅ |
+| C.5 | Profile + crisis + safety ✅ |
+| C.6 | Android APK — local Gradle build (`apps/mobile/dist/pts-mobile-release.apk`) ✅ |
 
 ---
 

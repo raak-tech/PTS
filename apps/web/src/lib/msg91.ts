@@ -1,6 +1,6 @@
 import { randomInt } from 'node:crypto';
 
-const MSG91_SMS_API = 'https://control.msg91.com/api/v5/flow/';
+const MSG91_SMS_API = 'https://control.msg91.com/api/v5/flow';
 
 function toMsg91Phone(phone: string) {
   return String(phone).replace(/^\+/, '');
@@ -29,7 +29,7 @@ export async function sendOtpViaMSG91(phone: string, code: string) {
       },
       body: JSON.stringify({
         template_id: templateId,
-        short_url: '0',
+        short_url: '1',
         recipients: [{ mobiles: toMsg91Phone(phone), VAR: code }],
       }),
     });

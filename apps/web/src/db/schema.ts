@@ -302,6 +302,17 @@ export const dailyCheckIns = pgTable("daily_check_ins", {
   submittedAt: timestamp("submitted_at", { mode: "date", withTimezone: true }).notNull(),
 });
 
+// Post-program monthly check-in (maintenance mode).
+export const monthlyCheckIns = pgTable('monthly_check_ins', {
+  id: text('id').primaryKey(),
+  clientId: text('client_id').notNull(),
+  yearMonth: text('year_month').notNull(),
+  painLevel: integer('pain_level').notNull(),
+  sleepQuality: text('sleep_quality').notNull(),
+  intention: text('intention'),
+  submittedAt: timestamp('submitted_at', { mode: 'date', withTimezone: true }).notNull(),
+});
+
 // LLM API usage tracking for admin cost dashboards.
 export const llmUsage = pgTable("llm_usage", {
   id: text("id").primaryKey(),

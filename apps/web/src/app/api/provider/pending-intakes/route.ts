@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 
 import { getDb } from '@/db';
 import { intakeResponses, plans, users } from '@/db/schema';
+import { getClientCounselorMap, isClientVisibleToProvider } from '@/lib/client-access';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
 
@@ -37,8 +38,13 @@ export async function GET(request: Request) {
       .where(isNull(plans.id))
       .orderBy(desc(intakeResponses.createdAt))) as PendingIntakeRow[];
 
+    const assignmentMap = await getClientCounselorMap();
+    const visibleIntakes = pendingIntakes.filter((intake) =>
+      isClientVisibleToProvider(intake.userId, user.id, assignmentMap),
+    );
+
     // Fetch user details for display
-    const userIds = pendingIntakes.map(p => p.userId);
+    const userIds = visibleIntakes.map(p => p.userId);
     type UserRow = { id: string; email: string };
     const clientUsers: UserRow[] =
       userIds.length > 0
@@ -54,7 +60,7 @@ export async function GET(request: Request) {
     const emailById = Object.fromEntries(clientUsers.map(u => [u.id, u.email]));
 
     // Format for mobile display
-    const formatted = pendingIntakes.map(intake => ({
+    const formatted = visibleIntakes.map(intake => ({
       userId: intake.userId,
       anonEmail: formatAnonEmail(emailById[intake.userId] ?? 'unknown@unknown.com'),
       painSource: intake.painSource,

@@ -1,6 +1,6 @@
 # PTS Pilot — Consolidated Todo (single source of truth)
 
-**Last updated:** 2026-07-02 (§9 Run B / APK 12)  
+**Last updated:** 2026-07-03 (Runs D–H: mapping, enrichment, SLA, post-week-6, infra)  
 **Purpose:** One execution queue for dev runs, APK drops, and counselor pilot.  
 **Rule:** Add new work here. Other docs keep product context only — link here instead of duplicating todos.
 
@@ -12,7 +12,7 @@
 
 ## Kickoff bar for next dev run
 
-**Build 11 (client) shipped.** **§9 Run A + Run B shipped** (counselor web + mobile APK 12). **§5 Run C shipped** (C1 client Program + C2 plan-review locked weeks + 9.5 engagement badge, APK 13) — device QA pending. **Super Admin Panel shipped** — LLM cost tracking, analytics, data explorer, audit log.
+**Build 14 (client) shipped (Runs D–H).** Counselor mapping, enrichment, SLA, post-week-6, infra cron. **§5 device QA** still pending (crisis gate, C7, OTP autofill).
 
 | # | Must-have | Status |
 |---|---|---|
@@ -40,7 +40,7 @@
 - [x] **Persist + surface on counselor side** — `counselor-share` artifacts; web workspace **Client updates** panel.
 - [x] **Distinct from Today’s notes** — separate `counselor-share` kind (not daily journal).
 - [x] **Include in Week N+1 LLM context** (§3) — `buildWeeklySummary().clientShares`.
-- [ ] **Optional:** notify counselor on new submission (push / unread badge).
+- [x] **Optional:** notify counselor on new client share (push) — `counselor-share` POST notifies assigned counselor.
 
 *Partial before build 11:* artifacts API existed; Profile UX and counselor panel not wired.
 
@@ -69,8 +69,10 @@
 ## 4. 🟠 Bugs & data integrity
 
 - [x] **Fix `/api/me/contacts` HTTP 500** — defensive profile/unread queries; provider client list uses `inArray` (verified `9988776655`).
-- [ ] **Align counselor assignment with plan approval** — `planApproved` vs `client_counselor` row; enforce on approve.
-- [ ] **Pending intake → generate plan** — waiting UX + notification when draft exists.
+- [x] **Align counselor assignment** — first-action claim on generate Week 1 / week edit / week approve; queues scoped to unclaimed-or-mine (Run D).
+- [x] **Fix stuck Week 1 initiation** — self-healing `generate-plan` + workspace Generate Week 1 control.
+- [x] **Hide "Message counselor" for unmapped clients** — mobile Today, waiting-plan, StrugglingFab (Run D).
+- [x] **Pending intake → generate plan** — inline waiting UX (elapsed timer, keep-tab-open hint), graceful `plan_exists`/timeout/error handling with retry; admin push on new draft; `generate-plan` given `maxDuration: 300` in `vercel.json`.
 
 ---
 
@@ -105,11 +107,11 @@
 - [x] **Plan review queue** — Week-1-first UI; locked weeks 2–6; no bulk approve (§9.1).
 - [x] **Read-out playback** — view/play client text + voice on web workspace (§9.4).
 - [x] **Weekly data panel** — enriched summary on client workspace (§9.3).
-- [ ] Full inline plan editing (all week fields) before approve.
-- [ ] Pain trend sparkline on engagement dashboard (check-in data exists).
-- [ ] Counselor profile / Calendly edit on web.
-- [ ] SLA escalation (12h) to admin per `DECISIONS.md`.
-- [ ] Notify counselor on new client share (optional).
+- [x] **Full inline plan editing** — counselorNote, ayurveda practices/disclaimer, music playlist/tracks, daily practice add/remove (Run E).
+- [x] **Pain trend sparkline** — client workspace + engagement dashboard (Run E).
+- [x] **Counselor profile / Calendly edit** — `/provider/profile` + clear URL + audit (Run E).
+- [x] **SLA escalation (12h) to admin** — `/api/admin/sla` + dashboard panel (Run F).
+- [x] **Notify counselor on new client share** — push on `counselor-share` (Run D).
 
 ---
 
@@ -127,27 +129,27 @@
 **Routes:** `/admin`, `/admin/analytics`, `/admin/costs`, `/admin/explorer`, `/admin/audit`
 
 **Follow-ups (optional):**
-- [ ] Pain trend sparkline on counselor engagement (data exists in `daily_check_ins`).
-- [ ] SLA escalation (12h) to admin per `DECISIONS.md`.
-- [ ] Broader audit coverage on all mutation routes.
+- [x] **Pain trend sparkline on counselor engagement** — Run E.
+- [x] **SLA escalation (12h) to admin** — Run F.
+- [x] **Broader audit coverage** — week edit/approve, generate-plan, schedule, profile, messages, note-resolve (Run E).
 
 ---
 
 ## 7. 🟠 Post–Week 6
 
-- [ ] Graduation screen + maintenance mode (SCOPE-E).
-- [ ] Monthly check-in cadence post-program.
+- [x] **Graduation screen + maintenance mode** — graduation redirect in tabs + maintenance Program tab (Run G, APK 14).
+- [x] **Monthly check-in cadence post-program** — `monthly_check_ins` schema + migration; calendar `completedAt` fix (Run G).
 
 ---
 
 ## 8. 🟡 Go-live & infra
 
-- [ ] Real MSG91 OTP (`BEFORE_PRODUCTION.md`).
-- [x] **Production admin via `ADMIN_EMAILS`** — admin panel + observability shipped; set `ADMIN_EMAILS` on Vercel for prod access.
-- [ ] Sentry + staging environment.
-- [ ] Vercel `sin1` region (blocked on regulatory decision #20).
-- [ ] 90-day intake cleanup job (`DECISIONS.md`).
-- [ ] Doc hygiene: mark `BUILDOUT_PLAN.md` mobile section as shipped where applicable.
+- [ ] **Real MSG91 OTP** — code aligned to proven integration; set `MSG91_AUTH_KEY` + `MSG91_TEMPLATE_ID` on Vercel and remove `OTP_TEST_MODE` (keys not in sibling `.env` — set manually).
+- [x] **Production admin via `ADMIN_EMAILS`** — admin panel + observability shipped.
+- [x] **90-day intake cleanup job** — Vercel cron `/api/cron/intake-cleanup` + `CRON_SECRET` (Run H).
+- [ ] **Sentry + staging environment** — deferred (needs account/DSN).
+- [ ] **Vercel `sin1` region** — optional / regulatory (skipped).
+- [x] **Doc hygiene** — PILOT_TODO updated (Run H).
 
 ---
 
@@ -228,7 +230,7 @@ Build 11 shipped client + API. **Run A + Run B (2026-07-02)** aligned counselor 
 
 | Phone | Role | Expected home |
 |-------|------|----------------|
-| `9998887776` | Client (new) | `waiting-plan` — Profile & settings available |
+| `9998887776` | Client (new) | `waiting-plan` — Profile & settings; Message counselor hidden until mapped |
 | `9988776655` | Client (approved) | Today tabs; contacts → counselor |
 | `9900000002` | Counselor | Provider queue / web workspace |
 

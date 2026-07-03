@@ -270,6 +270,7 @@ function WeekEditor({
         <EditableField label="Week theme" value={data.theme} onSave={v => updateField('theme', v)} />
         <EditableField label="Week focus" value={data.focus} multiline onSave={v => updateField('focus', v)} />
         <EditableField label="Weekly reflection prompt" value={data.weeklyReflection} multiline onSave={v => updateField('weeklyReflection', v)} />
+        <EditableField label="Counselor note (private)" value={data.counselorNote ?? ''} multiline onSave={v => updateField('counselorNote', v)} />
 
         <p style={{ margin: '16px 0 8px', fontWeight: 600, fontSize: 13 }}>Daily practices</p>
         {data.dailyPractices.map((p, i) => (
@@ -277,8 +278,37 @@ function WeekEditor({
             <EditableField label={`Practice ${i + 1} title`} value={p.title} onSave={v => updatePractice(i, 'title', v)} />
             <EditableField label="Description" value={p.description} multiline onSave={v => updatePractice(i, 'description', v)} />
             <EditableField label="Duration" value={p.duration} onSave={v => updatePractice(i, 'duration', v)} />
+            <button
+              type="button"
+              onClick={() => {
+                const practices = data.dailyPractices.filter((_, idx) => idx !== i);
+                const updated = { ...data, dailyPractices: practices };
+                setData(updated);
+                void saveWeek(updated);
+              }}
+              style={{ ...btnSecondary, fontSize: 12, padding: '6px 12px', marginTop: 4 }}
+            >
+              Remove practice
+            </button>
           </div>
         ))}
+        <button
+          type="button"
+          onClick={() => {
+            const updated = {
+              ...data,
+              dailyPractices: [
+                ...data.dailyPractices,
+                { title: 'New practice', description: '', duration: '10 min' },
+              ],
+            };
+            setData(updated);
+            void saveWeek(updated);
+          }}
+          style={{ ...btnSecondary, marginBottom: 12 }}
+        >
+          + Add practice
+        </button>
 
         <p style={{ margin: '16px 0 8px', fontWeight: 600, fontSize: 13 }}>
           Daily read-outs ({readOuts.length})
@@ -312,6 +342,23 @@ function WeekEditor({
             <p style={{ margin: '16px 0 8px', fontWeight: 600, fontSize: 13 }}>Ayurveda-informed wellness</p>
             <div style={{ padding: '10px 12px', background: '#f1f8e9', borderRadius: 8, border: '1px solid #c8e6c9', marginBottom: 8 }}>
               <EditableField label="Rhythm note" value={data.ayurvedaBlock.rhythmNote} multiline onSave={v => updateField('ayurvedaBlock', { ...data.ayurvedaBlock!, rhythmNote: v })} />
+              <EditableField
+                label="Practices (one per line)"
+                value={(data.ayurvedaBlock.practices ?? []).join('\n')}
+                multiline
+                onSave={v =>
+                  updateField('ayurvedaBlock', {
+                    ...data.ayurvedaBlock!,
+                    practices: v.split('\n').map((s) => s.trim()).filter(Boolean),
+                  })
+                }
+              />
+              <EditableField
+                label="Disclaimer"
+                value={data.ayurvedaBlock.disclaimer ?? ''}
+                multiline
+                onSave={v => updateField('ayurvedaBlock', { ...data.ayurvedaBlock!, disclaimer: v })}
+              />
             </div>
           </>
         )}
@@ -325,6 +372,7 @@ function WeekEditor({
               <EditableField label="Micro-movement title" value={data.yogaTrial.microMovement.title} onSave={v => updateField('yogaTrial', { ...data.yogaTrial!, microMovement: { ...data.yogaTrial!.microMovement, title: v } })} />
               <EditableField label="Micro-movement description" value={data.yogaTrial.microMovement.description} multiline onSave={v => updateField('yogaTrial', { ...data.yogaTrial!, microMovement: { ...data.yogaTrial!.microMovement, description: v } })} />
               <EditableField label="Duration" value={data.yogaTrial.microMovement.duration} onSave={v => updateField('yogaTrial', { ...data.yogaTrial!, microMovement: { ...data.yogaTrial!.microMovement, duration: v } })} />
+              <EditableField label="Disclaimer" value={data.yogaTrial.disclaimer ?? ''} multiline onSave={v => updateField('yogaTrial', { ...data.yogaTrial!, disclaimer: v })} />
             </div>
           </>
         )}
@@ -335,6 +383,58 @@ function WeekEditor({
             <div style={{ padding: '10px 12px', background: '#f3e5f5', borderRadius: 8, border: '1px solid #e1bee7', marginBottom: 8 }}>
               <EditableField label="Purpose" value={data.musicMoment.purpose} onSave={v => updateField('musicMoment', { ...data.musicMoment!, purpose: v })} />
               <EditableField label="Suggestion" value={data.musicMoment.suggestion} multiline onSave={v => updateField('musicMoment', { ...data.musicMoment!, suggestion: v })} />
+              {data.musicMoment.playlist ? (
+                <>
+                  <EditableField
+                    label="Playlist title"
+                    value={data.musicMoment.playlist.title}
+                    onSave={v =>
+                      updateField('musicMoment', {
+                        ...data.musicMoment!,
+                        playlist: { ...data.musicMoment!.playlist, title: v },
+                      })
+                    }
+                  />
+                  <EditableField
+                    label="Spotify search query"
+                    value={data.musicMoment.playlist.spotifySearchQuery ?? ''}
+                    onSave={v =>
+                      updateField('musicMoment', {
+                        ...data.musicMoment!,
+                        playlist: { ...data.musicMoment!.playlist, spotifySearchQuery: v },
+                      })
+                    }
+                  />
+                  {data.musicMoment.playlist.tracks?.map((track, ti) => (
+                    <div key={ti} style={{ marginTop: 8, padding: 8, background: '#faf5fc', borderRadius: 6 }}>
+                      <EditableField
+                        label={`Track ${ti + 1} title`}
+                        value={track.title}
+                        onSave={v => {
+                          const tracks = [...data.musicMoment!.playlist.tracks];
+                          tracks[ti] = { ...tracks[ti], title: v };
+                          updateField('musicMoment', {
+                            ...data.musicMoment!,
+                            playlist: { ...data.musicMoment!.playlist, tracks },
+                          });
+                        }}
+                      />
+                      <EditableField
+                        label="Artist"
+                        value={track.artist}
+                        onSave={v => {
+                          const tracks = [...data.musicMoment!.playlist.tracks];
+                          tracks[ti] = { ...tracks[ti], artist: v };
+                          updateField('musicMoment', {
+                            ...data.musicMoment!,
+                            playlist: { ...data.musicMoment!.playlist, tracks },
+                          });
+                        }}
+                      />
+                    </div>
+                  ))}
+                </>
+              ) : null}
             </div>
           </>
         )}

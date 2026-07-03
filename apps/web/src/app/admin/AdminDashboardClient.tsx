@@ -239,6 +239,10 @@ export function AdminDashboardClient() {
   const [detail, setDetail] = useState<MetricDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [slaBreaches, setSlaBreaches] = useState<
+    { kind: string; clientLabel: string; counselorLabel?: string; ageHours: number; detail: string; clientId: string }[]
+  >([]);
+  const [slaLoading, setSlaLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
@@ -253,6 +257,15 @@ export function AdminDashboardClient() {
     void load();
     const interval = setInterval(() => void load(), 30000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    void fetch('/api/admin/sla', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { breaches?: typeof slaBreaches } | null) => {
+        setSlaBreaches(data?.breaches ?? []);
+      })
+      .finally(() => setSlaLoading(false));
   }, []);
 
   const loadDetail = async (kind: MetricDetailKind) => {
@@ -446,6 +459,34 @@ export function AdminDashboardClient() {
           </Link>
         </div>
       ) : null}
+
+      <section style={{ marginBottom: 24, border: '1px solid #eee', borderRadius: 12, padding: 16, background: 'white' }}>
+        <h2 style={{ margin: '0 0 8px', fontSize: 16 }}>SLA breaches (12h)</h2>
+        <p style={{ margin: '0 0 12px', fontSize: 13, color: '#666' }}>
+          Unanswered client messages, pending intakes without plans, and unresolved urgent admin notes.
+        </p>
+        {slaLoading ? (
+          <p style={{ margin: 0, fontSize: 14, color: '#888' }}>Loading…</p>
+        ) : slaBreaches.length === 0 ? (
+          <p style={{ margin: 0, fontSize: 14, color: '#2e7d32' }}>No active SLA breaches.</p>
+        ) : (
+          <div style={{ display: 'grid', gap: 8 }}>
+            {slaBreaches.slice(0, 20).map((b, i) => (
+              <div
+                key={`${b.kind}-${b.clientId}-${i}`}
+                style={{ padding: '10px 12px', borderRadius: 8, background: '#fff8e1', border: '1px solid #ffe082', fontSize: 13 }}
+              >
+                <strong>{b.kind.replace(/_/g, ' ')}</strong> · {b.clientLabel}
+                {b.counselorLabel ? ` · ${b.counselorLabel}` : ''} · {b.ageHours}h overdue
+                <div style={{ color: '#666', marginTop: 4 }}>{b.detail}</div>
+                <Link href={`/admin/clients/${b.clientId}`} style={{ fontSize: 12, marginTop: 6, display: 'inline-block' }}>
+                  Client dossier →
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
         {cards.map((card) => (

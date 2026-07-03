@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { getDb } from '@/db';
 import { clientCounselor } from '@/db/schema';
 import { assertProviderCanAccessClient } from '@/lib/client-access';
+import { recordAudit } from '@/lib/audit';
 import { getUserFromRequest } from '@/lib/session';
 
 const bodySchema = z.object({
@@ -86,6 +87,15 @@ export async function POST(request: Request, context: RouteContext) {
       })
       .where(eq(clientCounselor.clientId, clientId));
   }
+
+  void recordAudit({
+    actorUserId: user.id,
+    actorRole: user.role,
+    action: 'schedule_requirement',
+    targetType: 'client',
+    targetId: clientId,
+    metadata: { required: parsed.data.required },
+  });
 
   return NextResponse.json({ ok: true, scheduleRequired: parsed.data.required });
 }

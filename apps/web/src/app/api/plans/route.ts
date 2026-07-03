@@ -139,7 +139,7 @@ export async function POST(request: Request) {
       await db
         .insert(clientCounselor)
         .values({ clientId: planRow.userId, counselorId: user.id, assignedAt: now })
-        .onConflictDoUpdate({ target: clientCounselor.clientId, set: { counselorId: user.id, assignedAt: now } });
+        .onConflictDoNothing();
 
       await seedDailyFromApprovedPlan(db, {
         clientId: planRow.userId,

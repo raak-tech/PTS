@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { CounselorReadOutEditor } from '@/components/CounselorReadOutEditor';
+import { PainSparkline } from '@/components/PainSparkline';
 
 type EngagementRow = {
   clientId: string;
@@ -138,6 +139,7 @@ export function ProviderClientWorkspaceClient({
   const [currentWeekContent, setCurrentWeekContent] = useState<WeekDraft | null>(null);
   const [weekComment, setWeekComment] = useState('');
   const [savingWeekComment, setSavingWeekComment] = useState(false);
+  const [generatingWeek1, setGeneratingWeek1] = useState(false);
 
   const approvedCount = Object.values(weekStatuses).filter((s) => s === 'approved').length;
   const nextWeekNumber = approvedCount + 1;
@@ -312,6 +314,41 @@ export function ProviderClientWorkspaceClient({
       setWeekDraft(null);
     } finally {
       setApplyingWeek(false);
+    }
+  };
+
+  const onGenerateWeek1 = async () => {
+    setGeneratingWeek1(true);
+    setApproveError('');
+    setMessage('');
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 320_000);
+      const res = await fetch('/api/provider/generate-plan', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: clientId }),
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        const reason =
+          data.reason === 'plan_exists'
+            ? 'Week 1 is already generated — reload to see it.'
+            : data.reason === 'generation_failed'
+              ? 'Generation failed. Confirm the client completed intake, then retry.'
+              : data.reason ?? 'Could not generate Week 1.';
+        setApproveError(reason);
+        return;
+      }
+      setMessage('Week 1 draft ready — reloading…');
+      window.location.reload();
+    } catch {
+      setApproveError('Network error — Week 1 not generated.');
+    } finally {
+      setGeneratingWeek1(false);
     }
   };
 
@@ -566,6 +603,16 @@ export function ProviderClientWorkspaceClient({
                 <strong>Pain trend:</strong> {weekly.painTrend}
               </p>
             ) : null}
+            {weekly.morningCheckIns.length >= 2 ? (
+              <div style={{ margin: '0 0 12px' }}>
+                <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 600 }}>Pain sparkline (7d)</p>
+                <PainSparkline
+                  points={weekly.morningCheckIns.map((c) => ({ value: c.painLevel, label: c.dateIso }))}
+                  width={200}
+                  height={36}
+                />
+              </div>
+            ) : null}
             {weekly.latestWeeklyCheckIn ? (
               <p style={{ margin: '0 0 12px', fontSize: 14, lineHeight: 1.6 }}>
                 <strong>Latest weekly check-in:</strong> {weekly.latestWeeklyCheckIn}
@@ -768,6 +815,25 @@ export function ProviderClientWorkspaceClient({
             />
           </div>
 
+          {approvedCount === 0 && weekDisplayStatus(1) === 'not_started' ? (
+            <div
+              style={{
+                marginBottom: 16,
+                padding: '14px 16px',
+                borderRadius: 12,
+                border: '1px solid var(--border-light)',
+                background: 'var(--accent-soft)',
+              }}
+            >
+              <p style={{ margin: '0 0 10px', fontSize: 14 }}>
+                No Week 1 draft yet for this client. Generate it from their intake to start the program.
+              </p>
+              <button type="button" onClick={() => void onGenerateWeek1()} disabled={generatingWeek1}>
+                {generatingWeek1 ? 'Generating Week 1 draft…' : 'Generate Week 1 draft'}
+              </button>
+            </div>
+          ) : null}
+
           <div style={{ display: 'grid', gap: 8 }}>
             {Array.from({ length: totalWeeks }, (_, i) => i + 1).map((weekNum) => {
               const status = weekDisplayStatus(weekNum);
@@ -801,7 +867,9 @@ export function ProviderClientWorkspaceClient({
                     </span>
                     {status === 'not_started' ? (
                       <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
-                        Generate from Plan tab after prior week is approved.
+                        {weekNum === 1
+                          ? 'Generate the Week 1 draft above to begin.'
+                          : 'Generate from “Next week planning” after the prior week is approved.'}
                       </p>
                     ) : null}
                   </div>

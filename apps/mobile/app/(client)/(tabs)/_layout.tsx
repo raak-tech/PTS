@@ -7,10 +7,12 @@ import { TestTimeBanner } from '@/components/TestTimeBanner';
 import { TabBarIcon } from '@/components/navigation/TabBarIcon';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useProgramTime } from '@/hooks/useProgramTime';
 import { useUnreadCounts } from '@/hooks/useUnreadCounts';
 
 export default function ClientTabsLayout() {
   const { user, loading } = useAuth();
+  const programTime = useProgramTime();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { total: unreadTotal } = useUnreadCounts();
@@ -20,6 +22,10 @@ export default function ClientTabsLayout() {
 
   if (!loading && user?.role === 'client' && !user.planApproved) {
     return <Redirect href="/(client)/waiting-plan" />;
+  }
+
+  if (!loading && user?.role === 'client' && programTime?.programComplete) {
+    return <Redirect href="/(client)/graduation" />;
   }
 
   return (

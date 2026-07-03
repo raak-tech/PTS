@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 import { getDb } from '../../../db';
 import { intakeResponses, planWeeks, plans, users } from '../../../db/schema';
+import { getClientCounselorMap, isClientVisibleToProvider } from '../../../lib/client-access';
+import { getUserFromCookieHeader } from '../../../lib/session';
 import { PlanReviewClient } from './PlanReviewClient';
 import { PendingIntakesClient } from './PendingIntakesClient';
 import type { GeneratedPlan } from '../../../lib/plan-generator';
@@ -11,6 +14,11 @@ export const metadata: Metadata = { title: 'Plan review | Provider' };
 
 export default async function ProviderPlansPage() {
   const db = getDb();
+  const user = await getUserFromCookieHeader((await headers()).get('cookie'));
+  const providerId = user?.id ?? '';
+  const assignmentMap = providerId ? await getClientCounselorMap() : {};
+  const isVisible = (clientId: string) =>
+    providerId ? isClientVisibleToProvider(clientId, providerId, assignmentMap) : true;
 
   // Pending intakes (no plan yet)
   type PendingIntakeRow = { userId: string; painSource: string; hasRedFlags: boolean; isSafe: boolean; createdAt: Date };
@@ -26,6 +34,7 @@ export default async function ProviderPlansPage() {
     .leftJoin(plans, eq(intakeResponses.userId, plans.userId))
     .where(isNull(plans.id))
     .orderBy(intakeResponses.createdAt)) as PendingIntakeRow[];
+  const visiblePendingIntakes = pendingIntakes.filter((i) => isVisible(i.userId));
 
   // All draft plans awaiting review
   type PlanRow = { id: string; userId: string; generatedContent: string; counselorNotes: string | null; status: string; createdAt: Date };
@@ -34,15 +43,17 @@ export default async function ProviderPlansPage() {
     .from(plans)
     .where(eq(plans.status, 'draft'))
     .orderBy(plans.createdAt)) as PlanRow[];
+  const visibleDraftPlans = draftPlans.filter((p) => isVisible(p.userId));
 
   const approvedPlans = (await db
     .select()
     .from(plans)
     .where(eq(plans.status, 'approved'))
     .orderBy(plans.createdAt)) as PlanRow[];
+  const visibleApprovedPlans = approvedPlans.filter((p) => isVisible(p.userId));
 
   // Fetch client emails for display (for both draft/approved plans AND pending intakes)
-  const allUserIds = [...new Set([...draftPlans, ...approvedPlans, ...pendingIntakes].map(p => p.userId))];
+  const allUserIds = [...new Set([...visibleDraftPlans, ...visibleApprovedPlans, ...visiblePendingIntakes].map(p => p.userId))];
   type UserRow = { id: string; email: string };
   const clientUsers = allUserIds.length > 0
     ? (await db.select({ id: users.id, email: users.email }).from(users).where(inArray(users.id, allUserIds))) as UserRow[]
@@ -51,7 +62,7 @@ export default async function ProviderPlansPage() {
   const emailById = Object.fromEntries(clientUsers.map(u => [u.id, u.email]));
 
   // Fetch intake responses for context (draft/approved plans)
-  const planUserIds = [...new Set([...draftPlans, ...approvedPlans].map(p => p.userId))];
+  const planUserIds = [...new Set([...visibleDraftPlans, ...visibleApprovedPlans].map(p => p.userId))];
   type IntakeContextRow = { userId: string; painSource: string; painDescription: string; recoveryGoal: string };
   const intakes = planUserIds.length > 0
     ? (await db.select({ userId: intakeResponses.userId, painSource: intakeResponses.painSource, painDescription: intakeResponses.painDescription, recoveryGoal: intakeResponses.recoveryGoal })
@@ -62,7 +73,7 @@ export default async function ProviderPlansPage() {
   const intakeByUserId = Object.fromEntries(intakes.map(i => [i.userId, i]));
 
   // Fetch planWeeks statuses for all draft plans so the editor shows current state
-  const draftPlanIds = draftPlans.map(p => p.id);
+  const draftPlanIds = visibleDraftPlans.map(p => p.id);
   type WeekStatusRow = { planId: string; weekNumber: number; status: string };
   const allWeekStatuses: WeekStatusRow[] = draftPlanIds.length > 0
     ? (await db
@@ -82,7 +93,7 @@ export default async function ProviderPlansPage() {
     return `${local[0]}***@${email.split('@')[1]}`;
   }
 
-  const enriched = draftPlans.map(p => ({
+  const enriched = visibleDraftPlans.map(p => ({
     ...p,
     clientEmail: anon(emailById[p.userId] ?? 'unknown@unknown.com'),
     intake: intakeByUserId[p.userId] ?? null,
@@ -98,7 +109,7 @@ export default async function ProviderPlansPage() {
 
       {/* Pending intakes section */}
       <PendingIntakesClient
-        intakes={pendingIntakes.map(intake => ({
+        intakes={visiblePendingIntakes.map(intake => ({
           userId: intake.userId,
           painSource: intake.painSource,
           hasRedFlags: intake.hasRedFlags,
@@ -129,11 +140,11 @@ export default async function ProviderPlansPage() {
         />
       ))}
 
-      {approvedPlans.length > 0 && (
+      {visibleApprovedPlans.length > 0 && (
         <section style={{ marginTop: 40 }}>
-          <h2 style={{ fontSize: 16, color: 'var(--muted)' }}>Approved plans ({approvedPlans.length})</h2>
+          <h2 style={{ fontSize: 16, color: 'var(--muted)' }}>Approved plans ({visibleApprovedPlans.length})</h2>
           <div style={{ display: 'grid', gap: 8 }}>
-            {approvedPlans.map(p => (
+            {visibleApprovedPlans.map(p => (
               <div key={p.id} style={{ padding: '12px 16px', border: '1px solid var(--border)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 14 }}>{anon(emailById[p.userId] ?? 'unknown@unknown.com')}</span>
                 <span style={{ fontSize: 12, color: 'var(--muted)' }}>Approved</span>
