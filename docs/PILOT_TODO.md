@@ -1,15 +1,16 @@
 # PTS Pilot — Consolidated Todo (single source of truth)
 
-**Last updated:** 2026-07-03 (session end — Runs D–H shipped, APK 14 on device)  
+**Last updated:** 2026-07-04 (Run I — client workspace week sub-tabs + edit propagation)  
 **Purpose:** One execution queue for dev runs, APK drops, and counselor pilot.  
 **Rule:** Add new work here. Other docs keep product context only — link here instead of duplicating todos.
 
-**Session snapshot (2026-07-03 evening):**
-- **Git:** `69405c9` on `master` (1 commit ahead of `origin/master` — push when ready).
-- **Web:** production at https://pts-web-pied.vercel.app (deployed after polish).
-- **Mobile:** APK **build 14** (`versionCode=14`) at `apps/mobile/dist/pts-mobile-release.apk` — installed on Pixel 7 (`2A101FDH200DWJ`).
-- **DB:** migration `0024_monthly_check_ins.sql` applied (local + production via build migrate).
+**Session snapshot (2026-07-04):**
+- **Run I shipped (web):** Plan tab week sub-tabs, per-week `WeekEditor` (edit + approve every round), per-week activity panel, cross-week patterns, and the edit→client propagation fix. `tsc` + `next build` green.
+- **Web:** production at https://pts-web-pied.vercel.app (redeploy after commit/push).
+- **Mobile:** APK **build 14** (`versionCode=14`) at `apps/mobile/dist/pts-mobile-release.apk` — installed on Pixel 7 (`2A101FDH200DWJ`). No mobile change in Run I.
+- **DB:** no new migration in Run I. `0024_monthly_check_ins.sql` applied (local + production via build migrate).
 - **Deferred:** MSG91 go-live, `CRON_SECRET` (optional until 90-day intake cleanup cron is wanted), Sentry/staging.
+- **Next:** §5 device QA pass; verify the Week-1 approve→client flow end-to-end on the waiting client.
 
 **Process (required before multi-surface code):** [`DEV_WORKFLOW.md`](DEV_WORKFLOW.md) — Analyze → Document → Review → Build  
 **Related (not execution queues):** `PROJECT_BRIEF.md`, `PROVIDER_WORKFLOW.md`, `MOBILE_APP_UX.md`, `DECISIONS.md`  
@@ -119,6 +120,11 @@
 - [x] **Counselor profile / Calendly edit** — `/provider/profile` + clear URL + audit (Run E).
 - [x] **SLA escalation (12h) to admin** — `/api/admin/sla` + dashboard panel (Run F).
 - [x] **Notify counselor on new client share** — push on `counselor-share` (Run D).
+- [x] **Workspace Plan tab → week sub-tabs (Week 1–6)** — `?tab=plan&week=N`; shared `WeekEditor` mounted per week; inline edit + approve every round (Run I).
+- [x] **Edit propagation fix** — approving a week merges `plan_weeks.content` into `plans.generatedContent`, flips plan to `approved` on first release, and seeds the daily layer, so counselor edits actually reach the client (Run I). `apply-week` now also creates the draft `plan_weeks` row for weeks 2–6.
+- [x] **Per-week activity panel** — `GET /api/provider/clients/[id]/week/[n]/activity` + `WeekActivityPanel` (read-outs, blocks, check-ins, pain, reflections, holistic) (Run I).
+- [x] **Cross-week patterns** — `client-week-metrics.ts` + `GET /api/provider/clients/[id]/program-metrics` + `ProgramPatternsPanel` (adherence/read-out/pain trends table) (Run I).
+- [x] **Plan review queue slimmed** — cards link into the workspace Plan tab ("Open in workspace") (Run I).
 
 ---
 

@@ -5,6 +5,10 @@ import { useEffect, useState } from 'react';
 
 import { CounselorReadOutEditor } from '@/components/CounselorReadOutEditor';
 import { PainSparkline } from '@/components/PainSparkline';
+import { ProgramPatternsPanel } from '@/components/provider/ProgramPatternsPanel';
+import { WeekActivityPanel } from '@/components/provider/WeekActivityPanel';
+import { WeekEditor } from '@/components/provider/WeekEditor';
+import type { WeekPlan } from '@/lib/plan-generator';
 
 type EngagementRow = {
   clientId: string;
@@ -92,10 +96,14 @@ type Props = {
   clientLabel: string;
   planId?: string;
   initialWeekStatuses?: Record<number, WeekStatus>;
+  initialWeekContents?: Record<number, WeekPlan>;
+  programAnchorDate?: string | null;
+  hasCrisisNotes?: boolean;
   totalWeeks?: number;
   overview: OverviewProps;
   intake?: IntakeSummary | null;
   initialTab?: 'overview' | 'plan' | 'readouts' | 'messages';
+  initialWeek?: number;
 };
 
 const TABS = [
@@ -110,12 +118,19 @@ export function ProviderClientWorkspaceClient({
   clientLabel,
   planId: initialPlanId,
   initialWeekStatuses = {},
+  initialWeekContents = {},
+  programAnchorDate = null,
+  hasCrisisNotes = false,
   totalWeeks = 6,
   overview,
   intake = null,
   initialTab = 'overview',
+  initialWeek = 1,
 }: Props) {
   const [tab, setTab] = useState(initialTab);
+  const [activeWeek, setActiveWeek] = useState<number>(initialWeek);
+  const [weekContents, setWeekContents] = useState<Record<number, WeekPlan>>(initialWeekContents);
+  const [crisisAcknowledged, setCrisisAcknowledged] = useState(false);
   const [engagement, setEngagement] = useState<EngagementRow | null>(null);
   const [summary, setSummary] = useState('');
   const [weekly, setWeekly] = useState<WeeklySummary | null>(null);
@@ -128,7 +143,6 @@ export function ProviderClientWorkspaceClient({
   const [message, setMessage] = useState('');
   const [planId, setPlanId] = useState(initialPlanId ?? '');
   const [weekStatuses, setWeekStatuses] = useState<Record<number, WeekStatus>>(initialWeekStatuses);
-  const [approvingWeek, setApprovingWeek] = useState<number | null>(null);
   const [approveError, setApproveError] = useState('');
   const [notes, setNotes] = useState<CounselorNote[]>([]);
   const [resolvingNoteId, setResolvingNoteId] = useState<string | null>(null);
@@ -136,7 +150,6 @@ export function ProviderClientWorkspaceClient({
   const [scheduleRequired, setScheduleRequired] = useState(false);
   const [scheduleCompletedAt, setScheduleCompletedAt] = useState<string | null>(null);
   const [togglingSchedule, setTogglingSchedule] = useState(false);
-  const [currentWeekContent, setCurrentWeekContent] = useState<WeekDraft | null>(null);
   const [weekComment, setWeekComment] = useState('');
   const [savingWeekComment, setSavingWeekComment] = useState(false);
   const [generatingWeek1, setGeneratingWeek1] = useState(false);
@@ -177,7 +190,6 @@ export function ProviderClientWorkspaceClient({
             const approvedWeek = Object.entries(weekStatuses).find(([, s]) => s === 'approved')?.[0];
             const weekIdx = approvedWeek ? Number(approvedWeek) - 1 : 0;
             const week = parsed.weeks?.[weekIdx] ?? parsed.weeks?.[0];
-            if (week) setCurrentWeekContent(week);
             const template = week?.reinforcementTemplate ?? parsed.weeks?.[0]?.reinforcementTemplate;
             if (template) {
               setTemplateTitle(template.title);
@@ -310,8 +322,11 @@ export function ProviderClientWorkspaceClient({
         setMessage(data.detail ?? data.error ?? 'Could not apply week');
         return;
       }
-      setMessage(`Week ${data.weekNumber} applied — review it in the plan queue, then approve to release to client.`);
       setWeekDraft(null);
+      setMessage(`Week ${data.weekNumber} draft ready — review, edit, and approve below.`);
+      // Reload onto the applied week's sub-tab so the inline editor shows it.
+      const target = `/provider/clients/${clientId}?tab=plan&week=${data.weekNumber}`;
+      window.location.assign(target);
     } finally {
       setApplyingWeek(false);
     }
@@ -343,8 +358,15 @@ export function ProviderClientWorkspaceClient({
         setApproveError(reason);
         return;
       }
-      setMessage('Week 1 draft ready — reloading…');
-      window.location.reload();
+      setMessage('Week 1 draft ready — opening plan…');
+      // Reload onto the Plan tab so the counselor lands on the freshly seeded
+      // Week 1 (default reload would drop them back on Overview → looks like nothing happened).
+      const target = `/provider/clients/${clientId}?tab=plan`;
+      if (window.location.pathname + window.location.search === target) {
+        window.location.reload();
+      } else {
+        window.location.assign(target);
+      }
     } catch {
       setApproveError('Network error — Week 1 not generated.');
     } finally {
@@ -352,32 +374,24 @@ export function ProviderClientWorkspaceClient({
     }
   };
 
-  const onApproveWeek = async (weekNumber: number) => {
-    if (!planId) {
-      setApproveError('No plan found for this client yet.');
-      return;
+  const selectWeek = (weekNum: number) => {
+    setActiveWeek(weekNum);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', 'plan');
+      url.searchParams.set('week', String(weekNum));
+      window.history.replaceState(null, '', url.toString());
     }
-    setApprovingWeek(weekNumber);
-    setApproveError('');
-    try {
-      const res = await fetch(`/api/provider/plans/${planId}/week/${weekNumber}`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setApproveError(data.error ?? 'Approval failed');
-        return;
-      }
-      setWeekStatuses((prev) => ({ ...prev, [weekNumber]: 'approved' }));
-      setMessage(`Week ${weekNumber} approved — client can now see it in their app.`);
-    } catch {
-      setApproveError('Network error — approval not saved');
-    } finally {
-      setApprovingWeek(null);
-    }
+  };
+
+  const onWeekSaved = (updated: WeekPlan) => {
+    setWeekContents((prev) => ({ ...prev, [updated.week]: updated }));
+    setWeekStatuses((prev) => ({ ...prev, [updated.week]: 'edited' }));
+  };
+
+  const onWeekApproved = (weekNumber: number) => {
+    setWeekStatuses((prev) => ({ ...prev, [weekNumber]: 'approved' }));
+    setMessage(`Week ${weekNumber} approved — client can now see it in their app.`);
   };
 
   const statusColour: Record<WeekDisplayStatus, string> = {
@@ -764,46 +778,16 @@ export function ProviderClientWorkspaceClient({
       </div>
 
       <div className="provider-tab-panel" data-active={tab === 'plan'} role="tabpanel">
-        {currentWeekContent ? (
-          <section className="provider-panel">
-            <h2>Current week content</h2>
-            <p style={{ margin: '0 0 8px', fontWeight: 700 }}>
-              Week {currentWeekContent.week}: {currentWeekContent.theme}
-            </p>
-            <p style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--muted)' }}>{currentWeekContent.focus}</p>
-            {currentWeekContent.musicMoment?.playlist ? (
-              <p style={{ margin: '0 0 8px', fontSize: 14 }}>
-                <strong>Music:</strong> {currentWeekContent.musicMoment.playlist.title}
-                {currentWeekContent.musicMoment.playlist.purpose
-                  ? ` — ${currentWeekContent.musicMoment.playlist.purpose}`
-                  : ''}
-              </p>
-            ) : null}
-            {currentWeekContent.yogaTrial ? (
-              <p style={{ margin: '0 0 8px', fontSize: 14 }}>
-                <strong>Yoga trial:</strong> {currentWeekContent.yogaTrial.principle}
-              </p>
-            ) : null}
-          </section>
-        ) : null}
-
         <section className="provider-panel">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <h2 style={{ margin: 0 }}>Week approvals</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+            <h2 style={{ margin: 0 }}>Program plan</h2>
             <span style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600 }}>
+              {programAnchorDate ? `Started ${programAnchorDate} · ` : ''}
               {approvedCount} / {totalWeeks} weeks approved
             </span>
           </div>
 
-          <div
-            style={{
-              height: 6,
-              background: 'var(--surface-2)',
-              borderRadius: 3,
-              marginBottom: 16,
-              overflow: 'hidden',
-            }}
-          >
+          <div style={{ height: 6, background: 'var(--surface-2)', borderRadius: 3, marginBottom: 16, overflow: 'hidden' }}>
             <div
               style={{
                 height: '100%',
@@ -815,160 +799,185 @@ export function ProviderClientWorkspaceClient({
             />
           </div>
 
-          {approvedCount === 0 && weekDisplayStatus(1) === 'not_started' ? (
-            <div
-              style={{
-                marginBottom: 16,
-                padding: '14px 16px',
-                borderRadius: 12,
-                border: '1px solid var(--border-light)',
-                background: 'var(--accent-soft)',
-              }}
-            >
-              <p style={{ margin: '0 0 10px', fontSize: 14 }}>
-                No Week 1 draft yet for this client. Generate it from their intake to start the program.
+          {hasCrisisNotes ? (
+            <div style={{ marginBottom: 16, padding: '14px 16px', background: '#ffebee', border: '2px solid #ef9a9a', borderRadius: 12 }}>
+              <p style={{ margin: '0 0 8px', fontWeight: 700, color: '#b71c1c', fontSize: 14 }}>
+                🚨 This client reported red flags or a safety concern
               </p>
-              <button type="button" onClick={() => void onGenerateWeek1()} disabled={generatingWeek1}>
-                {generatingWeek1 ? 'Generating Week 1 draft…' : 'Generate Week 1 draft'}
-              </button>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', fontSize: 13, color: '#b71c1c', fontWeight: 600 }}>
+                <input
+                  type="checkbox"
+                  checked={crisisAcknowledged}
+                  onChange={(e) => setCrisisAcknowledged(e.target.checked)}
+                  style={{ marginTop: 2, width: 16, height: 16, cursor: 'pointer', accentColor: '#b71c1c' }}
+                />
+                I have read the crisis notes and am proceeding with full awareness of this client&apos;s safety status.
+              </label>
             </div>
           ) : null}
 
-          <div style={{ display: 'grid', gap: 8 }}>
+          <div role="tablist" aria-label="Program weeks" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {Array.from({ length: totalWeeks }, (_, i) => i + 1).map((weekNum) => {
               const status = weekDisplayStatus(weekNum);
-              const isApproving = approvingWeek === weekNum;
-              const canApprove = status === 'draft' || status === 'edited';
+              const isActive = activeWeek === weekNum;
               return (
-                <div
+                <button
                   key={weekNum}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => selectWeek(weekNum)}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 12,
-                    flexWrap: 'wrap',
-                    padding: '10px 14px',
-                    borderRadius: 10,
-                    border: `1px solid ${status === 'approved' ? 'rgba(155, 196, 168, 0.45)' : status === 'not_started' ? 'var(--border-light)' : 'var(--border-light)'}`,
-                    background:
-                      status === 'approved'
-                        ? 'rgba(155, 196, 168, 0.1)'
-                        : status === 'not_started'
-                          ? 'transparent'
-                          : 'var(--surface-2)',
-                    opacity: status === 'not_started' ? 0.85 : 1,
+                    padding: '8px 14px',
+                    borderRadius: 999,
+                    border: `1.5px solid ${isActive ? 'var(--accent)' : 'var(--border-light)'}`,
+                    background: isActive ? 'var(--accent-soft)' : 'transparent',
+                    fontWeight: 600,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    color: 'var(--text)',
                   }}
                 >
-                  <div>
-                    <span style={{ fontWeight: 600, fontSize: 14 }}>Week {weekNum}</span>
-                    <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 600, color: statusColour[status] }}>
-                      {statusLabel[status]}
-                    </span>
-                    {status === 'not_started' ? (
-                      <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
-                        {weekNum === 1
-                          ? 'Generate the Week 1 draft above to begin.'
-                          : 'Generate from “Next week planning” after the prior week is approved.'}
-                      </p>
-                    ) : null}
-                  </div>
-                  {canApprove ? (
-                    <button
-                      type="button"
-                      disabled={isApproving || !planId}
-                      onClick={() => void onApproveWeek(weekNum)}
-                      style={{ opacity: isApproving ? 0.7 : 1 }}
-                    >
-                      {isApproving ? 'Approving…' : `Approve Week ${weekNum}`}
-                    </button>
-                  ) : status === 'approved' ? (
-                    <span style={{ fontSize: 12, color: 'var(--success)' }}>Client can see this week ✓</span>
-                  ) : null}
-                </div>
+                  Week {weekNum}
+                  <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 600, color: statusColour[status] }}>
+                    {statusLabel[status]}
+                  </span>
+                </button>
               );
             })}
           </div>
-
-          {approveError ? (
-            <p style={{ marginTop: 8, fontSize: 13, color: 'var(--danger)' }}>{approveError}</p>
-          ) : null}
-          <p style={{ marginTop: 12, fontSize: 13, color: 'var(--muted)' }}>
-            To edit week content inline, use the{' '}
-            <Link href="/provider/plans">plan review queue</Link>.
-          </p>
         </section>
 
-        <section className="provider-panel">
-          <h2>Next week planning (AI)</h2>
-          <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 0 }}>
-            Save a clinical comment on the current approved week, then generate the next week using engagement data.
-          </p>
-          {approvedCount > 0 ? (
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
-                Comment on Week {approvedCount} (required before Week {approvedCount + 1})
-              </label>
-              <textarea
-                value={weekComment}
-                onChange={(e) => setWeekComment(e.target.value)}
-                rows={4}
-                placeholder="Clinical framing, adjustments, what to emphasize next week…"
-                style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid var(--border-light)' }}
-              />
-              <button
-                type="button"
-                style={{ marginTop: 8 }}
-                onClick={() => void onSaveWeekComment()}
-                disabled={savingWeekComment || weekComment.trim().length < 3}
-              >
-                {savingWeekComment ? 'Saving…' : `Save Week ${approvedCount} comment`}
-              </button>
-            </div>
-          ) : null}
-          <button type="button" onClick={() => void onRegenerateWeek()} disabled={regenWeek || approvedCount === 0}>
-            {regenWeek
-              ? `Generating Week ${nextWeekNumber} draft…`
-              : approvedCount > 0
-                ? `Generate Week ${nextWeekNumber} draft`
-                : 'Approve Week 1 before generating Week 2'}
-          </button>
-          {weekSuggestions.length > 0 ? (
-            <ul style={{ marginTop: 12, lineHeight: 1.6 }}>
-              {weekSuggestions.map((s) => (
-                <li key={s}>{s}</li>
-              ))}
-            </ul>
-          ) : null}
-          {weekDraft ? (
-            <div
-              style={{
-                marginTop: 16,
-                padding: 16,
-                border: '1px solid var(--border-light)',
-                borderRadius: 12,
-                background: 'var(--surface-2)',
-              }}
-            >
-              <p style={{ margin: '0 0 8px', fontWeight: 700 }}>
-                Week {weekDraft.week}: {weekDraft.theme}
+        {approvedCount > 0 ? (
+          <section className="provider-panel">
+            <details>
+              <summary style={{ cursor: 'pointer', fontWeight: 700, fontSize: 16 }}>
+                Cross-week patterns
+              </summary>
+              <p style={{ margin: '8px 0 12px', fontSize: 13, color: 'var(--muted)' }}>
+                Compare engagement across all approved weeks to spot trends and adjust the next plan.
               </p>
-              <p style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--muted)' }}>{weekDraft.focus}</p>
-              <p style={{ margin: '0 0 4px', fontSize: 13 }}>
-                <strong>Read-out:</strong> {weekDraft.reinforcementTemplate?.title ?? '—'}
+              <ProgramPatternsPanel clientId={clientId} />
+            </details>
+          </section>
+        ) : null}
+
+        {(() => {
+          const status = weekDisplayStatus(activeWeek);
+          const content = weekContents[activeWeek];
+          const priorApproved = activeWeek === 1 || weekStatuses[activeWeek - 1] === 'approved';
+          const isNextToGenerate = activeWeek === nextWeekNumber;
+
+          // Editable / approvable week — full inline editor.
+          if ((status === 'draft' || status === 'edited' || status === 'approved') && content && planId) {
+            return (
+              <>
+                <section className="provider-panel">
+                  <h2 style={{ marginTop: 0 }}>Week {activeWeek} plan</h2>
+                  <WeekEditor
+                    key={`week-${activeWeek}`}
+                    week={content}
+                    planId={planId}
+                    weekStatus={status}
+                    crisisBlocked={hasCrisisNotes && !crisisAcknowledged}
+                    defaultOpen
+                    onSaved={onWeekSaved}
+                    onApproved={onWeekApproved}
+                  />
+                  {approveError ? (
+                    <p style={{ marginTop: 8, fontSize: 13, color: 'var(--danger)' }}>{approveError}</p>
+                  ) : null}
+                </section>
+                <section className="provider-panel">
+                  <h2 style={{ marginTop: 0 }}>Week {activeWeek} activity</h2>
+                  <WeekActivityPanel key={`activity-${activeWeek}`} clientId={clientId} weekNumber={activeWeek} />
+                </section>
+              </>
+            );
+          }
+
+          // Week 1 not generated yet.
+          if (activeWeek === 1 && status === 'not_started') {
+            return (
+              <section className="provider-panel">
+                <p style={{ margin: '0 0 10px', fontSize: 14 }}>
+                  No Week 1 draft yet for this client. Generate it from their intake to start the program.
+                </p>
+                <button type="button" onClick={() => void onGenerateWeek1()} disabled={generatingWeek1}>
+                  {generatingWeek1 ? 'Generating Week 1 draft…' : 'Generate Week 1 draft'}
+                </button>
+                {approveError ? (
+                  <p style={{ marginTop: 8, fontSize: 13, color: 'var(--danger)' }}>{approveError}</p>
+                ) : null}
+              </section>
+            );
+          }
+
+          // Later week, prior week approved and this is the next to generate.
+          if (activeWeek > 1 && isNextToGenerate && priorApproved) {
+            return (
+              <section className="provider-panel">
+                <h2 style={{ marginTop: 0 }}>Generate Week {activeWeek}</h2>
+                <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 0 }}>
+                  Save a clinical comment on Week {approvedCount}, then generate Week {activeWeek} using this
+                  client&apos;s engagement data. You can edit everything before approving.
+                </p>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+                    Comment on Week {approvedCount} (required before Week {activeWeek})
+                  </label>
+                  <textarea
+                    value={weekComment}
+                    onChange={(e) => setWeekComment(e.target.value)}
+                    rows={4}
+                    placeholder="Clinical framing, adjustments, what to emphasize next week…"
+                    style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid var(--border-light)' }}
+                  />
+                  <button
+                    type="button"
+                    style={{ marginTop: 8 }}
+                    onClick={() => void onSaveWeekComment()}
+                    disabled={savingWeekComment || weekComment.trim().length < 3}
+                  >
+                    {savingWeekComment ? 'Saving…' : `Save Week ${approvedCount} comment`}
+                  </button>
+                </div>
+                <button type="button" onClick={() => void onRegenerateWeek()} disabled={regenWeek}>
+                  {regenWeek ? `Generating Week ${activeWeek} draft…` : `Generate Week ${activeWeek} draft`}
+                </button>
+                {weekSuggestions.length > 0 ? (
+                  <ul style={{ marginTop: 12, lineHeight: 1.6 }}>
+                    {weekSuggestions.map((s) => (
+                      <li key={s}>{s}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                {weekDraft ? (
+                  <div style={{ marginTop: 16, padding: 16, border: '1px solid var(--border-light)', borderRadius: 12, background: 'var(--surface-2)' }}>
+                    <p style={{ margin: '0 0 8px', fontWeight: 700 }}>
+                      Week {weekDraft.week}: {weekDraft.theme}
+                    </p>
+                    <p style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--muted)' }}>{weekDraft.focus}</p>
+                    <button type="button" onClick={() => void onApplyWeek()} disabled={applyingWeek}>
+                      {applyingWeek ? 'Applying…' : `Apply Week ${weekDraft.week} — then edit & approve`}
+                    </button>
+                  </div>
+                ) : null}
+                {message ? <p style={{ marginTop: 12, fontSize: 13, color: 'var(--muted)' }}>{message}</p> : null}
+              </section>
+            );
+          }
+
+          // Locked future week.
+          return (
+            <section className="provider-panel">
+              <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>
+                Week {activeWeek} is not available yet. Approve Week {activeWeek - 1} first, then generate Week{' '}
+                {activeWeek} here.
               </p>
-              <p style={{ margin: '0 0 4px', fontSize: 13 }}>
-                <strong>Yoga:</strong> {weekDraft.yogaTrial?.principle ?? '—'}
-              </p>
-              <p style={{ margin: '0 0 12px', fontSize: 13 }}>
-                <strong>Music:</strong> {weekDraft.musicMoment?.playlist?.title ?? '—'}
-              </p>
-              <button type="button" onClick={() => void onApplyWeek()} disabled={applyingWeek}>
-                {applyingWeek ? 'Applying…' : `Apply Week ${weekDraft.week} draft to plan`}
-              </button>
-            </div>
-          ) : null}
-        </section>
+            </section>
+          );
+        })()}
       </div>
 
       <div className="provider-tab-panel" data-active={tab === 'readouts'} role="tabpanel">

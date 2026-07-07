@@ -1,9 +1,10 @@
+import { randomUUID } from 'node:crypto';
+
 import { and, desc, eq } from 'drizzle-orm';
 
 import { getDb } from '@/db';
-import { plans } from '@/db/schema';
+import { planWeeks, plans } from '@/db/schema';
 import type { GeneratedPlan, WeekPlan } from '@/lib/plan-generator';
-import { seedDailyFromApprovedPlan } from '@/lib/seed-daily-from-plan';
 
 export async function applyWeekToApprovedPlan(
   clientId: string,
@@ -41,12 +42,35 @@ export async function applyWeekToApprovedPlan(
     .set({ generatedContent: planContent })
     .where(eq(plans.id, approved.id));
 
-  await seedDailyFromApprovedPlan(db, {
-    clientId,
-    counselorId,
-    planContent,
-    planWeek: weekPlan.week,
-  });
+  // Upsert a plan_weeks draft row so the new week is immediately editable and
+  // approvable per-week in the counselor workspace. Never downgrade an already
+  // approved week back to draft.
+  const now = new Date();
+  const weekContent = JSON.stringify(weekPlan);
+  const [existingWeek] = await db
+    .select({ id: planWeeks.id, status: planWeeks.status })
+    .from(planWeeks)
+    .where(and(eq(planWeeks.planId, approved.id), eq(planWeeks.weekNumber, weekPlan.week)))
+    .limit(1);
+
+  if (existingWeek) {
+    if (existingWeek.status !== 'approved') {
+      await db
+        .update(planWeeks)
+        .set({ content: weekContent, status: 'draft', editedAt: now, counselorId })
+        .where(and(eq(planWeeks.planId, approved.id), eq(planWeeks.weekNumber, weekPlan.week)));
+    }
+  } else {
+    await db.insert(planWeeks).values({
+      id: randomUUID(),
+      planId: approved.id,
+      weekNumber: weekPlan.week,
+      content: weekContent,
+      status: 'draft',
+      counselorId,
+      createdAt: now,
+    });
+  }
 
   return approved.id;
 }

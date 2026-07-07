@@ -24,7 +24,16 @@
       "Bash(head *)",
       "Bash(tail *)",
       "Bash(sed *)",
-      "Bash(awk *)"
+      "Bash(awk *)",
+      "Bash(cd *)",
+      "Bash(timeout *)",
+      "Bash(lsof *)",
+      "mcp__context-mode__ctx_stats",
+      "mcp__context-mode__ctx_batch_execute",
+      "mcp__context-mode__ctx_fetch_and_index",
+      "mcp__context-mode__ctx_execute",
+      "mcp__context-mode__ctx_execute_file",
+      "mcp__context-mode__ctx_search"
     ],
     "deny": [
       "Bash(rm -rf /)",

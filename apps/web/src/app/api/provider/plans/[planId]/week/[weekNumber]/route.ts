@@ -8,7 +8,9 @@ import { claimClientCounselor } from '@/lib/claim-client-counselor';
 import { recordAudit } from '@/lib/audit';
 import { sendPushToUser } from '@/lib/expo-push';
 import { logError } from '@/lib/logger';
+import type { GeneratedPlan, WeekPlan } from '@/lib/plan-generator';
 import { toDateIso } from '@/lib/program-calendar';
+import { seedDailyFromApprovedPlan } from '@/lib/seed-daily-from-plan';
 import { getUserFromRequest } from '@/lib/session';
 
 function unauthorized() {
@@ -144,7 +146,13 @@ export async function POST(
     const db = getDb();
 
     const [planRow] = await db
-      .select({ id: plans.id, userId: plans.userId })
+      .select({
+        id: plans.id,
+        userId: plans.userId,
+        status: plans.status,
+        generatedContent: plans.generatedContent,
+        programAnchorDate: plans.programAnchorDate,
+      })
       .from(plans)
       .where(eq(plans.id, planId))
       .limit(1);
@@ -155,32 +163,67 @@ export async function POST(
 
     const now = new Date();
 
-    const existing = await db
-      .select({ id: planWeeks.id, status: planWeeks.status })
+    const [existing] = await db
+      .select({ id: planWeeks.id, status: planWeeks.status, content: planWeeks.content })
       .from(planWeeks)
       .where(and(eq(planWeeks.planId, planId), eq(planWeeks.weekNumber, weekNum)))
       .limit(1);
 
-    if (existing.length > 0) {
-      await db
-        .update(planWeeks)
-        .set({
-          status: 'approved',
-          approvedAt: now,
-          releasedAt: now,
-          counselorId: user.id,
-        })
-        .where(and(eq(planWeeks.planId, planId), eq(planWeeks.weekNumber, weekNum)));
-    } else {
+    if (!existing) {
       return NextResponse.json({ error: 'week_not_found' }, { status: 404 });
     }
 
-    if (weekNum === 1) {
-      await db
-        .update(plans)
-        .set({ programAnchorDate: toDateIso(now) })
-        .where(eq(plans.id, planId));
+    await db
+      .update(planWeeks)
+      .set({
+        status: 'approved',
+        approvedAt: now,
+        releasedAt: now,
+        counselorId: user.id,
+      })
+      .where(and(eq(planWeeks.planId, planId), eq(planWeeks.weekNumber, weekNum)));
+
+    // Propagate the approved (possibly edited) week into the client-facing plan.
+    // The client reads plans.generatedContent, while inline edits are stored in
+    // plan_weeks.content — merge so counselor edits actually reach the client.
+    let mergedContent = planRow.generatedContent;
+    let approvedWeek: WeekPlan | null = null;
+    try {
+      approvedWeek = JSON.parse(existing.content) as WeekPlan;
+      const plan = JSON.parse(planRow.generatedContent) as GeneratedPlan;
+      const idx = plan.weeks.findIndex((w) => w.week === weekNum);
+      if (idx >= 0) {
+        plan.weeks[idx] = approvedWeek;
+      } else {
+        plan.weeks.push(approvedWeek);
+        plan.weeks.sort((a, b) => a.week - b.week);
+      }
+      mergedContent = JSON.stringify(plan);
+    } catch (err) {
+      logError('provider_plan_week_merge_failed', err, { planId, weekNum });
     }
+
+    // Flip the plan to approved on first release so the client can see it, and
+    // anchor the program on Week 1. Idempotent for later weeks.
+    const planUpdate: Record<string, unknown> = { generatedContent: mergedContent };
+    if (planRow.status !== 'approved') {
+      planUpdate.status = 'approved';
+      planUpdate.approvedAt = now;
+      planUpdate.approvedBy = user.id;
+      planUpdate.counselorId = user.id;
+    }
+    if (weekNum === 1 && !planRow.programAnchorDate) {
+      planUpdate.programAnchorDate = toDateIso(now);
+    }
+    await db.update(plans).set(planUpdate).where(eq(plans.id, planId));
+
+    // Seed the daily layer (read-outs, calendar template) from the approved week.
+    await seedDailyFromApprovedPlan(db, {
+      clientId: planRow.userId,
+      counselorId: user.id,
+      planContent: mergedContent,
+      planWeek: weekNum,
+    });
 
     await claimClientCounselor(planRow.userId, user.id);
 

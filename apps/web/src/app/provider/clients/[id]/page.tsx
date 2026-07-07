@@ -4,12 +4,13 @@ import { desc, eq } from 'drizzle-orm';
 
 import { getDb } from '@/db';
 import { intakeResponses, planWeeks, plans, supportArtifacts, userConsents, users } from '@/db/schema';
+import type { GeneratedPlan, WeekPlan } from '@/lib/plan-generator';
 import { formatClientLabel } from '@/lib/provider-display';
 import { ProviderClientWorkspaceClient } from './ProviderClientWorkspaceClient';
 
 type Props = {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ tab?: string }>;
+  searchParams?: Promise<{ tab?: string; week?: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -26,8 +27,10 @@ function parseTab(tab?: string): 'overview' | 'plan' | 'readouts' | 'messages' {
 
 export default async function ProviderClientDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
-  const sp = (await Promise.resolve(searchParams ?? {})) as { tab?: string };
+  const sp = (await Promise.resolve(searchParams ?? {})) as { tab?: string; week?: string };
   const initialTab = parseTab(sp.tab);
+  const parsedWeek = Number(sp.week);
+  const initialWeek = Number.isFinite(parsedWeek) && parsedWeek >= 1 && parsedWeek <= 6 ? parsedWeek : 1;
 
   const db = getDb();
 
@@ -72,23 +75,49 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
   }
 
   const [latestPlan] = await db
-    .select({ id: plans.id })
+    .select({
+      id: plans.id,
+      status: plans.status,
+      generatedContent: plans.generatedContent,
+      counselorNotes: plans.counselorNotes,
+      programAnchorDate: plans.programAnchorDate,
+    })
     .from(plans)
     .where(eq(plans.userId, id))
     .orderBy(desc(plans.createdAt))
     .limit(1);
 
-  type WeekStatusRow = { weekNumber: number; status: string };
-  const weekStatusRows: WeekStatusRow[] = latestPlan
+  type WeekRow = { weekNumber: number; status: string; content: string };
+  const weekRows: WeekRow[] = latestPlan
     ? ((await db
-        .select({ weekNumber: planWeeks.weekNumber, status: planWeeks.status })
+        .select({ weekNumber: planWeeks.weekNumber, status: planWeeks.status, content: planWeeks.content })
         .from(planWeeks)
-        .where(eq(planWeeks.planId, latestPlan.id))) as WeekStatusRow[])
+        .where(eq(planWeeks.planId, latestPlan.id))) as WeekRow[])
     : [];
 
   const weekStatuses = Object.fromEntries(
-    weekStatusRows.map((r) => [r.weekNumber, r.status as 'draft' | 'edited' | 'approved']),
+    weekRows.map((r) => [r.weekNumber, r.status as 'draft' | 'edited' | 'approved']),
   );
+
+  // Per-week content for inline editing. Prefer plan_weeks.content; fall back to
+  // the matching week in plans.generatedContent (covers legacy/unsynced rows).
+  const weekContents: Record<number, WeekPlan> = {};
+  let generatedWeeks: WeekPlan[] = [];
+  if (latestPlan?.generatedContent) {
+    try {
+      generatedWeeks = (JSON.parse(latestPlan.generatedContent) as GeneratedPlan).weeks ?? [];
+    } catch {
+      generatedWeeks = [];
+    }
+  }
+  for (const row of weekRows) {
+    try {
+      weekContents[row.weekNumber] = JSON.parse(row.content) as WeekPlan;
+    } catch {
+      const fallback = generatedWeeks.find((w) => w.week === row.weekNumber);
+      if (fallback) weekContents[row.weekNumber] = fallback;
+    }
+  }
 
   const PROGRAM_WEEKS = 6;
 
@@ -106,14 +135,22 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
     .where(eq(intakeResponses.userId, id))
     .limit(1);
 
+  const hasCrisisNotes =
+    Boolean(latestPlan?.counselorNotes && /crisis/i.test(latestPlan.counselorNotes)) ||
+    Boolean(intake && (intake.hasRedFlags || !intake.isSafe));
+
   return (
     <ProviderClientWorkspaceClient
       clientId={client.id}
       clientLabel={formatClientLabel(client)}
       planId={latestPlan?.id}
       initialWeekStatuses={weekStatuses}
+      initialWeekContents={weekContents}
+      programAnchorDate={latestPlan?.programAnchorDate ?? null}
+      hasCrisisNotes={hasCrisisNotes}
       totalWeeks={PROGRAM_WEEKS}
       initialTab={initialTab}
+      initialWeek={initialWeek}
       intake={
         intake
           ? {

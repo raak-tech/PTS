@@ -1,8 +1,10 @@
 # Counselor Workflow — Pain to Strength
 
-**Version:** 1.2 (supersedes v1.1)  
-**Last updated:** 2026-07-03  
+**Version:** 1.3 (supersedes v1.2)  
+**Last updated:** 2026-07-04  
 **Status:** Agreed — see `DECISIONS.md` entries dated 2026-06-30 (SCOPE-G), 2026-07-02 (Week-1-first), and 2026-07-03 (counselor claim)
+
+> **v1.3 change:** The client workspace **Plan tab** is now the primary authoring surface. It has a **sub-tab per week (Week 1–6)**. Each week sub-tab shows the inline editor for that week, a **Week activity panel** (client engagement for that week), and a **Cross-week patterns** panel (trends across all approved weeks). Editing and approval happen per week, inline, for **every** round of generation — the counselor is never forced to approve an unreviewed week. The plan review queue (`/provider/plans`) is now an entry point that links into the workspace Plan tab.
 
 ---
 
@@ -44,20 +46,20 @@ Before reading the plan, the counselor reviews:
 - Red-flag status — if flagged, read the safety notes first
 
 ### Step 3: Edit Week 1 inline
-On the web workspace, every field in Week 1 is editable:
+Open the client workspace → **Plan tab → Week 1 sub-tab**. Every field in Week 1 is editable inline:
 - Week theme and focus text
 - Each daily practice (title, description, duration)
 - Weekly reflection prompt
 - Daily read-out title and body text
-- Holistic block text (Ayurveda, yoga, music) — or toggle off entirely
+- Holistic block text (Ayurveda, yoga, music)
 
 The counselor changes what needs changing. AI-generated content they're happy with stays as-is. Changes are saved automatically. Status moves from `draft` → `edited`.
 
 ### Step 4: Approve Week 1
-Counselor clicks "Approve Week 1". Client immediately sees Week 1 in their app.
+Counselor clicks "Approve Week 1" inside the Week 1 sub-tab. Client immediately sees Week 1 in their app.
 
-- If the plan has crisis notes: acknowledgment step required before approve is enabled.
-- On approval: Week 1 daily read-out and calendar template are seeded automatically.
+- If the plan has crisis notes: an acknowledgment checkbox at the top of the Plan tab must be ticked before any Approve button is enabled.
+- On approval: the plan flips to `approved`, the approved (possibly edited) week is written into the client-facing plan, and the Week 1 daily read-out and calendar template are seeded automatically. **Counselor edits reach the client because approval merges `plan_weeks.content` into the plan the client reads.**
 - Counselor is assigned to the client on **first action** (generate Week 1, week edit, or week approve) — not only on approve. First claim wins.
 
 ### Step 5: Record a daily read-out (optional but recommended)
@@ -73,28 +75,29 @@ A quick message — *"Your Week 1 program is ready. I've reviewed your assessmen
 Triggered at the end of each week, when the client submits their weekly check-in.
 
 ### Step 1: Review the week's data
-On the web workspace, the counselor reviews:
-- Weekly check-in answers (what worked, what didn't, pain trend)
-- Daily engagement: calendar blocks done/skipped, read-out responses, holistic completions
-- Morning check-in pain trend (sparkline over the week)
-- Scheduling insights (patterns in when the client engages or misses)
+On the Plan tab, each approved week's sub-tab shows a **Week activity panel**:
+- Read-out responses, calendar blocks done/partial/skipped, morning check-ins, evening reflections
+- Pain trend for the week
+- Holistic completions, schedule feedback, latest weekly check-in
+
+The **Cross-week patterns** panel (top of the Plan tab) compares all approved weeks side by side — adherence, read-out engagement, and average pain trends across the program — so the counselor can spot patterns before shaping the next week.
 
 ### Step 2: Save week comment, then generate Week N+1 draft
-Before generating the next week, the counselor **must save a week comment** on the approved week (clinical notes for the AI — what to emphasise, adjust, or watch for). The API blocks generation without this comment.
+Move to the **Week N+1 sub-tab** (the next ungenerated week). It shows a week-comment box and a Generate button. The counselor **must save a week comment** on the approved week (clinical notes for the AI — what to emphasise, adjust, or watch for). The API blocks generation without this comment.
 
-Click "Generate Week N+1" — the AI uses the week comment, this week's engagement data (pain check-ins, read-out responses, client shares, calendar adherence), and the original intake to produce a tailored next-week draft, including any Ayurveda, yoga, and music blocks.
+Click "Generate Week N+1 draft" — the AI uses the week comment, this week's engagement data, and the original intake to produce a tailored next-week draft. Click "Apply" to stage it as an editable **draft** in that week's sub-tab (it is **not** yet visible to the client).
 
-This takes 1–2 minutes. The counselor does not need to wait — they can read the current week data while it generates.
+This takes 1–2 minutes. The counselor can review other weeks' data while it generates.
 
 ### Step 3: Edit Week N+1 inline
-Same as Step 3 in Workflow 1. Edit what needs adjusting based on what the client actually did this week. Common adjustments:
+The applied draft opens in the Week N+1 sub-tab with the same inline editor as Week 1. Edit what needs adjusting based on what the client actually did this week. Common adjustments:
 - Reduce intensity if adherence was low
 - Advance the focus if the client is doing well
 - Add a specific practice the client mentioned in their check-in
 - Rewrite a reflection prompt that didn't land
 
 ### Step 4: Approve Week N+1
-Client sees the new week immediately.
+Click "Approve Week N+1" in the sub-tab. The edited week is merged into the client-facing plan and the client sees the new week immediately.
 
 ### Step 5: Update the daily read-out
 Record a new voice read-out or update the text read-out for the new week. Ideally references something specific from the client's check-in: *"You mentioned this week that walking felt easier — let's build on that."*
