@@ -23,21 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: pts
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,18 +34,21 @@ jobs:
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
 
+      - name: Setup PostgreSQL
+        run: |
+          sudo systemctl start postgresql
+          sudo -u postgres createdb pts || true
+          sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+
       - name: Install deps
         working-directory: apps/web
         run: npm ci
 
-      - name: Setup DB
+      - name: Run DB migrations
         working-directory: apps/web
-        run: |
-          # Create test database and run migrations
-          PGPASSWORD=postgres psql -h localhost -U postgres -d pts -c "SELECT 1" || true
-          DATABASE_URL="postgresql://postgres:postgres@localhost:5432/pts" npx drizzle-kit push --force
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pts
+        run: npx drizzle-kit push --force
 
       - name: Install Playwright browsers
         working-directory: apps/web

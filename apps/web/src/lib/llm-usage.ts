@@ -4,7 +4,7 @@ import { getDb } from '@/db';
 import { llmUsage } from '@/db/schema';
 import { logError } from '@/lib/logger';
 
-export type LlmOperation = 'plan_generation' | 'week_generation';
+export type LlmOperation = 'plan_generation' | 'week_generation' | 'intake_extraction';
 
 export type LlmUsageContext = {
   userId?: string;
