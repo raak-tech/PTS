@@ -187,7 +187,6 @@ function parseExtractionResponse(raw: string): {
   const data = JSON.parse(cleaned);
 
   // Validate structure — ensure all expected fields exist
-  const fieldNames = Object.keys(data.extracted ?? {});
   const expectedFields = [
     'painSource',
     'painSourceOther',
