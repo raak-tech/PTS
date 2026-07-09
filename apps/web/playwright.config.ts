@@ -14,7 +14,9 @@ export default defineConfig({
     // Force DB URL for the dev server used by Playwright so auth/reset tests can hit the DB.
     // Uses the current OS user for the unix socket connection — works in CI and local dev.
     command:
-      'SKIP_DB_MIGRATE=1 npm run dev -- --port 3000',
+          process.env.DATABASE_URL
+            ? `SKIP_DB_MIGRATE=1 npm run dev -- --port 3000`
+            : 'DATABASE_URL=postgresql:///pts?host=/var/run/postgresql SKIP_DB_MIGRATE=1 npm run dev -- --port 3000',
     url: 'http://127.0.0.1:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
