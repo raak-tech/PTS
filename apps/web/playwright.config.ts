@@ -9,6 +9,7 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:3000',
     trace: 'on-first-retry',
+    bypassCSP: true,
   },
   webServer: {
     // Force DB URL for the dev server used by Playwright so auth/reset tests can hit the DB.
