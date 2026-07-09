@@ -14,6 +14,7 @@ export function PlanGenerationProgress({ active }: { active: boolean }) {
 
   useEffect(() => {
     if (!active) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setElapsed(0);
       return;
     }

@@ -70,7 +70,7 @@ export default async function CounselorRegisterPage({
             <legend style={legendStyle}>Access</legend>
             <div style={fieldStyle}>
               <label htmlFor="inviteCode" style={labelStyle}>Counselor invite code <span style={{ color: '#b00020' }}>*</span></label>
-              <p style={hintStyle}>Provided by the PTS team. Contact us if you don't have one.</p>
+              <p style={hintStyle}>Provided by the PTS team. Contact us if you don&rsquo;t have one.</p>
               <input id="inviteCode" name="inviteCode" type="text" required placeholder="CNSL-XXXXXXXX" style={inputStyle} />
             </div>
           </fieldset>
@@ -99,13 +99,13 @@ export default async function CounselorRegisterPage({
 
             <div style={fieldStyle}>
               <label htmlFor="title" style={labelStyle}>Professional title <span style={{ color: '#b00020' }}>*</span></label>
-              <p style={hintStyle}>e.g. "Licensed Counseling Psychologist", "Psychotherapist", "Rehabilitation Counselor"</p>
+              <p style={hintStyle}>e.g. &ldquo;Licensed Counseling Psychologist&rdquo;, &ldquo;Psychotherapist&rdquo;, &ldquo;Rehabilitation Counselor&rdquo;</p>
               <input id="title" name="title" type="text" required placeholder="Your title" style={inputStyle} />
             </div>
 
             <div style={fieldStyle}>
               <label htmlFor="credentials" style={labelStyle}>Credentials & qualifications</label>
-              <p style={hintStyle}>Degrees, certifications, registrations (e.g. RCI, BCI, BACP). We'll verify these before activation.</p>
+              <p style={hintStyle}>Degrees, certifications, registrations (e.g. RCI, BCI, BACP). We&rsquo;ll verify these before activation.</p>
               <textarea id="credentials" name="credentials" rows={3} placeholder="e.g. M.Phil Clinical Psychology, RCI Licensed, BACP Accredited" style={{ ...inputStyle, resize: 'vertical' }} />
             </div>
 
@@ -189,7 +189,7 @@ export default async function CounselorRegisterPage({
               Submit registration →
             </button>
             <p style={{ margin: '12px 0 0', fontSize: 13, color: '#888', textAlign: 'center' }}>
-              Your profile will be reviewed before your account is activated. You'll receive an email when you're approved.
+              Your profile will be reviewed before your account is activated. You&rsquo;ll receive an email when you&rsquo;re approved.
             </p>
           </div>
         </form>

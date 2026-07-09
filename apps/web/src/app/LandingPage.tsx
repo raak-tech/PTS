@@ -100,7 +100,7 @@ export function LandingPage() {
       <section style={{ background: '#0f0f0f', color: 'white', padding: '80px 24px' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <h2 style={{ textAlign: 'center', fontSize: 28, fontWeight: 700, margin: '0 0 12px' }}>What your program includes</h2>
-          <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', margin: '0 0 48px', fontSize: 16 }}>Everything you need. Nothing you don't.</p>
+          <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', margin: '0 0 48px', fontSize: 16 }}>Everything you need. Nothing you don&rsquo;t.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
             {[
               { title: 'Personalised 6-week plan', text: 'Built from your specific intake — not a generic template. Your counselor reviews and approves every plan before it reaches you.' },
@@ -176,7 +176,7 @@ export function LandingPage() {
                   Psychologist · M.Sc. Psychology & Social Work · Diploma in Transactional Analysis · Certified Yoga Teacher
                 </p>
                 <p style={{ fontSize: 14, color: '#555', lineHeight: 1.7, margin: '0 0 12px' }}>
-                  Ramya is a psychologist with specialist expertise in the intersection of chronic pain and mental health — including fibromyalgia, back pain, neck pain, and TMJ conditions. She works at Synapse Pain & Spine Clinic in Chennai, where she supports patients navigating the psychological dimensions of pain that physical treatment alone doesn't address.
+                  Ramya is a psychologist with specialist expertise in the intersection of chronic pain and mental health — including fibromyalgia, back pain, neck pain, and TMJ conditions. She works at Synapse Pain & Spine Clinic in Chennai, where she supports patients navigating the psychological dimensions of pain that physical treatment alone doesn&rsquo;t address.
                 </p>
                 <p style={{ fontSize: 14, color: '#555', lineHeight: 1.7, margin: '0 0 16px' }}>
                   Her training in Transactional Analysis informs her understanding of how past experiences and relational patterns shape how people respond to pain — and her work centres on the belief that people have the capacity to change and grow, even when pain feels permanent.
@@ -190,7 +190,7 @@ export function LandingPage() {
             </div>
             <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #eee' }}>
               <p style={{ margin: 0, fontStyle: 'italic', fontSize: 15, color: '#333', lineHeight: 1.6 }}>
-                "I believe in the capacity of every individual to change and grow. Pain — whether from an accident, an injury, or a condition — changes your life. But it doesn't have to define it. What I bring to PTS is the clinical understanding of how pain and psychology intersect, and a genuine commitment to helping people find their way back."
+                &ldquo;I believe in the capacity of every individual to change and grow. Pain — whether from an accident, an injury, or a condition — changes your life. But it doesn&rsquo;t have to define it. What I bring to PTS is the clinical understanding of how pain and psychology intersect, and a genuine commitment to helping people find their way back.&rdquo;
               </p>
               <p style={{ margin: '10px 0 0', fontSize: 13, color: '#999' }}>— Ramya N. Satheesh, Key Advisor & Lead Counselor, PTS</p>
             </div>
@@ -248,7 +248,7 @@ export function LandingPage() {
             Create a free account. Complete your assessment. Your counselor will have your personalised 6-week plan ready within 24 hours.
           </p>
           <Link href="/register" style={{ display: 'inline-block', padding: '16px 44px', borderRadius: 999, background: 'linear-gradient(135deg, #fbbf24, #f97316)', color: '#111', fontWeight: 800, fontSize: 17, textDecoration: 'none' }}>
-            Get started — it's free →
+            Get started — it&rsquo;s free →
           </Link>
           <p style={{ marginTop: 18, fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>
             No commitment. Cancel any time. Not medical advice — <Link href="/red-flags" style={{ color: 'rgba(255,255,255,0.45)' }}>see safety guidelines</Link>.

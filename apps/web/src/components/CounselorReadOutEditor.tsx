@@ -104,6 +104,7 @@ export function CounselorReadOutEditor({
   }, [clientId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadRows().then((list) => {
       if (list.length > 0) {
         const active = list.find((r) => r.isActive) ?? list[0];

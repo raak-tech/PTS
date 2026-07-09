@@ -63,7 +63,7 @@ export default async function LoginPage({
                 fontSize: 16, fontFamily: 'inherit', boxSizing: 'border-box',
                 color: '#111', backgroundColor: '#fff',
                 WebkitTextFillColor: '#111 !important',
-              } as any}
+              } as any /* eslint-disable-line @typescript-eslint/no-explicit-any */}
             />
           </div>
 

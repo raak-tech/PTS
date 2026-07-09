@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { eq, inArray, isNull } from 'drizzle-orm';
 
 import { getDb } from '../../../db';
 import { intakeResponses, planWeeks, plans, users } from '../../../db/schema';

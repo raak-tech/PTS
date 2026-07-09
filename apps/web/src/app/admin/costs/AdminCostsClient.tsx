@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { AdminNav } from '@/components/admin/AdminNav';
-import { BarChart, LineChart, StatGrid } from '@/components/admin/AdminCharts';
+import { LineChart, StatGrid } from '@/components/admin/AdminCharts';
 
 type CostData = {
   range: { days: number };

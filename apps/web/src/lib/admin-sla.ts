@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, lt } from 'drizzle-orm';
+import { and, eq, isNull, lt } from 'drizzle-orm';
 
 import { getDb } from '@/db';
 import {

@@ -186,7 +186,7 @@ export function PlanReviewClient({
             {/* Client overview */}
             <div style={{ marginBottom: 20 }}>
               <p style={{ margin: '0 0 6px', fontWeight: 600 }}>What the client will see</p>
-              <p style={{ margin: 0, fontSize: 14, color: '#555', fontStyle: 'italic', lineHeight: 1.6 }}>"{plan.overview}"</p>
+              <p style={{ margin: 0, fontSize: 14, color: '#555', fontStyle: 'italic', lineHeight: 1.6 }}>&ldquo;{plan.overview}&rdquo;</p>
             </div>
 
             {/* Holistic visibility toggles */}
@@ -217,7 +217,7 @@ export function PlanReviewClient({
                     onChange={e => setCrisisAcknowledged(e.target.checked)}
                     style={{ marginTop: 2, width: 18, height: 18, cursor: 'pointer', accentColor: '#b71c1c' }}
                   />
-                  I have read the crisis notes and am proceeding with full awareness of this client's safety status.
+                  I have read the crisis notes and am proceeding with full awareness of this client&rsquo;s safety status.
                 </label>
               </div>
             )}

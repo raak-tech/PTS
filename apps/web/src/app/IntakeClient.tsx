@@ -50,6 +50,7 @@ const STEPS = [
   { title: "A quick safety check", subtitle: "Before we finalise." },
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function Radio({ name, value, checked, onChange, label }: any) {
   return (
     <label style={{
@@ -66,6 +67,7 @@ function Radio({ name, value, checked, onChange, label }: any) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function Checkbox({ checked, onChange, label }: any) {
   return (
     <label style={{
@@ -82,6 +84,7 @@ function Checkbox({ checked, onChange, label }: any) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function Step1({ data, set }: any) {
   return (
     <div style={{ display: "grid", gap: 24 }}>
@@ -99,7 +102,7 @@ function Step1({ data, set }: any) {
       </div>
 
       <div>
-        <label style={{ fontWeight: 600, fontSize: "clamp(14px, 3vw, 16px)", margin: "0 0 8px", display: "block", color: t.text }}>Tell us what happened or what you're dealing with.</label>
+        <label style={{ fontWeight: 600, fontSize: "clamp(14px, 3vw, 16px)", margin: "0 0 8px", display: "block", color: t.text }}>Tell us what happened or what you&rsquo;re dealing with.</label>
         <p style={{ fontSize: "clamp(12px, 2vw, 13px)", color: t.textMuted, margin: 0, marginBottom: 8 }}>A few sentences is plenty.</p>
         <textarea value={data.painDescription} onChange={e => set({ painDescription: e.target.value })} rows={4} placeholder="e.g. I was in a car accident 3 months ago..." style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid #ddd", fontSize: "clamp(14px, 2vw, 16px)", fontFamily: "inherit", boxSizing: "border-box", resize: "vertical" }} />
       </div>
@@ -116,13 +119,14 @@ function Step1({ data, set }: any) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function Step2({ data, set }: any) {
   const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid #ddd", fontSize: "clamp(14px, 2vw, 16px)", fontFamily: "inherit", boxSizing: "border-box", marginTop: 6 };
   return (
     <div style={{ display: "grid", gap: 20 }}>
       <div>
         <p style={{ fontWeight: 600, fontSize: "clamp(14px, 3vw, 16px)", margin: "0 0 6px" }}>Age range</p>
-        <select value={data.ageRange} onChange={e => set({ ageRange: e.target.value })} style={inputStyle as any}>
+        <select value={data.ageRange} onChange={e => set({ ageRange: e.target.value })} style={inputStyle as any /* eslint-disable-line @typescript-eslint/no-explicit-any */}>
           <option value="">Select…</option>
           <option value="under18">Under 18</option>
           <option value="18to25">18 – 25</option>
@@ -135,7 +139,7 @@ function Step2({ data, set }: any) {
 
       <div>
         <p style={{ fontWeight: 600, fontSize: "clamp(14px, 3vw, 16px)", margin: "0 0 6px" }}>Gender</p>
-        <select value={data.gender} onChange={e => set({ gender: e.target.value })} style={inputStyle as any}>
+        <select value={data.gender} onChange={e => set({ gender: e.target.value })} style={inputStyle as any /* eslint-disable-line @typescript-eslint/no-explicit-any */}>
           <option value="">Select…</option>
           <option value="male">Male</option>
           <option value="female">Female</option>
@@ -146,7 +150,7 @@ function Step2({ data, set }: any) {
 
       <div>
         <label style={{ fontWeight: 600, fontSize: "clamp(14px, 3vw, 16px)", margin: "0 0 6px", display: "block" }}>What do you do (occupation / main activity)?</label>
-        <p style={{ fontSize: "clamp(12px, 2vw, 13px)", color: t.textMuted, margin: 0, marginBottom: 6 }}>e.g. "Professional footballer", "Teacher", "Self-employed"</p>
+        <p style={{ fontSize: "clamp(12px, 2vw, 13px)", color: t.textMuted, margin: 0, marginBottom: 6 }}>e.g. &ldquo;Professional footballer&rdquo;, &ldquo;Teacher&rdquo;, &ldquo;Self-employed&rdquo;</p>
         <input value={data.occupation} onChange={e => set({ occupation: e.target.value })} placeholder="Your occupation" style={inputStyle} />
       </div>
 
@@ -184,6 +188,7 @@ function Step2({ data, set }: any) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function Step3({ data, set }: any) {
   const toggle = (v: string) => {
     const cur = data.activitiesAffected;
@@ -201,7 +206,7 @@ function Step3({ data, set }: any) {
       </div>
 
       <div>
-        <label style={{ fontWeight: 600, fontSize: "clamp(14px, 3vw, 16px)", margin: "0 0 6px", display: "block" }}>What's the biggest thing that's changed?</label>
+        <label style={{ fontWeight: 600, fontSize: "clamp(14px, 3vw, 16px)", margin: "0 0 6px", display: "block" }}>What&rsquo;s the biggest thing that&rsquo;s changed?</label>
         <p style={{ fontSize: "clamp(12px, 2vw, 13px)", color: t.textMuted, margin: 0, marginBottom: 8 }}>What matters most to you?</p>
         <textarea value={data.biggestChange} onChange={e => set({ biggestChange: e.target.value })} rows={4} placeholder="e.g. I used to run every morning..." style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid #ddd", fontSize: "clamp(14px, 2vw, 16px)", fontFamily: "inherit", boxSizing: "border-box", resize: "vertical" }} />
       </div>
@@ -209,6 +214,7 @@ function Step3({ data, set }: any) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function Step4({ data, set }: any) {
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -230,6 +236,7 @@ function Step4({ data, set }: any) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function Step5({ data, set }: any) {
   const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid #ddd", fontSize: "clamp(14px, 2vw, 16px)", fontFamily: "inherit", boxSizing: "border-box", marginTop: 6 };
   return (
@@ -252,6 +259,7 @@ function Step5({ data, set }: any) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function Step6({ data, set }: any) {
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -276,6 +284,7 @@ function Step6({ data, set }: any) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function Step7({ data, set }: any) {
   const redFlags = ["Severe or sudden new weakness in your arms or legs", "Loss of bladder or bowel control", "Fever alongside severe pain", "Pain that followed a major trauma in the last 48 hours", "Numbness in your inner thighs or around the groin", "Unexplained significant weight loss"];
   return (
@@ -298,7 +307,7 @@ function Step7({ data, set }: any) {
         </div>
         {!data.isSafe && (
           <div style={{ background: "#fce4ec", border: "1px solid #ef9a9a", borderRadius: 10, padding: "12px 16px", marginTop: 12 }}>
-            <p style={{ margin: "0 0 6px", fontWeight: 600, color: "#b71c1c", fontSize: "clamp(14px, 2vw, 16px)" }}>You're not alone.</p>
+            <p style={{ margin: "0 0 6px", fontWeight: 600, color: "#b71c1c", fontSize: "clamp(14px, 2vw, 16px)" }}>You&rsquo;re not alone.</p>
             <p style={{ margin: 0, fontSize: "clamp(12px, 2vw, 13px)", color: t.textSecondary }}>Please reach out. In India: <strong>iCall — 9152987821</strong>. Globally: findahelpline.com</p>
           </div>
         )}
@@ -318,6 +327,7 @@ export function IntakeClient() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (saved) setData(JSON.parse(saved) as IntakeData);
     } catch { }
   }, []);
@@ -355,6 +365,7 @@ export function IntakeClient() {
         body: JSON.stringify({ ...data, activitiesAffected: JSON.stringify(data.activitiesAffected) }),
       });
       if (!res.ok) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
         const body = await res.json().catch(() => ({})) as any;
         if (body.error === "unauthorized") {
           window.location.href = "/login/mobile?next=/intake";

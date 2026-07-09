@@ -58,7 +58,7 @@ export function ProfileEditorClient({ initialData }: ProfileEditorClientProps) {
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       }
-    } catch (err) {
+    } catch {
       setError('Error saving profile');
     } finally {
       setSaving(false);

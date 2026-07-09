@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { getDb } from '@/db';
 import { sessions } from '@/db/schema';
 import { hashToken } from '@/lib/auth';
-import { getUserFromRequest, readSessionToken } from '@/lib/session';
+import { readSessionToken } from '@/lib/session';
 
 export async function POST(request: Request) {
   const token = readSessionToken(request);
