@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 
-import { isAdminUser } from '@/lib/admin';
 import { logError } from '@/lib/logger';
 import { collectPlatformMetrics } from '@/lib/metrics';
 import { getUserFromRequest } from '@/lib/session';

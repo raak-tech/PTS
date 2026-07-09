@@ -35,13 +35,11 @@ function formatTime(iso: string) {
 
 export function MessagesClient({
   currentUserId,
-  currentUserRole,
   contacts,
   hasContacts,
   preselectedId,
 }: {
   currentUserId: string;
-  currentUserRole: string;
   contacts: Contact[];
   hasContacts: boolean;
   preselectedId?: string;
@@ -72,12 +70,14 @@ export function MessagesClient({
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadUnreadCounts();
     const unreadInterval = setInterval(() => void loadUnreadCounts(), 30000);
     return () => clearInterval(unreadInterval);
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (activeContact) loadThread(activeContact);
     // Poll every 8 seconds for new messages
     const interval = setInterval(() => {

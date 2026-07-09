@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 
-import { getDb } from '@/db';
 import { buildEngagementForClients } from '@/lib/client-engagement';
 import { getVisibleClientIdsForProvider } from '@/lib/client-access';
 import { localDateIso } from '@/lib/daily-layer';
@@ -17,7 +16,6 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const clientIdParam = url.searchParams.get('clientId');
     const today = localDateIso();
-    const db = getDb();
 
     let clientIds: string[];
 

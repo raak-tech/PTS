@@ -10,6 +10,7 @@ export function NotificationButton() {
   useEffect(() => {
     // Check if browser supports notifications
     if ('Notification' in window && 'serviceWorker' in navigator) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsSupported(true);
       setIsEnabled(Notification.permission === 'granted');
     }

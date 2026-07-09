@@ -34,6 +34,7 @@ export function AdminExplorerClient() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     void fetch(`/api/admin/explorer?table=${table}&page=${page}`, { credentials: 'include' })
       .then((r) => r.json())

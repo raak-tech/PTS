@@ -9,13 +9,13 @@ export default function IntakeCompletePage() {
       <div style={{ maxWidth: 540, textAlign: 'center' }}>
         <div style={{ fontSize: 48, marginBottom: 24 }}>✓</div>
         <h1 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 16px' }}>
-          You're in. Your journey starts here.
+          You&rsquo;re in. Your journey starts here.
         </h1>
         <p style={{ fontSize: 17, color: '#555', lineHeight: 1.6, margin: '0 0 12px' }}>
-          Your counselor will review what you've shared and put together a personalised program for you. This usually takes less than 24 hours.
+          Your counselor will review what you&rsquo;ve shared and put together a personalised program for you. This usually takes less than 24 hours.
         </p>
         <p style={{ fontSize: 15, color: '#888', margin: '0 0 36px' }}>
-          You'll receive a message here when your plan is ready. In the meantime, your counselor may reach out with any questions.
+          You&rsquo;ll receive a message here when your plan is ready. In the meantime, your counselor may reach out with any questions.
         </p>
 
         <div style={{ display: 'grid', gap: 12 }}>
