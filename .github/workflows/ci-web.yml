@@ -23,6 +23,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: pts
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,12 +53,22 @@ jobs:
         working-directory: apps/web
         run: npm ci
 
+      - name: Setup DB
+        working-directory: apps/web
+        run: |
+          # Create test database and run migrations
+          PGPASSWORD=postgres psql -h localhost -U postgres -d pts -c "SELECT 1" || true
+          DATABASE_URL="postgresql://postgres:postgres@localhost:5432/pts" npx drizzle-kit push --force
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pts
+
       - name: Install Playwright browsers
         working-directory: apps/web
-        run: npx playwright install --with-deps
+        run: npx playwright install --with-deps chromium
 
       - name: Run tests
         working-directory: apps/web
         env:
           CI: true
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pts
         run: npm test
