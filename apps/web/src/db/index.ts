@@ -1,11 +1,9 @@
-import { createRequire } from "node:module";
 import * as os from "node:os";
 
-import { validateEnv } from '../lib/env';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 
-const require = createRequire(import.meta.url);
-const { drizzle } = require('drizzle-orm/postgres-js');
-const postgres = require('postgres');
+import { validateEnv } from '../lib/env';
 
 export type Db = ReturnType<typeof getDb>;
 
