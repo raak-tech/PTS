@@ -104,7 +104,6 @@ export default async function ProviderMessagesPage({
       <p className="provider-page-subtitle">Secure threads with your clients.</p>
       <MessagesClient
         currentUserId={user.id}
-        currentUserRole={user.role}
         contacts={contacts}
         hasContacts={contacts.length > 0}
         preselectedId={preselectedId}

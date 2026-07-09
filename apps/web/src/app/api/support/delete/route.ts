@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     const db = getDb();
 
-    await db.transaction(async (tx: typeof db) => {
+    await db.transaction(async (tx) => {
       await tx.delete(supportArtifacts).where(eq(supportArtifacts.userId, user.id));
       await tx.delete(userConsents).where(eq(userConsents.userId, user.id));
       await tx.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, user.id));

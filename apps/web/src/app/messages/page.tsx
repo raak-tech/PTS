@@ -120,7 +120,6 @@ export default async function MessagesPage({ searchParams }: { searchParams?: Pr
   return (
     <MessagesClient
       currentUserId={user.id}
-      currentUserRole={user.role}
       contacts={allContacts}
       hasContacts={allContacts.length > 0}
       preselectedId={preselectedId}

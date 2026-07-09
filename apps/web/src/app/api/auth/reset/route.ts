@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     const now = new Date();
     const newHash = await hashPassword(parsed.data.password);
 
-    await db.transaction(async (tx: typeof db) => {
+    await db.transaction(async (tx) => {
       await tx.update(users).set({ passwordHash: newHash }).where(eq(users.id, row.userId));
       await tx.update(passwordResetTokens)
         .set({ usedAt: now })

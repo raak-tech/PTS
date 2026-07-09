@@ -16,6 +16,7 @@ export const users = pgTable("users", {
   role: text("role").notNull(), // 'client' | 'provider' | 'admin'
   displayName: text("display_name"),
   expoPushToken: text("expo_push_token"),
+  notificationsEnabled: boolean("notifications_enabled").notNull().default(false),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
 
