@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 
 import { CounselorReadOutEditor } from '@/components/CounselorReadOutEditor';
 import { PainSparkline } from '@/components/PainSparkline';
+import { IntakeDataBar } from '@/components/provider/IntakeDataBar';
 import { ProgramPatternsPanel } from '@/components/provider/ProgramPatternsPanel';
 import { WeekActivityPanel } from '@/components/provider/WeekActivityPanel';
 import { WeekEditor } from '@/components/provider/WeekEditor';
@@ -91,6 +92,19 @@ type MessagePreview = {
   createdAt: string;
 };
 
+type IntakeDataBarData = {
+  painSource: string;
+  painDescription: string;
+  recoveryGoal: string;
+  hasRedFlags: boolean;
+  isSafe: boolean;
+  confidenceScores: string | null;
+  rawText: string | null;
+  rounds: number | null;
+  overallConfidence: string | null;
+  summary: string | null;
+};
+
 type Props = {
   clientId: string;
   clientLabel: string;
@@ -102,6 +116,8 @@ type Props = {
   totalWeeks?: number;
   overview: OverviewProps;
   intake?: IntakeSummary | null;
+  planStatus?: string | null;
+  intakeDataBar?: IntakeDataBarData | null;
   initialTab?: 'overview' | 'plan' | 'readouts' | 'messages';
   initialWeek?: number;
 };
@@ -124,6 +140,8 @@ export function ProviderClientWorkspaceClient({
   totalWeeks = 6,
   overview,
   intake = null,
+  planStatus = null,
+  intakeDataBar = null,
   initialTab = 'overview',
   initialWeek = 1,
 }: Props) {
@@ -814,6 +832,25 @@ export function ProviderClientWorkspaceClient({
                 I have read the crisis notes and am proceeding with full awareness of this client&apos;s safety status.
               </label>
             </div>
+          ) : null}
+
+          {intakeDataBar ? (
+            <IntakeDataBar
+              clientId={clientId}
+              painSource={intakeDataBar.painSource}
+              painDescription={intakeDataBar.painDescription}
+              recoveryGoal={intakeDataBar.recoveryGoal}
+              hasRedFlags={intakeDataBar.hasRedFlags}
+              isSafe={intakeDataBar.isSafe}
+              confidenceScores={intakeDataBar.confidenceScores}
+              rawText={intakeDataBar.rawText}
+              rounds={intakeDataBar.rounds}
+              overallConfidence={intakeDataBar.overallConfidence}
+              summary={intakeDataBar.summary}
+              planStatus={planStatus}
+              onGeneratePlan={() => onGenerateWeek1()}
+              isGenerating={generatingWeek1}
+            />
           ) : null}
 
           <div role="tablist" aria-label="Program weeks" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

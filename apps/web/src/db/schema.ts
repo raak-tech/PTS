@@ -333,6 +333,24 @@ export const llmUsage = pgTable("llm_usage", {
   errorText: text("error_text"),
 });
 
+// intakeSessions — tracks new one-box intake flow extractions with confidence scores.
+// One session per intake. Links to intakeResponses once confirmed.
+export const intakeSessions = pgTable("intake_sessions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  intakeResponseId: text("intake_response_id"),
+  segmentType: text("segment_type"),
+  rawText: text("raw_text").notNull(),
+  extractionJson: text("extraction_json").notNull(), // JSON: ExtractedIntake with confidence
+  confidenceScores: text("confidence_scores").notNull(), // JSON: Record<string, number>
+  rounds: integer("rounds").notNull().default(1),
+  overallConfidence: text("overall_confidence"), // stored as string for precision (0-1)
+  summary: text("summary"),
+  status: text("status").notNull().default("draft"), // 'draft' | 'confirmed' | 'reviewed'
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
 // Admin/counselor action audit trail.
 export const auditLog = pgTable("audit_log", {
   id: text("id").primaryKey(),
