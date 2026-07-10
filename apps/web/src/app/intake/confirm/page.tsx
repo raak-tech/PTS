@@ -20,6 +20,7 @@ type ConfirmData = {
   overallConfidence: number;
   rounds: number;
   segmentType: string | null;
+  freeText?: string;
 };
 
 // Fields that the counselor requires at ≥0.85 confidence
@@ -136,6 +137,12 @@ export default function IntakeConfirmPage() {
   // ── Load data from sessionStorage ───────────────────────────
 
   useEffect(() => {
+    // Feature flag: redirect to legacy intake if enabled
+    if (process.env.NEXT_PUBLIC_USE_LEGACY_INTAKE === "true") {
+      router.replace("/");
+      return;
+    }
+
     try {
       const raw = sessionStorage.getItem("pts.intake.extraction.v1");
       if (!raw) {
@@ -195,7 +202,7 @@ export default function IntakeConfirmPage() {
   const canStart =
     data !== null && (allRequiredHighConfidence(data) || editing);
 
-  // ── Submit to legacy intake API ──────────────────────────────
+  // ── Submit: save intake then trigger plan generation ────────
 
   const handleStartProgram = async () => {
     if (!data) return;
@@ -203,26 +210,63 @@ export default function IntakeConfirmPage() {
     setError("");
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30_000);
+    const timeout = setTimeout(() => controller.abort(), 60_000);
 
     try {
-      // Submit via the existing POST /api/intake endpoint
-      const res = await fetch("/api/intake", {
+      // Step 1: Save the extraction to the DB
+      const saveRes = await fetch("/api/intake/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         signal: controller.signal,
-        body: JSON.stringify(data.mapped),
+        body: JSON.stringify({
+          extracted: data.extracted,
+          mapped: data.mapped,
+          segmentType: data.segmentType,
+          rounds: data.rounds,
+          overallConfidence: data.overallConfidence,
+          summary: data.summary,
+          rawText: data.freeText ?? "",
+        }),
       });
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
+      if (!saveRes.ok) {
+        const body = await saveRes.json().catch(() => ({}));
         if ((body as { error?: string }).error === "unauthorized") {
           window.location.href = "/login/mobile?next=/intake/confirm";
           return;
         }
         throw new Error(
-          (body as { error?: string }).error ?? "Could not submit. Please try again.",
+          (body as { error?: string }).error ?? "Could not save your intake. Please try again.",
+        );
+      }
+
+      const saveData = (await saveRes.json()) as {
+        ok: boolean;
+        intakeSessionId: string;
+        intakeResponseId: string;
+        error?: string;
+      };
+
+      if (!saveData.ok || !saveData.intakeSessionId) {
+        throw new Error("Save completed but no session ID returned.");
+      }
+
+      // Step 2: Trigger plan generation (creates pending_review plan)
+      const planRes = await fetch("/api/intake/generate-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        signal: controller.signal,
+        body: JSON.stringify({
+          intakeSessionId: saveData.intakeSessionId,
+        }),
+      });
+
+      if (!planRes.ok) {
+        const body = await planRes.json().catch(() => ({}));
+        throw new Error(
+          (body as { error?: string }).error ?? "Could not start plan generation. Please try again.",
         );
       }
 

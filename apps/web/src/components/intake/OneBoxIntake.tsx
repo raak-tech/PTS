@@ -35,6 +35,7 @@ export type ExtractionComplete = {
   summary: string;
   overallConfidence: number;
   rounds: number;
+  freeText: string;
 };
 
 type Props = {
@@ -175,6 +176,7 @@ export function OneBoxIntake({ segmentType, onExtractionComplete }: Props) {
           summary: data.summary,
           overallConfidence: data.overallConfidence,
           rounds: r,
+          freeText,
         });
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") {

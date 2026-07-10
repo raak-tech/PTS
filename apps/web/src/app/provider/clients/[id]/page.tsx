@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { desc, eq } from 'drizzle-orm';
 
 import { getDb } from '@/db';
-import { intakeResponses, planWeeks, plans, supportArtifacts, userConsents, users } from '@/db/schema';
+import { intakeResponses, intakeSessions, planWeeks, plans, supportArtifacts, userConsents, users } from '@/db/schema';
 import type { GeneratedPlan, WeekPlan } from '@/lib/plan-generator';
 import { formatClientLabel } from '@/lib/provider-display';
 import { ProviderClientWorkspaceClient } from './ProviderClientWorkspaceClient';
@@ -135,6 +135,20 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
     .where(eq(intakeResponses.userId, id))
     .limit(1);
 
+  // Fetch the latest intake session (one-box flow) for confidence data
+  const [latestSession] = await db
+    .select({
+      confidenceScores: intakeSessions.confidenceScores,
+      rawText: intakeSessions.rawText,
+      rounds: intakeSessions.rounds,
+      overallConfidence: intakeSessions.overallConfidence,
+      summary: intakeSessions.summary,
+    })
+    .from(intakeSessions)
+    .where(eq(intakeSessions.userId, id))
+    .orderBy(desc(intakeSessions.createdAt))
+    .limit(1);
+
   const hasCrisisNotes =
     Boolean(latestPlan?.counselorNotes && /crisis/i.test(latestPlan.counselorNotes)) ||
     Boolean(intake && (intake.hasRedFlags || !intake.isSafe));
@@ -160,6 +174,23 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
               hasRedFlags: intake.hasRedFlags,
               isSafe: intake.isSafe,
               completedAt: intake.completedAt ? intake.completedAt.toISOString() : null,
+            }
+          : null
+      }
+      planStatus={latestPlan?.status ?? null}
+      intakeDataBar={
+        latestSession && intake
+          ? {
+              painSource: intake.painSourceOther ?? intake.painSource,
+              painDescription: intake.painDescription,
+              recoveryGoal: intake.recoveryGoal,
+              hasRedFlags: intake.hasRedFlags,
+              isSafe: intake.isSafe,
+              confidenceScores: latestSession.confidenceScores,
+              rawText: latestSession.rawText,
+              rounds: latestSession.rounds,
+              overallConfidence: latestSession.overallConfidence,
+              summary: latestSession.summary,
             }
           : null
       }
