@@ -112,7 +112,7 @@ export async function buildEngagementForClients(
       }[];
 
       const holisticDone = holisticRows.length;
-      const holisticTotal = 3;
+      const holisticTotal = 4;
 
       const [checkIn] = await db
         .select({ id: dailyCheckIns.id })

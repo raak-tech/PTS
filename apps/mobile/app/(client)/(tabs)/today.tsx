@@ -187,13 +187,13 @@ export default function TodayScreen() {
   const { counselorId } = useCounselorContact();
   const { reinforcements, submitResponse, submitVoice } = useTodayReinforcement();
   const { blocks, updateBlockStatus, saveBlocks, submitFeedback } = useDailyCalendar();
-  const { week: holisticWeek, completed: holisticCompleted, markComplete } = useHolisticWeek();
+  const { week: holisticWeek, completed: holisticCompleted, entries: holisticEntries, markComplete } = useHolisticWeek();
   const musicCatalog = useMusicCatalog();
   const [holisticSaving, setHolisticSaving] = useState<HolisticActivityType | null>(null);
+  const [practiceSaving, setPracticeSaving] = useState(false);
   const router = useRouter();
-  const [practiceDone, setPracticeDone] = useState(false);
-  const [practiceFeelingShown, setPracticeFeelingShown] = useState(false);
   const [practiceFeeling, setPracticeFeeling] = useState('');
+  const [savingPracticeFeeling, setSavingPracticeFeeling] = useState(false);
   const [readOutTexts, setReadOutTexts] = useState<Record<string, string>>({});
   const [savingReadOutId, setSavingReadOutId] = useState<string | null>(null);
   const [workedText, setWorkedText] = useState('');
@@ -269,30 +269,34 @@ export default function TodayScreen() {
     });
   }, [token, isEvening]);
 
-  // Load today's check-in on mount (morning only)
+  // Load today's check-in on mount (any time of day — needed for evening "still to do")
   useEffect(() => {
-    if (!token || isEvening) return;
+    if (!token) return;
     void apiGetDailyCheckIn(token).then((data) => {
       if (data.checkIn) {
         setCheckInPainLevel(data.checkIn.painLevel);
         setCheckInSleepQuality(data.checkIn.sleepQuality as 'poor' | 'ok' | 'good');
         setCheckInIntention(data.checkIn.intention);
         setCheckInSaved(true);
-      } else {
-        // Load yesterday's pain for reference
+      } else if (!isEvening) {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         const y = yesterday.getFullYear();
         const m = String(yesterday.getMonth() + 1).padStart(2, '0');
         const d = String(yesterday.getDate()).padStart(2, '0');
-        void apiGetDailyCheckIn(token, `${y}-${m}-${d}`).then((data) => {
-          if (data.checkIn) {
-            setYesterdayPainLevel(data.checkIn.painLevel);
+        void apiGetDailyCheckIn(token, `${y}-${m}-${d}`).then((yData) => {
+          if (yData.checkIn) {
+            setYesterdayPainLevel(yData.checkIn.painLevel);
           }
         });
       }
     });
   }, [token, isEvening]);
+
+  useEffect(() => {
+    const notes = holisticEntries.find((entry) => entry.activityType === 'practice')?.notes;
+    if (notes) setPracticeFeeling(notes);
+  }, [holisticEntries]);
 
   const onSubmitCheckIn = async () => {
     if (!token) return;
@@ -389,7 +393,7 @@ export default function TodayScreen() {
     if (scheduleRequired) {
       tasks.push({ id: 'schedule', label: 'Plan my day', done: scheduleDone });
     }
-    tasks.push({ id: 'practice', label: "Today's practice", done: practiceDone });
+    tasks.push({ id: 'practice', label: "Today's practice", done: holisticCompleted.practice });
     return tasks;
   }, [
     checkInSaved,
@@ -398,11 +402,15 @@ export default function TodayScreen() {
     readoutDone,
     scheduleRequired,
     scheduleDone,
-    practiceDone,
   ]);
 
   const allMorningDone = useMemo(
     () => morningTasks.every((t) => t.done),
+    [morningTasks],
+  );
+
+  const stillToDoTasks = useMemo(
+    () => morningTasks.filter((t) => !t.done),
     [morningTasks],
   );
 
@@ -465,6 +473,25 @@ export default function TodayScreen() {
       await markComplete(type);
     } finally {
       setHolisticSaving(null);
+    }
+  };
+
+  const onMarkPractice = async () => {
+    setPracticeSaving(true);
+    try {
+      await markComplete('practice');
+    } finally {
+      setPracticeSaving(false);
+    }
+  };
+
+  const onSavePracticeFeeling = async () => {
+    if (!holisticCompleted.practice || !practiceFeeling.trim()) return;
+    setSavingPracticeFeeling(true);
+    try {
+      await markComplete('practice', practiceFeeling.trim());
+    } finally {
+      setSavingPracticeFeeling(false);
     }
   };
 
@@ -592,18 +619,16 @@ export default function TodayScreen() {
                 </Text>
               </>
             )}
-            {practiceDone ? (
+            {holisticCompleted.practice ? (
               <Text style={styles.done}>✓ Marked done for today</Text>
             ) : (
               <Button
                 label="Mark practice done"
-                onPress={() => {
-                  setPracticeDone(true);
-                  setPracticeFeelingShown(true);
-                }}
+                onPress={() => void onMarkPractice()}
+                loading={practiceSaving}
               />
             )}
-            {practiceFeelingShown && practiceDone ? (
+            {holisticCompleted.practice ? (
               <>
                 <Text style={[styles.meta, { marginTop: 12 }]}>How did this feel? (optional)</Text>
                 <TextField
@@ -612,7 +637,16 @@ export default function TodayScreen() {
                   placeholder="Easy, challenging, refreshing…"
                   value={practiceFeeling}
                   onChangeText={setPracticeFeeling}
+                  onEndEditing={() => void onSavePracticeFeeling()}
                 />
+                {practiceFeeling.trim() ? (
+                  <Button
+                    label={savingPracticeFeeling ? 'Saving…' : 'Save feeling'}
+                    variant="secondary"
+                    onPress={() => void onSavePracticeFeeling()}
+                    loading={savingPracticeFeeling}
+                  />
+                ) : null}
               </>
             ) : null}
           </>
@@ -749,6 +783,16 @@ export default function TodayScreen() {
         />
       ) : (
         <>
+          {stillToDoTasks.length > 0 ? (
+            <>
+              <SectionLabel>Still to do today</SectionLabel>
+              <TodayTaskQueue
+                tasks={stillToDoTasks}
+                subtitle="Missed earlier? You can still finish these today"
+                renderExpanded={renderMorningTask}
+              />
+            </>
+          ) : null}
           <SectionLabel>Evening check-in</SectionLabel>
           <TodayTaskQueue tasks={eveningTasks} renderExpanded={renderEveningTask} />
         </>

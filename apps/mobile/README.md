@@ -2,7 +2,7 @@
 
 Expo app for **clients + counselors** (phone OTP). See [`docs/MOBILE_APP_UX.md`](../../docs/MOBILE_APP_UX.md) and [`docs/MOBILE_AUTH.md`](../../docs/MOBILE_AUTH.md).
 
-**Current pilot build:** **14** (`versionCode=14`, `versionName=1.0.0`) → `dist/pts-mobile-release.apk`  
+**Current pilot build:** **15** (`versionCode=15`, `versionName=1.0.0`) → `dist/pts-mobile-release.apk`  
 **API:** `https://pts-web-pied.vercel.app` (production)
 
 ## Install on connected Android device

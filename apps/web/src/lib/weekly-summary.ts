@@ -34,6 +34,7 @@ export type WeeklySummary = {
   morningCheckIns: { dateIso: string; painLevel: number; sleepQuality: string; intention: string | null }[];
   painTrend: string | null;
   holisticCompletions: { activityType: string; count: number }[];
+  practiceFeelingSamples: string[];
   readOutSummaries: string[];
   eveningReflectionSamples: string[];
   clientShares: string[];
@@ -215,6 +216,12 @@ export async function buildWeeklySummary(clientId: string, weekStart?: string): 
     count,
   }));
 
+  const practiceFeelingSamples = (
+    holisticRows as { activityType: string; dateIso: string; notes: string | null }[]
+  )
+    .filter((row) => row.activityType === 'practice' && row.notes?.trim())
+    .map((row) => `${row.dateIso}: ${row.notes!.trim().slice(0, 400)}`);
+
   const shareRows = await db
     .select()
     .from(supportArtifacts)
@@ -271,6 +278,7 @@ export async function buildWeeklySummary(clientId: string, weekStart?: string): 
     morningCheckIns,
     painTrend,
     holisticCompletions: holisticCompletionsSummary,
+    practiceFeelingSamples,
     readOutSummaries,
     eveningReflectionSamples,
     clientShares,

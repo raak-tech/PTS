@@ -16,6 +16,7 @@ type Summary = {
   latestWeeklyCheckIn: string | null;
   morningCheckIns: { dateIso: string; painLevel: number; sleepQuality: string; intention: string | null }[];
   holisticCompletions: { activityType: string; count: number }[];
+  practiceFeelingSamples: string[];
   readOutSummaries: string[];
   eveningReflectionSamples: string[];
   scheduleInsights: string[];
@@ -145,6 +146,19 @@ export function WeekActivityPanel({ clientId, weekNumber }: { clientId: string; 
           </div>
         ) : null}
       </div>
+
+      {s.practiceFeelingSamples.length > 0 ? (
+        <div style={{ marginTop: 12 }}>
+          <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase' }}>
+            Practice reflections
+          </p>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.5 }}>
+            {s.practiceFeelingSamples.map((r, i) => (
+              <li key={i}>{r}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {s.readOutSummaries.length > 0 ? (
         <div style={{ marginTop: 12 }}>

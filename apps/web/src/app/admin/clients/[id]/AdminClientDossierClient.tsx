@@ -508,6 +508,7 @@ export function AdminClientDossierClient({ clientId }: Props) {
             {holisticCompletions.map((h) => (
               <li key={h.id ?? `${h.dateIso}-${h.activityType}`}>
                 {h.dateIso} · week {h.weekNumber} · {h.activityType} · {formatWhen(h.completedAt)}
+                {h.notes ? ` — “${h.notes}”` : ''}
               </li>
             ))}
           </ul>

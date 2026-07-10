@@ -8,6 +8,7 @@ import {
   parseGeneratedPlan,
   type GeneratedPlan,
   type HolisticActivityType,
+  type HolisticCompletionEntry,
 } from '@/lib/api';
 import { useProgramTime } from '@/hooks/useProgramTime';
 
@@ -21,7 +22,9 @@ export function useHolisticWeek() {
     ayurveda: false,
     yoga: false,
     music: false,
+    practice: false,
   });
+  const [entries, setEntries] = useState<HolisticCompletionEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
@@ -38,7 +41,13 @@ export function useHolisticWeek() {
           parsed?.weeks.find((w) => w.week === weekNumber) ?? parsed?.weeks[weekNumber - 1] ?? null;
         setWeek(current);
       }
-      setCompleted(holistic.completed);
+      setCompleted({
+        ayurveda: holistic.completed.ayurveda ?? false,
+        yoga: holistic.completed.yoga ?? false,
+        music: holistic.completed.music ?? false,
+        practice: holistic.completed.practice ?? false,
+      });
+      setEntries(holistic.entries ?? []);
     } finally {
       setLoading(false);
     }
@@ -48,11 +57,11 @@ export function useHolisticWeek() {
     void reload();
   }, [reload]);
 
-  const markComplete = async (activityType: HolisticActivityType) => {
+  const markComplete = async (activityType: HolisticActivityType, notes?: string) => {
     if (!token) return;
-    await apiMarkHolisticComplete(token, activityType, weekNumber);
+    await apiMarkHolisticComplete(token, activityType, weekNumber, notes);
     await reload();
   };
 
-  return { week, weekNumber, completed, loading, markComplete, reload };
+  return { week, weekNumber, completed, entries, loading, markComplete, reload };
 }

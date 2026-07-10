@@ -11,7 +11,7 @@ import { localDateIso } from '@/lib/daily-layer';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
 
-const HOLISTIC_TYPES = ['ayurveda', 'yoga', 'music'] as const;
+const HOLISTIC_TYPES = ['ayurveda', 'yoga', 'music', 'practice'] as const;
 
 const postSchema = z.object({
   activityType: z.enum(HOLISTIC_TYPES),

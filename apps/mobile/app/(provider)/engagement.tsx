@@ -52,7 +52,7 @@ export default function ProviderEngagementScreen() {
               <Text style={[styles.row, styles.attention]}>{c.name}</Text>
               <Text style={styles.stat}>
                 Read-out: {c.reinforcementRecordedToday ? 'done' : 'pending'} · Calendar{' '}
-                {c.calendarBlocksDone}/{c.calendarBlocksTotal} · Holistic {c.holisticDone ?? 0}/{c.holisticTotal ?? 3}
+                {c.calendarBlocksDone}/{c.calendarBlocksTotal} · Holistic {c.holisticDone ?? 0}/{c.holisticTotal ?? 4}
               </Text>
             </Card>
           ))
@@ -68,7 +68,7 @@ export default function ProviderEngagementScreen() {
             </Text>
             <Text style={styles.stat}>
               Calendar {c.calendarBlocksDone}/{c.calendarBlocksTotal} · Holistic {c.holisticDone ?? 0}/
-              {c.holisticTotal ?? 3}
+              {c.holisticTotal ?? 4}
             </Text>
           </Card>
         ))}

@@ -41,6 +41,7 @@ type WeeklySummary = {
   clientShares: string[];
   latestWeeklyCheckIn: string | null;
   holisticCompletions?: { activityType: string; count: number }[];
+  practiceFeelingSamples?: string[];
 };
 
 type WeekDraft = {
@@ -588,7 +589,7 @@ export function ProviderClientWorkspaceClient({
                 {engagement.reinforcementRecordedToday ? '✓ recorded' : '○ pending'}
               </li>
               <li>
-                <strong>Holistic:</strong> {engagement.holisticDone ?? 0}/{engagement.holisticTotal ?? 3}
+                <strong>Holistic:</strong> {engagement.holisticDone ?? 0}/{engagement.holisticTotal ?? 4}
               </li>
               <li>
                 <strong>Calendar:</strong> {engagement.calendarBlocksDone}/{engagement.calendarBlocksTotal} blocks
@@ -697,12 +698,22 @@ export function ProviderClientWorkspaceClient({
             ) : null}
             {weekly.holisticCompletions && weekly.holisticCompletions.length > 0 ? (
               <div style={{ marginTop: 14 }}>
-                <p style={{ fontWeight: 600, marginBottom: 8 }}>Holistic completions</p>
+                <p style={{ fontWeight: 600, marginBottom: 8 }}>Daily activities</p>
                 <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
                   {weekly.holisticCompletions.map((h) => (
                     <li key={h.activityType}>
                       {h.activityType}: {h.count}
                     </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {weekly.practiceFeelingSamples && weekly.practiceFeelingSamples.length > 0 ? (
+              <div style={{ marginTop: 14 }}>
+                <p style={{ fontWeight: 600, marginBottom: 8 }}>Practice reflections</p>
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.6 }}>
+                  {weekly.practiceFeelingSamples.slice(0, 5).map((line) => (
+                    <li key={line}>{line}</li>
                   ))}
                 </ul>
               </div>

@@ -10,7 +10,6 @@ import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { HolisticWeekSection } from '@/components/holistic/HolisticCards';
 import { useHolisticWeek } from '@/hooks/useHolisticWeek';
 import { useProgramTime } from '@/hooks/useProgramTime';
-import type { HolisticActivityType } from '@/lib/api';
 import { apiGetPlan, parseGeneratedPlan } from '@/lib/api';
 import { PROGRAM_WEEK_THEMES } from '@/lib/appTime';
 
@@ -28,8 +27,7 @@ export default function WeekDetailScreen() {
   const [focus, setFocus] = useState<string>(fallback.focus);
   const [practices, setPractices] = useState<{ title: string; description: string; duration: string }[]>([]);
   const [reflection, setReflection] = useState('');
-  const { week: holisticWeek, completed, markComplete } = useHolisticWeek();
-  const [saving, setSaving] = useState<HolisticActivityType | null>(null);
+  const { week: holisticWeek } = useHolisticWeek();
   const styles = useThemedStyles((c) => ({
     item: { fontSize: 14, color: c.muted, lineHeight: 22 },
     body: { fontSize: 14, color: c.muted, lineHeight: 22 },
@@ -99,14 +97,17 @@ export default function WeekDetailScreen() {
           {reflection || 'What felt different about how you relate to your pain this week?'}
         </Text>
       </Card>
+      <Card title="Music, yoga & wellness">
+        <Text style={styles.body}>
+          Preview what&apos;s planned this week. When you&apos;re ready, open the Today tab and complete each
+          activity there — that&apos;s how your counselor sees daily progress.
+        </Text>
+      </Card>
       <HolisticWeekSection
         week={holisticWeek}
-        completed={completed}
-        onComplete={(type) => {
-          setSaving(type);
-          void markComplete(type).finally(() => setSaving(null));
-        }}
-        saving={saving}
+        completed={{ ayurveda: false, yoga: false, music: false }}
+        onComplete={() => {}}
+        readOnly
       />
     </Screen>
   );

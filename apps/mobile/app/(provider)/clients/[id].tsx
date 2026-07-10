@@ -155,7 +155,7 @@ export default function ProviderClientScreen() {
           calendarBlocksDone: row.calendarBlocksDone,
           calendarBlocksTotal: row.calendarBlocksTotal,
           holisticDone: row.holisticDone ?? 0,
-          holisticTotal: row.holisticTotal ?? 3,
+          holisticTotal: row.holisticTotal ?? 4,
         });
       }
     });
@@ -347,7 +347,7 @@ export default function ProviderClientScreen() {
             Calendar: {engagement.calendarBlocksDone}/{engagement.calendarBlocksTotal} blocks done
           </Text>
           <Text style={styles.body}>
-            Holistic: {engagement.holisticDone}/{engagement.holisticTotal} (Ayurveda, yoga, music)
+            Holistic: {engagement.holisticDone}/{engagement.holisticTotal} (Ayurveda, yoga, music, practice)
           </Text>
         </Card>
       ) : null}

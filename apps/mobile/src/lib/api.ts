@@ -657,6 +657,7 @@ export async function apiGetWeeklySummary(token: string, clientId: string) {
       clientShares: string[];
       latestWeeklyCheckIn: string | null;
       holisticCompletions?: { activityType: string; count: number }[];
+      practiceFeelingSamples?: string[];
     };
   }>(
     await fetchWithTimeout(`${API_URL}/api/provider/clients/${clientId}/weekly-summary`, {
@@ -665,7 +666,14 @@ export async function apiGetWeeklySummary(token: string, clientId: string) {
   );
 }
 
-export type HolisticActivityType = 'ayurveda' | 'yoga' | 'music';
+export type HolisticActivityType = 'ayurveda' | 'yoga' | 'music' | 'practice';
+
+export type HolisticCompletionEntry = {
+  activityType: HolisticActivityType;
+  weekNumber: number;
+  notes: string | null;
+  completedAt: string;
+};
 
 export async function apiGetHolisticCompletions(token: string, date?: string, clientId?: string) {
   const params = new URLSearchParams();
@@ -676,6 +684,7 @@ export async function apiGetHolisticCompletions(token: string, date?: string, cl
     ok: boolean;
     date: string;
     completed: Record<HolisticActivityType, boolean>;
+    entries: HolisticCompletionEntry[];
   }>(await fetchWithTimeout(`${API_URL}/api/holistic/completions${q}`, {
     headers: { Authorization: `Bearer ${token}` },
   }));
@@ -685,12 +694,13 @@ export async function apiMarkHolisticComplete(
   token: string,
   activityType: HolisticActivityType,
   weekNumber: number,
+  notes?: string,
 ) {
   return parseJson<{ ok: boolean }>(
     await fetchWithTimeout(`${API_URL}/api/holistic/completions`, {
       method: 'POST',
       headers: authHeaders(token),
-      body: JSON.stringify({ activityType, weekNumber }),
+      body: JSON.stringify({ activityType, weekNumber, ...(notes !== undefined ? { notes } : {}) }),
     }),
   );
 }

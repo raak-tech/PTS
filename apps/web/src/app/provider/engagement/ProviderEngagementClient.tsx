@@ -105,7 +105,7 @@ export function ProviderEngagementClient() {
                   <strong>Calendar:</strong> {c.calendarBlocksDone}/{c.calendarBlocksTotal} blocks done
                 </li>
                 <li>
-                  <strong>Holistic cards:</strong> {c.holisticDone ?? 0}/{c.holisticTotal ?? 3} (Ayurveda, yoga, music)
+                  <strong>Holistic cards:</strong> {c.holisticDone ?? 0}/{c.holisticTotal ?? 4} (Ayurveda, yoga, music, practice)
                 </li>
               </ul>
               {(c.painLevels?.length ?? 0) >= 2 ? (
