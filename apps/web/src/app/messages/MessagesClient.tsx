@@ -25,6 +25,12 @@ function anonymise(email: string, role: string) {
   return `${local[0]}***@${email.split("@")[1]}`;
 }
 
+function contactLabel(c: Contact, showFullPii: boolean) {
+  if (c.displayName) return c.displayName;
+  if (showFullPii) return c.email;
+  return anonymise(c.email, c.role);
+}
+
 function formatTime(iso: string) {
   const d = new Date(iso);
   const now = new Date();
@@ -38,11 +44,13 @@ export function MessagesClient({
   contacts,
   hasContacts,
   preselectedId,
+  showFullPii = false,
 }: {
   currentUserId: string;
   contacts: Contact[];
   hasContacts: boolean;
   preselectedId?: string;
+  showFullPii?: boolean;
 }) {
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const initial = preselectedId ? (contacts.find(c => c.id === preselectedId) ?? contacts[0] ?? null) : (contacts[0] ?? null);
@@ -143,7 +151,7 @@ export function MessagesClient({
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                 <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>
-                  {anonymise(c.email, c.role)}
+                  {contactLabel(c, showFullPii)}
                 </div>
                 {unread > 0 && (
                   <span style={{
@@ -167,7 +175,7 @@ export function MessagesClient({
           <>
             {/* Thread header */}
             <div style={{ padding: "16px 20px", borderBottom: "1px solid #eee", background: "white" }}>
-              <p style={{ margin: 0, fontWeight: 600 }}>{activeContact.displayName || anonymise(activeContact.email, activeContact.role)}</p>
+              <p style={{ margin: 0, fontWeight: 600 }}>{contactLabel(activeContact, showFullPii)}</p>
               <p style={{ margin: "4px 0 0", fontSize: 12, color: "#999" }}>{activeContact.role === "provider" ? "Your counselor" : "Client"}</p>
               {activeContact.role === "provider" && (
                 <div style={{ marginTop: 12 }}>

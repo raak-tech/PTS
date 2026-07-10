@@ -22,11 +22,6 @@ type RowState =
   | { status: 'done' }
   | { status: 'error'; message: string };
 
-function anon(email: string) {
-  const [local] = email.split('@');
-  return `${local[0]}***@${email.split('@')[1]}`;
-}
-
 // Client-side cap slightly above the 300s serverless function limit.
 const GENERATE_TIMEOUT_MS = 320_000;
 
@@ -136,7 +131,7 @@ export function PendingIntakesClient({ intakes }: PendingIntakesClientProps) {
             >
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
-                  {anon(intake.email)}
+                  {intake.email}
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 6 }}>
                   {intake.painSource}

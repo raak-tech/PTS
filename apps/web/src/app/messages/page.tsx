@@ -6,6 +6,7 @@ import { and, eq, ne, or } from 'drizzle-orm';
 import { getDb } from '../../db';
 import { clientCounselor, counselorProfiles, messages, users } from '../../db/schema';
 import { getUserFromCookieHeader } from '../../lib/session';
+import { isPilotPiiVisible } from '@/lib/pii';
 import { MessagesClient } from './MessagesClient';
 
 export const metadata: Metadata = { title: 'Messages | PTS' };
@@ -123,6 +124,7 @@ export default async function MessagesPage({ searchParams }: { searchParams?: Pr
       contacts={allContacts}
       hasContacts={allContacts.length > 0}
       preselectedId={preselectedId}
+      showFullPii={isPilotPiiVisible()}
     />
   );
 }

@@ -10,6 +10,7 @@ import { isAdminUser } from '@/lib/admin';
 import { recordAudit } from '@/lib/audit';
 import { logError } from '@/lib/logger';
 import { isValidIndianMobile, normalizePhone, phoneToEmail } from '@/lib/phone';
+import { displayPhone } from '@/lib/pii';
 import { getUserFromRequest } from '@/lib/session';
 
 function optionalField(min: number, max: number) {
@@ -128,7 +129,7 @@ export async function POST(request: Request) {
       action: 'create_user',
       targetType: 'user',
       targetId: userId,
-      metadata: { role, phone: `***${phone.slice(-4)}` },
+      metadata: { role, phone: displayPhone(phone) ?? phone },
     });
 
     return NextResponse.json({

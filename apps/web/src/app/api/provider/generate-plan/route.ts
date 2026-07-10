@@ -10,6 +10,7 @@ import { recordAudit } from '@/lib/audit';
 import { claimClientCounselor } from '@/lib/claim-client-counselor';
 import { sendPushToUser } from '@/lib/expo-push';
 import { log, logError } from '@/lib/logger';
+import { displayEmail } from '@/lib/pii';
 import type { GeneratedPlan } from '@/lib/plan-generator';
 
 export async function POST(request: Request) {
@@ -107,16 +108,14 @@ export async function POST(request: Request) {
     .from(users)
     .where(eq(users.id, userId));
   const clientEmail = clientRows[0]?.email ?? 'unknown';
-
-  const [clientFirstChar] = clientEmail.split('@');
-  const anonEmail = `${clientFirstChar[0]}***@${clientEmail.split('@')[1]}`;
+  const clientLabel = displayEmail(clientEmail);
 
   for (const admin of adminUsers) {
     if (admin.expoPushToken) {
       void sendPushToUser(
         admin.expoPushToken,
         'New plan draft ready',
-        `Plan generated for ${anonEmail}`,
+        `Plan generated for ${clientLabel}`,
       );
     }
   }

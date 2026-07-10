@@ -5,6 +5,7 @@ import { getDb } from '@/db';
 import { intakeResponses, plans, users } from '@/db/schema';
 import { getClientCounselorMap, isClientVisibleToProvider } from '@/lib/client-access';
 import { logError } from '@/lib/logger';
+import { formatClientContact } from '@/lib/pii';
 import { getUserFromRequest } from '@/lib/session';
 
 export async function GET(request: Request) {
@@ -45,29 +46,40 @@ export async function GET(request: Request) {
 
     // Fetch user details for display
     const userIds = visibleIntakes.map(p => p.userId);
-    type UserRow = { id: string; email: string };
+    type UserRow = { id: string; email: string; phone: string | null; displayName: string | null };
     const clientUsers: UserRow[] =
       userIds.length > 0
         ? ((await db
             .select({
               id: users.id,
               email: users.email,
+              phone: users.phone,
+              displayName: users.displayName,
             })
             .from(users)
             .where(inArray(users.id, userIds))) as UserRow[])
         : [];
 
-    const emailById = Object.fromEntries(clientUsers.map(u => [u.id, u.email]));
+    const userById = Object.fromEntries(clientUsers.map((u) => [u.id, u]));
 
     // Format for mobile display
-    const formatted = visibleIntakes.map(intake => ({
-      userId: intake.userId,
-      anonEmail: formatAnonEmail(emailById[intake.userId] ?? 'unknown@unknown.com'),
-      painSource: intake.painSource,
-      submittedAt: intake.createdAt.toISOString(),
-      hasRedFlags: intake.hasRedFlags,
-      isSafe: intake.isSafe,
-    }));
+    const formatted = visibleIntakes.map((intake) => {
+      const client = userById[intake.userId] ?? {
+        email: 'unknown@unknown.com',
+        phone: null,
+        displayName: null,
+      };
+      return {
+        userId: intake.userId,
+        anonEmail: formatClientContact(client),
+        clientPhone: client.phone,
+        clientEmail: client.email,
+        painSource: intake.painSource,
+        submittedAt: intake.createdAt.toISOString(),
+        hasRedFlags: intake.hasRedFlags,
+        isSafe: intake.isSafe,
+      };
+    });
 
     return NextResponse.json({
       ok: true,
@@ -79,7 +91,3 @@ export async function GET(request: Request) {
   }
 }
 
-function formatAnonEmail(email: string) {
-  const [local, domain] = email.split('@');
-  return `${local[0]}***@${domain}`;
-}

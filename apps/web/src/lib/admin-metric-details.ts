@@ -34,24 +34,7 @@ export function isMetricDetailKind(value: string): value is MetricDetailKind {
   return (METRIC_DETAIL_KINDS as readonly string[]).includes(value);
 }
 
-function maskEmail(email: string): string {
-  const [local, domain] = email.split('@');
-  if (!domain) return '***';
-  return `${local[0] ?? ''}***@${domain}`;
-}
-
-function maskPhone(phone: string | null): string | null {
-  if (!phone) return null;
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length < 4) return '***';
-  return `***${digits.slice(-4)}`;
-}
-
-function userLabel(name: string | null, email: string, phone: string | null): string {
-  if (name?.trim()) return name.trim();
-  if (phone) return maskPhone(phone) ?? 'Client';
-  return maskEmail(email);
-}
+import { displayEmail, displayPhone, displayText, userContactLabel } from '@/lib/pii';
 
 export async function getMetricDetail(kind: MetricDetailKind) {
   const db = getDb();
@@ -85,10 +68,10 @@ export async function getMetricDetail(kind: MetricDetailKind) {
         title: 'All users',
         rows: rows.map((r) => ({
           id: r.id,
-          label: userLabel(r.displayName, r.email, r.phone),
+          label: userContactLabel(r.displayName, r.email, r.phone),
           role: r.role,
-          email: maskEmail(r.email),
-          phone: maskPhone(r.phone),
+          email: displayEmail(r.email),
+          phone: displayPhone(r.phone),
           createdAt: r.createdAt.toISOString(),
         })),
       };
@@ -119,8 +102,9 @@ export async function getMetricDetail(kind: MetricDetailKind) {
         title: 'Clients',
         rows: rows.map((r) => ({
           id: r.id,
-          label: userLabel(r.displayName, r.email, r.phone),
-          phone: maskPhone(r.phone),
+          label: userContactLabel(r.displayName, r.email, r.phone),
+          phone: displayPhone(r.phone),
+          email: displayEmail(r.email),
           createdAt: r.createdAt.toISOString(),
         })),
       };
@@ -151,8 +135,9 @@ export async function getMetricDetail(kind: MetricDetailKind) {
         title: 'Counselors',
         rows: rows.map((r) => ({
           id: r.id,
-          label: userLabel(r.displayName, r.email, r.phone),
-          phone: maskPhone(r.phone),
+          label: userContactLabel(r.displayName, r.email, r.phone),
+          phone: displayPhone(r.phone),
+          email: displayEmail(r.email),
           createdAt: r.createdAt.toISOString(),
         })),
       };
@@ -194,9 +179,9 @@ export async function getMetricDetail(kind: MetricDetailKind) {
         rows: rows.map((r) => ({
           id: r.intakeId,
           userId: r.userId,
-          label: userLabel(r.displayName, r.email, r.phone),
+          label: userContactLabel(r.displayName, r.email, r.phone),
           painSource: r.painSource,
-          recoveryGoal: r.recoveryGoal.slice(0, 120),
+          recoveryGoal: displayText(r.recoveryGoal, 120),
           hasRedFlags: r.hasRedFlags,
           isSafe: r.isSafe,
           completedAt: r.completedAt?.toISOString() ?? null,
@@ -255,7 +240,7 @@ export async function getMetricDetail(kind: MetricDetailKind) {
         rows: rows.map((r) => ({
           id: r.planId,
           userId: r.userId,
-          label: userLabel(r.displayName, r.email, r.phone),
+          label: userContactLabel(r.displayName, r.email, r.phone),
           status: r.status,
           createdAt: r.createdAt.toISOString(),
           approvedAt: r.approvedAt?.toISOString() ?? null,
@@ -300,8 +285,8 @@ export async function getMetricDetail(kind: MetricDetailKind) {
           id: r.clientId,
           clientId: r.clientId,
           counselorId: r.counselorId,
-          clientLabel: userLabel(r.clientName, r.clientEmail, r.clientPhone),
-          counselorLabel: userLabel(r.counselorName, r.counselorEmail, r.counselorPhone),
+          clientLabel: userContactLabel(r.clientName, r.clientEmail, r.clientPhone),
+          counselorLabel: userContactLabel(r.counselorName, r.counselorEmail, r.counselorPhone),
           assignedAt: r.assignedAt.toISOString(),
         })),
       };
@@ -348,9 +333,9 @@ export async function getMetricDetail(kind: MetricDetailKind) {
           id: r.id,
           fromUserId: fromUser.id,
           toUserId: toUser.id,
-          from: userLabel(r.fromName, r.fromEmail, r.fromPhone),
-          to: userLabel(r.toName, r.toEmail, r.toPhone),
-          preview: r.body.slice(0, 140),
+          from: userContactLabel(r.fromName, r.fromEmail, r.fromPhone),
+          to: userContactLabel(r.toName, r.toEmail, r.toPhone),
+          preview: displayText(r.body, 140),
           createdAt: r.createdAt.toISOString(),
           readAt: r.readAt?.toISOString() ?? null,
         })),
@@ -397,8 +382,8 @@ export async function getMetricDetail(kind: MetricDetailKind) {
         rows: rows.map((r) => ({
           id: r.intakeId,
           userId: r.userId,
-          label: userLabel(r.displayName, r.email, r.phone),
-          painDescription: r.painDescription.slice(0, 160),
+          label: userContactLabel(r.displayName, r.email, r.phone),
+          painDescription: displayText(r.painDescription, 160),
           hasRedFlags: r.hasRedFlags,
           isSafe: r.isSafe,
           completedAt: r.completedAt?.toISOString() ?? null,

@@ -5,6 +5,7 @@ import { eq, inArray, isNull } from 'drizzle-orm';
 import { getDb } from '../../../db';
 import { intakeResponses, planWeeks, plans, users } from '../../../db/schema';
 import { getClientCounselorMap, isClientVisibleToProvider } from '../../../lib/client-access';
+import { formatClientContact } from '@/lib/pii';
 import { getUserFromCookieHeader } from '../../../lib/session';
 import { PlanReviewClient } from './PlanReviewClient';
 import { PendingIntakesClient } from './PendingIntakesClient';
@@ -54,12 +55,12 @@ export default async function ProviderPlansPage() {
 
   // Fetch client emails for display (for both draft/approved plans AND pending intakes)
   const allUserIds = [...new Set([...visibleDraftPlans, ...visibleApprovedPlans, ...visiblePendingIntakes].map(p => p.userId))];
-  type UserRow = { id: string; email: string };
+  type UserRow = { id: string; email: string; phone: string | null; displayName: string | null };
   const clientUsers = allUserIds.length > 0
-    ? (await db.select({ id: users.id, email: users.email }).from(users).where(inArray(users.id, allUserIds))) as UserRow[]
+    ? (await db.select({ id: users.id, email: users.email, phone: users.phone, displayName: users.displayName }).from(users).where(inArray(users.id, allUserIds))) as UserRow[]
     : [];
 
-  const emailById = Object.fromEntries(clientUsers.map(u => [u.id, u.email]));
+  const userById = Object.fromEntries(clientUsers.map((u) => [u.id, u]));
 
   // Fetch intake responses for context (draft/approved plans)
   const planUserIds = [...new Set([...visibleDraftPlans, ...visibleApprovedPlans].map(p => p.userId))];
@@ -88,14 +89,14 @@ export default async function ProviderPlansPage() {
     weekStatusByPlan[row.planId][row.weekNumber] = row.status as 'draft' | 'edited' | 'approved';
   }
 
-  function anon(email: string) {
-    const [local] = email.split('@');
-    return `${local[0]}***@${email.split('@')[1]}`;
+  function clientContact(userId: string) {
+    const client = userById[userId] ?? { email: 'unknown@unknown.com', phone: null, displayName: null };
+    return formatClientContact(client);
   }
 
   const enriched = visibleDraftPlans.map(p => ({
     ...p,
-    clientEmail: anon(emailById[p.userId] ?? 'unknown@unknown.com'),
+    clientEmail: clientContact(p.userId),
     intake: intakeByUserId[p.userId] ?? null,
     parsed: JSON.parse(p.generatedContent) as GeneratedPlan,
     weekStatuses: weekStatusByPlan[p.id] ?? {},
@@ -115,7 +116,7 @@ export default async function ProviderPlansPage() {
           hasRedFlags: intake.hasRedFlags,
           isSafe: intake.isSafe,
           createdAt: intake.createdAt,
-          email: emailById[intake.userId] ?? 'unknown@unknown.com',
+          email: clientContact(intake.userId),
         }))}
       />
 
@@ -146,7 +147,7 @@ export default async function ProviderPlansPage() {
           <div style={{ display: 'grid', gap: 8 }}>
             {visibleApprovedPlans.map(p => (
               <div key={p.id} style={{ padding: '12px 16px', border: '1px solid var(--border)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 14 }}>{anon(emailById[p.userId] ?? 'unknown@unknown.com')}</span>
+                <span style={{ fontSize: 14 }}>{clientContact(p.userId)}</span>
                 <span style={{ fontSize: 12, color: 'var(--muted)' }}>Approved</span>
               </div>
             ))}

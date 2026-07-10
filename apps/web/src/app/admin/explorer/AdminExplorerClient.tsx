@@ -21,6 +21,7 @@ const TABLES = [
 
 type ExplorerResponse = {
   table: string;
+  pilotPiiVisible?: boolean;
   rows: Record<string, unknown>[];
   total: number;
   page: number;
@@ -50,7 +51,9 @@ export function AdminExplorerClient() {
       <AdminNav current="/admin/explorer" />
       <h1 style={{ margin: '0 0 16px', fontSize: 24, fontWeight: 800 }}>Data explorer</h1>
       <p style={{ color: '#666', fontSize: 14, marginTop: 0 }}>
-        Read-only browse of whitelisted tables. PII is masked; sensitive columns are excluded.
+        {data?.pilotPiiVisible
+          ? 'Pilot mode: full phone numbers, emails, and message previews are visible.'
+          : 'Read-only browse of whitelisted tables. PII is masked; sensitive columns are excluded.'}
       </p>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>

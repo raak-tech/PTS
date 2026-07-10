@@ -6,6 +6,7 @@ import { and, eq, ne, or } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { clientCounselor, messages, users } from '@/db/schema';
 import { formatClientLabel } from '@/lib/provider-display';
+import { isPilotPiiVisible } from '@/lib/pii';
 import { getUserFromCookieHeader } from '@/lib/session';
 import { MessagesClient } from '@/app/messages/MessagesClient';
 
@@ -107,6 +108,7 @@ export default async function ProviderMessagesPage({
         contacts={contacts}
         hasContacts={contacts.length > 0}
         preselectedId={preselectedId}
+        showFullPii={isPilotPiiVisible()}
       />
     </>
   );

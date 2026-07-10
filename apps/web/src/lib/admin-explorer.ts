@@ -37,18 +37,12 @@ export function isExplorerTable(value: string): value is ExplorerTable {
   return (EXPLORER_TABLES as readonly string[]).includes(value);
 }
 
-function maskEmail(email: string): string {
-  const [local, domain] = email.split('@');
-  if (!domain) return '***';
-  return `${local[0] ?? ''}***@${domain}`;
-}
-
-function maskPhone(phone: string | null): string | null {
-  if (!phone) return null;
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length < 4) return '***';
-  return `***${digits.slice(-4)}`;
-}
+import {
+  displayEmail,
+  displayPhone,
+  displayText,
+  userContactLabel,
+} from '@/lib/pii';
 
 export async function queryExplorerTable(
   table: ExplorerTable,
@@ -80,8 +74,8 @@ export async function queryExplorerTable(
           id: r.id,
           role: r.role,
           displayName: r.displayName,
-          email: maskEmail(r.email),
-          phone: maskPhone(r.phone),
+          email: displayEmail(r.email),
+          phone: displayPhone(r.phone),
           createdAt: r.createdAt.toISOString(),
         })),
         total: all.length,
@@ -190,7 +184,7 @@ export async function queryExplorerTable(
           id: r.id,
           fromUserId: r.fromUserId,
           toUserId: r.toUserId,
-          preview: r.body.slice(0, 120),
+          preview: displayText(r.body, 120),
           createdAt: r.createdAt.toISOString(),
           readAt: r.readAt?.toISOString() ?? null,
         })),
@@ -218,7 +212,7 @@ export async function queryExplorerTable(
       return {
         rows: rows.map((r: (typeof rows)[number]) => ({
           ...r,
-          bodyText: r.bodyText.slice(0, 160),
+          bodyText: displayText(r.bodyText, 160),
           createdAt: r.createdAt.toISOString(),
         })),
         total: all.length,
