@@ -1,35 +1,32 @@
-import type { Metadata } from 'next';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { eq } from 'drizzle-orm';
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
-import { getDb } from '@/db';
-import { intakeResponses } from '@/db/schema';
-import { getUserFromCookieHeader } from '@/lib/session';
-import { IntakeClient } from '../IntakeClient';
+import { getUserFromCookieHeader } from "@/lib/session";
+import { IntakeFlowClient } from "./IntakeFlowClient";
 
-export const metadata: Metadata = {
-  title: 'Your assessment',
+export const metadata = {
+  title: "Tell us your story | PTS",
+  description:
+    "Tell your counselor what you're going through — freely, in your own words.",
 };
 
 export default async function IntakePage() {
-  const user = await getUserFromCookieHeader((await headers()).get('cookie'));
-
-  if (!user) {
-    redirect('/login/mobile?next=/intake');
+  // Feature flag: hot-revert to legacy intake
+  if (process.env.NEXT_PUBLIC_USE_LEGACY_INTAKE === "true") {
+    redirect("/");
   }
 
-  if (user.role === 'provider') redirect('/provider');
-  if (user.role === 'admin') redirect('/admin');
+  // Auth check
+  const headersList = await headers();
+  const user = await getUserFromCookieHeader(headersList.get("cookie"));
 
-  const db = getDb();
-  const [existing] = await db
-    .select({ completedAt: intakeResponses.completedAt })
-    .from(intakeResponses)
-    .where(eq(intakeResponses.userId, user.id))
-    .limit(1);
+  if (!user) {
+    redirect("/login/mobile?next=/intake");
+  }
 
-  if (existing?.completedAt) redirect('/plan');
+  if (user.role === "provider") {
+    redirect("/provider");
+  }
 
-  return <IntakeClient />;
+  return <IntakeFlowClient />;
 }
