@@ -28,16 +28,18 @@ function safeNextPath(next?: string) {
   return next;
 }
 
-function errorRedirect(request: Request, message: string) {
+function errorRedirect(request: Request, message: string, next?: string) {
   const url = new URL('/login', request.url);
   url.searchParams.set('error', message);
+  if (next) url.searchParams.set('next', next);
   return NextResponse.redirect(url, 303);
 }
 
 export async function POST(request: Request) {
+  let next: string | undefined;
   try {
     const formData = await request.formData();
-    const next = formData.get('next')?.toString();
+    next = formData.get('next')?.toString();
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
     const pilotMode = ['1', 'true', 'yes'].includes(process.env.OTP_TEST_MODE?.trim().toLowerCase() ?? '');
@@ -56,19 +58,19 @@ export async function POST(request: Request) {
     });
 
     if (!parsed.success) {
-      return errorRedirect(request, 'invalid');
+      return errorRedirect(request, 'invalid', next);
     }
 
     const db = getDb();
     const [user] = await db.select().from(users).where(eq(users.email, parsed.data.email)).limit(1);
 
     if (!user || !user.passwordHash) {
-      return errorRedirect(request, 'invalid');
+      return errorRedirect(request, 'invalid', next);
     }
 
     const ok = await verifyPassword(user.passwordHash, parsed.data.password);
     if (!ok) {
-      return errorRedirect(request, 'invalid');
+      return errorRedirect(request, 'invalid', next);
     }
 
     const now = new Date();
@@ -96,6 +98,6 @@ export async function POST(request: Request) {
     return response;
   } catch (err) {
     logError('login_error', err);
-    return errorRedirect(request, 'server');
+    return errorRedirect(request, 'server', next);
   }
 }

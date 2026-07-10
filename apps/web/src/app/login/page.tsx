@@ -13,6 +13,8 @@ function errorCopy(error?: string) {
       return 'Invalid email or password. Try again.';
     case 'too-many-requests':
       return 'Too many sign-in attempts. Wait a few minutes and try again.';
+    case 'server':
+      return 'Something went wrong signing in. Please try again in a moment.';
     default:
       return null;
   }
@@ -37,7 +39,11 @@ export default async function LoginPage({
       <div style={{ width: '100%', maxWidth: 480 }}>
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
           <h1 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 10px', color: '#111' }}>Sign in</h1>
-          <p style={{ color: t.textSecondary, margin: 0, lineHeight: 1.5, fontSize: 16, fontWeight: 500 }}>Welcome back. Use your PTS email and password.</p>
+          <p style={{ color: t.textSecondary, margin: 0, lineHeight: 1.5, fontSize: 16, fontWeight: 500 }}>
+            {next === '/admin'
+              ? 'Admin access: sign in with your admin email and password.'
+              : 'Welcome back. Use your PTS email and password.'}
+          </p>
         </div>
 
         {status && <p role="status" style={{ background: '#e8f5e9', border: '2px solid #2e7d32', color: '#1b5e20', padding: '10px 16px', borderRadius: 10, marginBottom: 20, fontSize: 14 }}>{status}</p>}
