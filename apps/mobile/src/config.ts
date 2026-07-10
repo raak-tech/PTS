@@ -3,3 +3,6 @@ export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://pts-web-pied.
 
 /** Use mock auth when true (prototype without backend). */
 export const USE_MOCK_AUTH = process.env.EXPO_PUBLIC_USE_MOCK_AUTH === 'true';
+
+/** Use legacy multi-step intake when true (false = new onboarding flow). */
+export const USE_LEGACY_INTAKE = false;

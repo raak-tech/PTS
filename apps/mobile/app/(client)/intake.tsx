@@ -20,8 +20,20 @@ import {
 } from '@/lib/intake';
 import { spacing } from '@/theme';
 
+// Phase 4 rollback flag
+const USE_LEGACY_INTAKE = false;
+
 export default function IntakeScreen() {
   const router = useRouter();
+
+  // Phase 4: redirect to new onboarding unless legacy flag is set
+  if (!USE_LEGACY_INTAKE) {
+    useEffect(() => {
+      router.replace('/(client)/intake/segment');
+    }, []);
+    return null;
+  }
+
   const { completeIntake } = useAuth();
   const { colors } = useTheme();
   const draftStorage = useIntakeDraft();
