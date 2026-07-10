@@ -1,4 +1,6 @@
 {
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build",
   "regions": ["sin1"],
   "functions": {
     "src/app/api/plans/route.ts": {
