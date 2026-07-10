@@ -1,0 +1,11 @@
+# Keep Git-triggered Vercel deploys small when building from repo root.
+apps/mobile/**
+apps/cursor-runner/**
+docs/**
+.git/**
+**/.next/**
+**/node_modules/**
+**/android/**
+**/ios/**
+**/*.apk
+**/*.aab
