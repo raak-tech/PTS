@@ -24,3 +24,6 @@ dist/
 *.log
 apps/cursor-runner/data/
 .vercel
+
+# Local confidential review materials (never commit)
+confidential-review/

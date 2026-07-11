@@ -12,6 +12,7 @@ import {
   DEFAULT_HOLISTIC_VISIBILITY,
 } from '@/lib/plan-holistic-edits';
 import type { GeneratedPlan } from '@/lib/plan-generator';
+import { stripCounselorOnlyFromPlanContent } from '@/lib/plan-client-view';
 import { regeneratePlanDraftForUser } from '@/lib/regenerate-plan-for-user';
 import { seedDailyFromApprovedPlan } from '@/lib/seed-daily-from-plan';
 import { assertProviderCanAccessClient } from '@/lib/client-access';
@@ -77,7 +78,19 @@ export async function GET(request: Request) {
       plan = latest ?? null;
     }
 
-    return NextResponse.json({ ok: true, plan });
+    if (!plan) {
+      return NextResponse.json({ ok: true, plan: null });
+    }
+
+    const safePlan =
+      user.role === 'client'
+        ? {
+            ...plan,
+            generatedContent: stripCounselorOnlyFromPlanContent(plan.generatedContent),
+          }
+        : plan;
+
+    return NextResponse.json({ ok: true, plan: safePlan });
   } catch (err) {
     logError('plans_get_error', err);
     return NextResponse.json({ error: 'internal' }, { status: 500 });

@@ -35,6 +35,8 @@ export type ExtractedIntake = {
   ayurvedaPreferences: ExtractionField;
   hasRedFlags: ExtractionField;
   isSafe: ExtractionField;
+  /** Optional pain-script / BASIC I.D. signals — counselor formulation only. Value is JSON object or null. */
+  painScriptSignals: ExtractionField;
 };
 
 export type ExtractionResult = {
@@ -148,6 +150,15 @@ Fields to extract:
 21. hasRedFlags — true if the client mentions self-harm, suicidal ideation, severe trauma, abuse, violence, or anything requiring immediate clinical attention. false otherwise. BE CONSERVATIVE — flag if you're unsure.
 22. isSafe — false if the client's current environment is unsafe (abuse, violence, neglect). true otherwise. Default to true if no safety concern is mentioned.
 
+23. painScriptSignals — OPTIONAL formulation signals (do not require for intake completion). If the client's words imply any of the following, extract as a JSON object in "value" (not a string). Otherwise null with confidence 0.0:
+   {
+     "scriptBeliefs": { "self": "...", "others": "...", "life": "...", "underlyingNeeds": ["..."], "dominantEmotions": ["..."] },
+     "scriptDisplays": { "behaviours": ["guarding", "pacing", ...], "sensations": ["..."], "fantasies": ["..."] },
+     "reinforcingExperiences": ["invalidation", "flare after stress", ...],
+     "basicId": { "behaviour": "...", "affect": "...", "sensation": "...", "imagery": "...", "cognition": "...", "interpersonal": "...", "drug": "..." }
+   }
+   Only include sub-fields the client actually implied. Do NOT label this framework to the client in follow-up questions.
+
 CRITICAL RULES:
 - If a field is NOT mentioned or cannot be inferred, set value to null and confidence to 0.0 (for booleans, use false with 0.0 confidence)
 - For hasRedFlags: if you see ANY hint of self-harm, suicidal thoughts, abuse, severe depression, or danger, set true with high confidence. Err on the side of safety.
@@ -210,6 +221,7 @@ function parseExtractionResponse(raw: string): {
     'ayurvedaPreferences',
     'hasRedFlags',
     'isSafe',
+    'painScriptSignals',
   ];
 
   for (const field of expectedFields) {
@@ -233,6 +245,15 @@ function parseExtractionResponse(raw: string): {
         ? data.extracted.isSafe.confidence
         : 0.0,
   };
+
+  if (!data.extracted.painScriptSignals) {
+    data.extracted.painScriptSignals = { value: null, confidence: 0.0 };
+  } else if (data.extracted.painScriptSignals.value) {
+    const raw = data.extracted.painScriptSignals.value;
+    if (typeof raw === 'object') {
+      data.extracted.painScriptSignals.value = JSON.stringify(raw);
+    }
+  }
 
   return {
     extracted: data.extracted as ExtractedIntake,

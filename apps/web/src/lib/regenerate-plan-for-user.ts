@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 
 import { getDb } from '@/db';
 import { intakeResponses, plans } from '@/db/schema';
+import { loadPainScriptSignalsForUser } from '@/lib/confidential/load-pain-script-signals';
 import { log, logError } from '@/lib/logger';
 import { generatePlan } from '@/lib/plan-generator';
 import { seedDraftPlanWeeks } from '@/lib/seed-plan-weeks';
@@ -22,11 +23,13 @@ export async function regeneratePlanDraftForUser(userId: string): Promise<string
   }
 
   try {
+    const painScriptSignals = await loadPainScriptSignalsForUser(userId);
     const generated = await generatePlan(
       {
         ...saved,
         hasDependents:
           saved.hasDependents == null ? null : saved.hasDependents ? 'yes' : 'no',
+        painScriptSignals,
       },
       { userId },
     );

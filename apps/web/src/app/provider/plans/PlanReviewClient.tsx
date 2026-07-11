@@ -187,6 +187,34 @@ export function PlanReviewClient({
               </div>
             </div>
 
+            {/* Protected formulation — counselor only */}
+            {plan.protectedFormulation && (
+              <div style={{ marginBottom: 20, padding: '14px 16px', background: '#fce4ec', border: '2px solid #f48fb1', borderRadius: 10 }}>
+                <p style={{ margin: '0 0 4px', fontWeight: 700, fontSize: 13, color: '#880e4f' }}>
+                  Protected formulation — confidential IP
+                </p>
+                <p style={{ margin: '0 0 12px', fontSize: 12, color: '#ad1457', lineHeight: 1.5 }}>
+                  {plan.protectedFormulation.confidentiality}
+                </p>
+                <p style={{ margin: '0 0 8px', fontSize: 13, lineHeight: 1.6 }}>
+                  <strong>Maintenance hypothesis:</strong> {plan.protectedFormulation.scriptMaintenanceHypothesis}
+                </p>
+                <p style={{ margin: '0 0 8px', fontSize: 13, lineHeight: 1.6 }}>
+                  <strong>Week 1 leverage:</strong> {plan.protectedFormulation.week1TherapeuticLeverage}
+                </p>
+                <p style={{ margin: '0 0 6px', fontWeight: 600, fontSize: 13 }}>BASIC I.D. snapshot</p>
+                <ul style={{ margin: 0, paddingLeft: 16, fontSize: 13, lineHeight: 1.5 }}>
+                  {Object.entries(plan.protectedFormulation.basicIdSnapshot)
+                    .filter(([, v]) => v)
+                    .map(([key, value]) => (
+                      <li key={key} style={{ marginBottom: 4 }}>
+                        <strong>{key}:</strong> {value}
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
+
             {/* Client overview */}
             <div style={{ marginBottom: 20 }}>
               <p style={{ margin: '0 0 6px', fontWeight: 600 }}>What the client will see</p>

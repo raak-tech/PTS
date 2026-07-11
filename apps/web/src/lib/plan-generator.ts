@@ -1,5 +1,11 @@
 import { logError, log } from './logger';
 import {
+  buildPainScriptPlanPromptSection,
+  formatPainScriptSignalsForPrompt,
+  type PainScriptSignals,
+  type ProtectedFormulation,
+} from '@/lib/confidential/pain-script-framework';
+import {
   parseOpenRouterUsage,
   recordLlmUsage,
   type LlmUsageContext,
@@ -44,6 +50,8 @@ export type GeneratedPlan = {
   weeks: WeekPlan[];
   keyThemes: string[];
   watchPoints: string[]; // things the counselor should monitor
+  /** Counselor-only — RAak proprietary formulation. Never show to clients. */
+  protectedFormulation?: ProtectedFormulation;
 };
 
 type IntakeData = {
@@ -67,6 +75,7 @@ type IntakeData = {
   structurePreference?: string | null;
   engagementTime?: string | null;
   ayurvedaPreferences?: string | null;
+  painScriptSignals?: PainScriptSignals | null;
 };
 
 const PAIN_SOURCE_LABELS: Record<string, string> = {
@@ -137,12 +146,32 @@ PAIN & SITUATION:
 - Best engagement time: ${intake.engagementTime ?? 'not specified'}
 ${ayurvedaContext}
 
+PAIN-SCRIPT SIGNALS FROM INTAKE (if extracted — use with confidential framework below):
+${formatPainScriptSignalsForPrompt(intake.painScriptSignals)}
+
+${buildPainScriptPlanPromptSection()}
+
 Generate a JSON object (only JSON, no markdown, no explanation) with this exact structure:
 {
   "overview": "2-3 sentences describing this person's situation and what this program will help them do. Warm, direct, written to the client.",
   "clientSummary": "2-3 sentences for the counselor: what is most important to understand about this person, what to watch for, what the therapeutic focus should be.",
   "keyThemes": ["theme1", "theme2", "theme3"],
   "watchPoints": ["thing to monitor 1", "thing to monitor 2"],
+  "protectedFormulation": {
+    "confidentiality": "CONFIDENTIAL / PROTECTED IP — RAak Pain Script System. Counselor eyes only. Not for client distribution or model training.",
+    "framework": "Pain Script System (RAak proprietary)",
+    "scriptMaintenanceHypothesis": "2-4 sentences: how beliefs, displays, and reinforcing experiences may be maintaining the pain script for THIS client",
+    "basicIdSnapshot": {
+      "behaviour": "brief note or omit key if unknown",
+      "affect": "...",
+      "sensation": "...",
+      "imagery": "...",
+      "cognition": "...",
+      "interpersonal": "...",
+      "drug": "..."
+    },
+    "week1TherapeuticLeverage": "1-2 sentences on which cycle points Week 1 practices target"
+  },
   "weeks": [
     {
       "week": 1,

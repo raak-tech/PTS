@@ -7,6 +7,7 @@ import { intakeResponses, planWeeks, plans } from '@/db/schema';
 import { assertProviderCanAccessClient } from '@/lib/client-access';
 import { recordAudit } from '@/lib/audit';
 import type { GeneratedPlan, WeekPlan } from '@/lib/plan-generator';
+import type { ProtectedFormulation } from '@/lib/confidential/pain-script-framework';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
 import { canAccessProviderConsole } from '@/lib/provider-console-access';
@@ -98,6 +99,7 @@ export async function POST(request: Request, context: RouteContext) {
     const summary = await buildWeeklySummary(clientId);
 
     let priorWeek: WeekPlan | undefined = summary.priorApprovedWeek ?? undefined;
+    let protectedFormulation: ProtectedFormulation | undefined;
     if (!priorWeek && approvedPlan) {
       const [priorRow] = await db
         .select({ content: planWeeks.content })
@@ -128,6 +130,23 @@ export async function POST(request: Request, context: RouteContext) {
         try {
           const plan = JSON.parse(draftPlan.generatedContent) as GeneratedPlan;
           priorWeek = plan.weeks.find((w) => w.week === parsed.data.weekNumber);
+          protectedFormulation = plan.protectedFormulation;
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+
+    if (!protectedFormulation && approvedPlan) {
+      const [approvedContent] = await db
+        .select({ generatedContent: plans.generatedContent })
+        .from(plans)
+        .where(eq(plans.id, approvedPlan.id))
+        .limit(1);
+      if (approvedContent?.generatedContent) {
+        try {
+          const plan = JSON.parse(approvedContent.generatedContent) as GeneratedPlan;
+          protectedFormulation = plan.protectedFormulation;
         } catch {
           /* ignore */
         }
@@ -144,6 +163,7 @@ export async function POST(request: Request, context: RouteContext) {
       weekNumber: nextWeek,
       summary,
       priorWeek,
+      protectedFormulation,
       context: {
         userId: clientId,
         planId: approvedPlan?.id,

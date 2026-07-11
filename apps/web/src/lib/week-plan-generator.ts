@@ -1,5 +1,9 @@
 import { log, logError } from '@/lib/logger';
 import {
+  buildPainScriptWeekPlanPromptSection,
+  type ProtectedFormulation,
+} from '@/lib/confidential/pain-script-framework';
+import {
   parseOpenRouterUsage,
   recordLlmUsage,
   type LlmUsageContext,
@@ -19,6 +23,7 @@ function buildWeekPrompt(
   weekNumber: number,
   summary: WeeklySummary,
   priorWeek?: WeekPlan,
+  protectedFormulation?: ProtectedFormulation | null,
 ): string {
   const insights = summary.scheduleInsights.slice(0, 6).join('\n- ') || 'No scheduling feedback yet.';
   const prior = priorWeek
@@ -88,6 +93,8 @@ ${shares}
 - ${insights}
 ${summary.latestWeeklyCheckIn ? `\nLATEST WEEKLY CHECK-IN (client words):\n${summary.latestWeeklyCheckIn}\n` : ''}${counselorComment}
 
+${buildPainScriptWeekPlanPromptSection(protectedFormulation)}
+
 Generate JSON for week ${weekNumber} ONLY (no markdown). Match this structure exactly:
 {
   "week": ${weekNumber},
@@ -128,6 +135,7 @@ export async function generateWeekPlan(opts: {
   weekNumber: number;
   summary: WeeklySummary;
   priorWeek?: WeekPlan;
+  protectedFormulation?: ProtectedFormulation | null;
   context?: LlmUsageContext;
 }): Promise<WeekPlan> {
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -157,7 +165,7 @@ export async function generateWeekPlan(opts: {
       },
       body: JSON.stringify({
         model,
-        messages: [{ role: 'user', content: buildWeekPrompt(opts.intake, opts.weekNumber, opts.summary, opts.priorWeek) }],
+        messages: [{ role: 'user', content: buildWeekPrompt(opts.intake, opts.weekNumber, opts.summary, opts.priorWeek, opts.protectedFormulation) }],
         temperature: 0.7,
         max_tokens: 4000,
         usage: { include: true },
