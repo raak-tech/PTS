@@ -1,8 +1,10 @@
 # PTS Pilot — Consolidated Todo (single source of truth)
 
-**Last updated:** 2026-07-04 (Run I — client workspace week sub-tabs + edit propagation)  
+**Last updated:** 2026-07-11 (Pain Script model parked on `PainModelLearned` branch)  
 **Purpose:** One execution queue for dev runs, APK drops, and counselor pilot.  
 **Rule:** Add new work here. Other docs keep product context only — link here instead of duplicating todos.
+
+**Parked work (not on `master`):** [`PAIN_MODEL_BRANCH.md`](PAIN_MODEL_BRANCH.md) — RAak Pain Script / BASIC I.D. integration on branch `PainModelLearned` (`137fd03`). Awaiting approval; do not merge or deploy until signed off.
 
 **Session snapshot (2026-07-04):**
 - **Run I shipped (web):** Plan tab week sub-tabs, per-week `WeekEditor` (edit + approve every round), per-week activity panel, cross-week patterns, and the edit→client propagation fix. `tsc` + `next build` green.
@@ -71,6 +73,17 @@
 - [x] **Update `week-plan-generator.ts` prompt** — enriched summary fields.
 - [x] **Program tab** — locked weeks show teaser copy until counselor releases (Run C1, APK 13).
 - [x] **Docs:** update `PROVIDER_WORKFLOW.md` + `PROJECT_STATUS_REVIEW.md` for Week-1-first model (§9.8).
+
+### 3b. Pain Script model (PARKED — not on `master`)
+
+**Branch:** `PainModelLearned` · **Doc:** [`PAIN_MODEL_BRANCH.md`](PAIN_MODEL_BRANCH.md) · **Status:** Awaiting approval — do not merge
+
+- [x] **Spike:** gap analysis — onboarding vs Pain Script / BASIC I.D. (formulation vs situation/goal)
+- [x] **Spike:** confidential framework in Week 1 + Weeks 2–6 LLM prompts; `protectedFormulation` counselor field
+- [x] **Spike:** optional `painScriptSignals` in intake extraction; client API stripping
+- [ ] **Approve** integration with product/counselor review
+- [ ] **Merge** `PainModelLearned` → `master` + deploy + test regeneration side-by-side
+- [ ] **Optional:** intake follow-ups when pain-script signals empty; workspace UI for protected formulation
 
 ---
 
@@ -257,6 +270,7 @@ OTP (pilot): `123456` for test numbers.
 | Document | Role now |
 |----------|----------|
 | **`PILOT_TODO.md`** | **← Active execution queue (this file)** |
+| **`PAIN_MODEL_BRANCH.md`** | **← Parked Pain Script integration (`PainModelLearned` branch)** |
 | **`DEV_WORKFLOW.md`** | **← Analyze → Document → Review → Build (required before §9 code)** |
 | `docs/plans/2026-07-02-section-9-counselor-alignment.md` | **§9 feature spec (shipped Run A–C)** |
 | `BACKLOG.md` | Long-term product backlog by track |
