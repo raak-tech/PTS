@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 
 import { getDb } from '@/db';
 import { intakeResponses, messages, planWeeks, plans, users } from '@/db/schema';
+import { getClientCounselorMap, isClientVisibleToProvider } from '@/lib/client-access';
 import { logError } from '@/lib/logger';
 import { describePendingPlanWeeks } from '@/lib/provider-console-access';
 import { getUserFromRequest } from '@/lib/session';
@@ -48,6 +49,9 @@ export async function GET(request: Request) {
     }
 
     const db = getDb();
+    const assignmentMap = await getClientCounselorMap();
+    const isVisible = (clientId: string) =>
+      isClientVisibleToProvider(clientId, user.id, assignmentMap);
 
     const draftPlans = (await db
       .select({
@@ -61,8 +65,9 @@ export async function GET(request: Request) {
       .from(plans)
       .where(eq(plans.status, 'draft'))
       .orderBy(plans.createdAt)) as DraftPlanRow[];
+    const visibleDraftPlans = draftPlans.filter((plan) => isVisible(plan.userId));
 
-    const clientIds: string[] = [...new Set(draftPlans.map((p) => p.userId))];
+    const clientIds: string[] = [...new Set(visibleDraftPlans.map((p) => p.userId))];
     const clientUsers: UserLabelRow[] =
       clientIds.length > 0
         ? ((await db
@@ -94,7 +99,7 @@ export async function GET(request: Request) {
     const userById = Object.fromEntries(clientUsers.map((u) => [u.id, u]));
     const intakeByUserId = Object.fromEntries(intakes.map((i) => [i.userId, i]));
 
-    const planIds = draftPlans.map((plan) => plan.id);
+    const planIds = visibleDraftPlans.map((plan) => plan.id);
     const weekRows =
       planIds.length > 0
         ? ((await db
@@ -139,6 +144,7 @@ export async function GET(request: Request) {
       .from(users)
       .where(eq(users.role, 'client'))
       .orderBy(desc(users.createdAt))) as (UserLabelRow & { createdAt: Date })[];
+    const visibleClients = allClients.filter((client) => isVisible(client.id));
 
     const allPlans = (await db
       .select({ userId: plans.userId, status: plans.status })
@@ -153,7 +159,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      pendingPlans: draftPlans.map((plan) => ({
+      pendingPlans: visibleDraftPlans.map((plan) => ({
         id: plan.id,
         clientId: plan.userId,
         clientName: displayLabel(userById[plan.userId] ?? { displayName: null, phone: null, email: 'unknown@unknown.com' }),
@@ -163,14 +169,16 @@ export async function GET(request: Request) {
         intake: intakeByUserId[plan.userId] ?? null,
         generatedContent: plan.generatedContent,
       })),
-      unreadMessages: Object.entries(unreadByClient).map(([clientId, count]) => ({
+      unreadMessages: Object.entries(unreadByClient)
+        .filter(([clientId]) => isVisible(clientId))
+        .map(([clientId, count]) => ({
         clientId,
         clientName: displayLabel(
-          allClients.find((c) => c.id === clientId) ?? { displayName: null, phone: null, email: 'unknown@unknown.com' },
+          visibleClients.find((c) => c.id === clientId) ?? { displayName: null, phone: null, email: 'unknown@unknown.com' },
         ),
         count,
       })),
-      clients: allClients.map((client) => ({
+      clients: visibleClients.map((client) => ({
         id: client.id,
         name: displayLabel(client),
         planStatus: planStatusByUser[client.id] ?? 'none',

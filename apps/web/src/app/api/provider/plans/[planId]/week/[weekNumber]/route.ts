@@ -12,6 +12,7 @@ import type { GeneratedPlan, WeekPlan } from '@/lib/plan-generator';
 import { toDateIso } from '@/lib/program-calendar';
 import { seedDailyFromApprovedPlan } from '@/lib/seed-daily-from-plan';
 import { getUserFromRequest } from '@/lib/session';
+import { assertProviderCanAccessClient } from '@/lib/client-access';
 import { canAccessProviderConsole } from '@/lib/provider-console-access';
 
 function unauthorized() {
@@ -65,6 +66,10 @@ export async function PATCH(
 
     if (!planRow) {
       return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    }
+
+    if (!(await assertProviderCanAccessClient(user.id, planRow.userId))) {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
 
     const now = new Date();
@@ -160,6 +165,10 @@ export async function POST(
 
     if (!planRow) {
       return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    }
+
+    if (!(await assertProviderCanAccessClient(user.id, planRow.userId))) {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
 
     const now = new Date();

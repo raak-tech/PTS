@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { buildEngagementForClients } from '@/lib/client-engagement';
-import { getVisibleClientIdsForProvider } from '@/lib/client-access';
+import { assertProviderCanAccessClient, getVisibleClientIdsForProvider } from '@/lib/client-access';
 import { localDateIso } from '@/lib/daily-layer';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
@@ -21,6 +21,9 @@ export async function GET(request: Request) {
     let clientIds: string[];
 
     if (clientIdParam) {
+      if (!(await assertProviderCanAccessClient(user.id, clientIdParam))) {
+        return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+      }
       clientIds = [clientIdParam];
     } else {
       clientIds = await getVisibleClientIdsForProvider(user.id);

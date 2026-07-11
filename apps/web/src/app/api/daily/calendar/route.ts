@@ -9,6 +9,7 @@ import { dailyCalendarEntries, clientCounselor } from '@/db/schema';
 import { assertCounselorForClient } from '@/lib/client-access';
 import { localDateIso, parseCalendarBlocks, type CalendarBlock } from '@/lib/daily-layer';
 import { logError } from '@/lib/logger';
+import { canAccessProviderConsole } from '@/lib/provider-console-access';
 import { getUserFromRequest } from '@/lib/session';
 
 const putSchema = z.object({
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
     const db = getDb();
 
     let targetClientId = user.id;
-    if (user.role === 'provider') {
+    if (canAccessProviderConsole(user) && user.role !== 'client') {
       if (!clientId) return NextResponse.json({ error: 'clientId_required' }, { status: 400 });
       if (!(await assertCounselorForClient(user.id, clientId))) {
         return NextResponse.json({ error: 'forbidden' }, { status: 403 });

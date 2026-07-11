@@ -5,6 +5,22 @@ import { isAdminUser } from '@/lib/admin';
 import { getDb } from '@/db';
 import { clientCounselor, users } from '@/db/schema';
 
+type AccessUser = { id: string; role: string; email: string };
+
+async function loadAccessActor(userId: string): Promise<AccessUser | null> {
+  const db = getDb();
+  const [actor] = (await db
+    .select({ id: users.id, role: users.role, email: users.email })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1)) as AccessUser[];
+  return actor ?? null;
+}
+
+function isConsoleAdmin(actor: AccessUser): boolean {
+  return actor.role === 'admin' || isAdminUser(actor);
+}
+
 export async function getAssignedCounselorId(clientId: string): Promise<string | null> {
   const db = getDb();
   const [row] = await db
@@ -45,32 +61,55 @@ export async function getVisibleClientIdsForProvider(providerId: string): Promis
     .map((c: { id: string }) => c.id);
 }
 
-/** Strict assignment check (messages, sensitive writes). */
-export async function assertCounselorForClient(counselorId: string, clientId: string): Promise<boolean> {
-  const assigned = await getAssignedCounselorId(clientId);
-  return assigned === counselorId;
-}
-
-/** Pilot: any provider may view/act on registered clients in the counselor console. */
+/**
+ * Provider may view/act on clients that are unassigned (pickup) or assigned to them.
+ * Admins bypass assignment rules.
+ */
 export async function assertProviderCanAccessClient(
   providerId: string,
   clientId: string,
 ): Promise<boolean> {
-  const db = getDb();
-  const [actor] = await db
-    .select({ role: users.role, email: users.email })
-    .from(users)
-    .where(eq(users.id, providerId))
-    .limit(1);
+  const actor = await loadAccessActor(providerId);
   if (!actor) return false;
-  if (actor.role === 'admin' || isAdminUser(actor)) return true;
-
+  if (isConsoleAdmin(actor)) return true;
   if (actor.role !== 'provider') return false;
 
+  const db = getDb();
   const [client] = await db
     .select({ role: users.role })
     .from(users)
     .where(eq(users.id, clientId))
     .limit(1);
-  return client?.role === 'client';
+  if (client?.role !== 'client') return false;
+
+  const assignmentMap = await getClientCounselorMap();
+  return isClientVisibleToProvider(clientId, providerId, assignmentMap);
+}
+
+/** Strict assignment check for assigned-client operations (messages on active caseload, notes, etc.). */
+export async function assertCounselorForClient(counselorId: string, clientId: string): Promise<boolean> {
+  const actor = await loadAccessActor(counselorId);
+  if (!actor) return false;
+  if (isConsoleAdmin(actor)) return true;
+
+  const assigned = await getAssignedCounselorId(clientId);
+  return assigned === counselorId;
+}
+
+/** Provider/admin may open a message thread with this client. */
+export async function assertMessageAccess(actorId: string, otherUserId: string): Promise<boolean> {
+  const [actor, other] = await Promise.all([loadAccessActor(actorId), loadAccessActor(otherUserId)]);
+  if (!actor || !other) return false;
+
+  if (actor.role === 'client' && other.role === 'provider') {
+    return true;
+  }
+
+  if ((actor.role === 'provider' || isConsoleAdmin(actor)) && other.role === 'client') {
+    return assertProviderCanAccessClient(actor.id, other.id);
+  }
+
+  if (isConsoleAdmin(actor)) return true;
+
+  return actor.id === other.id;
 }

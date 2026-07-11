@@ -4,6 +4,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { planWeeks, plans, users } from '@/db/schema';
 import { getUserFromCookieHeader } from '@/lib/session';
+import { assertProviderCanAccessClient } from '@/lib/client-access';
 import { canAccessProviderConsole } from '@/lib/provider-console-access';
 import { regeneratePlanDraftForUser } from '@/lib/regenerate-plan-for-user';
 import { seedDraftPlanWeeks } from '@/lib/seed-plan-weeks';
@@ -27,6 +28,10 @@ export async function POST(request: Request) {
 
   if (!userId) {
     return Response.json({ ok: false, reason: 'missing_user_id' }, { status: 400 });
+  }
+
+  if (!(await assertProviderCanAccessClient(user.id, userId))) {
+    return Response.json({ ok: false, reason: 'forbidden' }, { status: 403 });
   }
 
   const db = getDb();

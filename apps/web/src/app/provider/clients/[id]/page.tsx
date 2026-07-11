@@ -1,11 +1,15 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 import { desc, eq } from 'drizzle-orm';
 
 import { getDb } from '@/db';
 import { intakeResponses, intakeSessions, planWeeks, plans, supportArtifacts, userConsents, users } from '@/db/schema';
+import { isAdminUser } from '@/lib/admin';
+import { getClientCounselorMap, isClientVisibleToProvider } from '@/lib/client-access';
 import type { GeneratedPlan, WeekPlan } from '@/lib/plan-generator';
 import { formatClientLabel } from '@/lib/provider-display';
+import { getUserFromCookieHeader } from '@/lib/session';
 import { ProviderClientWorkspaceClient } from './ProviderClientWorkspaceClient';
 
 type Props = {
@@ -31,6 +35,12 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
   const initialTab = parseTab(sp.tab);
   const parsedWeek = Number(sp.week);
   const initialWeek = Number.isFinite(parsedWeek) && parsedWeek >= 1 && parsedWeek <= 6 ? parsedWeek : 1;
+
+  const user = await getUserFromCookieHeader((await headers()).get('cookie'));
+  const assignmentMap = user && !isAdminUser(user) ? await getClientCounselorMap() : {};
+  if (user && !isAdminUser(user) && !isClientVisibleToProvider(id, user.id, assignmentMap)) {
+    notFound();
+  }
 
   const db = getDb();
 

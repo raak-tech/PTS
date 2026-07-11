@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { assertCounselorForClient } from '@/lib/client-access';
+import { assertProviderCanAccessClient } from '@/lib/client-access';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
 import { canAccessProviderConsole } from '@/lib/provider-console-access';
@@ -16,7 +16,7 @@ export async function GET(request: Request, context: RouteContext) {
     }
 
     const { id: clientId } = await context.params;
-    if (!(await assertCounselorForClient(user.id, clientId))) {
+    if (!(await assertProviderCanAccessClient(user.id, clientId))) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
 

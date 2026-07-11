@@ -14,6 +14,7 @@ import {
 import type { GeneratedPlan } from '@/lib/plan-generator';
 import { regeneratePlanDraftForUser } from '@/lib/regenerate-plan-for-user';
 import { seedDailyFromApprovedPlan } from '@/lib/seed-daily-from-plan';
+import { assertProviderCanAccessClient } from '@/lib/client-access';
 import { isAdminUser } from '@/lib/admin';
 import { canAccessProviderConsole } from '@/lib/provider-console-access';
 import { getUserFromRequest } from '@/lib/session';
@@ -38,6 +39,14 @@ export async function GET(request: Request) {
       : user.id;
 
     const db = getDb();
+
+    if (
+      (user.role === 'provider' || isAdminUser(user)) &&
+      targetUserId !== user.id &&
+      !(await assertProviderCanAccessClient(user.id, targetUserId))
+    ) {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    }
 
     let plan = null;
     if (user.role === 'client') {
@@ -117,6 +126,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'not_found' }, { status: 404 });
       }
 
+      if (!(await assertProviderCanAccessClient(user.id, planRow.userId))) {
+        return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+      }
+
       let planContent = planRow.generatedContent;
       try {
         const generated = JSON.parse(planRow.generatedContent) as GeneratedPlan;
@@ -185,6 +198,10 @@ export async function POST(request: Request) {
 
       if (!planRow) {
         return NextResponse.json({ error: 'not_found' }, { status: 404 });
+      }
+
+      if (!(await assertProviderCanAccessClient(user.id, planRow.userId))) {
+        return NextResponse.json({ error: 'forbidden' }, { status: 403 });
       }
 
       const planId = await regeneratePlanDraftForUser(planRow.userId);

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 import { getDb } from '@/db';
 import { counselorNotes } from '@/db/schema';
-import { assertCounselorForClient } from '@/lib/client-access';
+import { assertProviderCanAccessClient } from '@/lib/client-access';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
 import { canAccessProviderConsole } from '@/lib/provider-console-access';
@@ -28,7 +28,7 @@ export async function GET(request: Request, context: RouteContext) {
 
     const { id } = await context.params;
 
-    if (!(await assertCounselorForClient(user.id, id))) {
+    if (!(await assertProviderCanAccessClient(user.id, id))) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
 

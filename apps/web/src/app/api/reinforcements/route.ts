@@ -9,6 +9,7 @@ import { dailyReinforcements, reinforcementResponses } from '@/db/schema';
 import { assertCounselorForClient } from '@/lib/client-access';
 import { isDateInRange, localDateIso } from '@/lib/daily-layer';
 import { logError } from '@/lib/logger';
+import { canAccessProviderConsole } from '@/lib/provider-console-access';
 import { resolveCounselorAudioUrl } from '@/lib/reinforcement-audio';
 import { getUserFromRequest } from '@/lib/session';
 
@@ -103,12 +104,15 @@ export async function GET(request: Request) {
       });
     }
 
-    if (user.role !== 'provider') {
+    if (!canAccessProviderConsole(user)) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
 
     const targetClientId = clientId ?? user.id;
-    if (clientId && !(await assertCounselorForClient(user.id, clientId))) {
+    if (!clientId) {
+      return NextResponse.json({ error: 'clientId_required' }, { status: 400 });
+    }
+    if (!(await assertCounselorForClient(user.id, clientId))) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
 
@@ -167,7 +171,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const user = await getUserFromRequest(request);
-    if (!user || user.role !== 'provider') {
+    if (!user || !canAccessProviderConsole(user)) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
 

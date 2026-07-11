@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { getDb } from '@/db';
 import { messages, users } from '@/db/schema';
+import { assertMessageAccess } from '@/lib/client-access';
 import { sendPushToUser } from '@/lib/expo-push';
 import { recordAudit } from '@/lib/audit';
 import { logError } from '@/lib/logger';
@@ -24,6 +25,10 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const withUserId = searchParams.get('with');
     if (!withUserId) return NextResponse.json({ error: 'missing ?with param' }, { status: 400 });
+
+    if (!(await assertMessageAccess(user.id, withUserId))) {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    }
 
     const db = getDb();
 
@@ -75,6 +80,10 @@ export async function POST(request: Request) {
       .limit(1);
 
     if (!recipient) return NextResponse.json({ error: 'recipient-not-found' }, { status: 404 });
+
+    if (!(await assertMessageAccess(user.id, parsed.data.toUserId))) {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    }
 
     const now = new Date();
     await db.insert(messages).values({
