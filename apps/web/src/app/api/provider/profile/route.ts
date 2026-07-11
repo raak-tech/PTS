@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { getDb } from '@/db';
 import { counselorProfiles } from '@/db/schema';
 import { getUserFromCookieHeader } from '@/lib/session';
+import { canAccessProviderConsole } from '@/lib/provider-console-access';
 import { recordAudit } from '@/lib/audit';
 import { logError } from '@/lib/logger';
 
@@ -23,7 +24,7 @@ export async function PATCH(request: Request) {
     const headersList = await headers();
     const user = await getUserFromCookieHeader(headersList.get('cookie'));
 
-    if (!user || user.role !== 'provider') {
+    if (!user || !canAccessProviderConsole(user)) {
       return Response.json({ ok: false, error: 'unauthorized' }, { status: 401 });
     }
 

@@ -156,6 +156,9 @@ function DetailTable({ detail }: { detail: MetricDetail }) {
                   <>
                     <div>
                       Status: <strong>{String(row.status)}</strong>
+                      {row.pendingWeeks ? (
+                        <span style={{ marginLeft: 8, color: '#555' }}>· {String(row.pendingWeeks)}</span>
+                      ) : null}
                       {row.crisisNote ? (
                         <span style={{ color: '#b71c1c', marginLeft: 8 }}>CRISIS</span>
                       ) : null}
@@ -198,8 +201,8 @@ function DetailTable({ detail }: { detail: MetricDetail }) {
                     Full dossier
                   </Link>
                 ) : null}
-                {detail.kind === 'pending-plans' && row.userId ? (
-                  <Link href="/provider/plans" style={{ fontSize: 13, marginLeft: 8 }}>
+                {detail.kind === 'pending-plans' && row.id ? (
+                  <Link href={`/provider/plans?highlight=${String(row.id)}`} style={{ fontSize: 13, marginLeft: 8 }}>
                     Review
                   </Link>
                 ) : null}

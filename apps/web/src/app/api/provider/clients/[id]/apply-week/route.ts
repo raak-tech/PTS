@@ -7,6 +7,7 @@ import { assertCounselorForClient } from '@/lib/client-access';
 import type { WeekPlan } from '@/lib/plan-generator';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
+import { canAccessProviderConsole } from '@/lib/provider-console-access';
 
 const bodySchema = z.object({
   week: z.object({
@@ -30,7 +31,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function POST(request: Request, context: RouteContext) {
   try {
     const user = await getUserFromRequest(request);
-    if (!user || user.role !== 'provider') {
+    if (!user || !canAccessProviderConsole(user)) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
 

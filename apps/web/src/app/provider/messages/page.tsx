@@ -7,6 +7,7 @@ import { getDb } from '@/db';
 import { clientCounselor, messages, users } from '@/db/schema';
 import { formatClientLabel } from '@/lib/provider-display';
 import { isPilotPiiVisible } from '@/lib/pii';
+import { canAccessProviderConsole } from '@/lib/provider-console-access';
 import { getUserFromCookieHeader } from '@/lib/session';
 import { MessagesClient } from '@/app/messages/MessagesClient';
 
@@ -18,8 +19,8 @@ export default async function ProviderMessagesPage({
   searchParams?: Promise<{ with?: string }>;
 }) {
   const user = await getUserFromCookieHeader((await headers()).get('cookie'));
-  if (!user || user.role !== 'provider') {
-    redirect('/login/mobile?next=/provider/clients');
+  if (!user || !canAccessProviderConsole(user)) {
+    redirect('/login?next=/provider/messages');
   }
 
   const params = await searchParams;

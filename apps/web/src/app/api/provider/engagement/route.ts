@@ -5,11 +5,12 @@ import { getVisibleClientIdsForProvider } from '@/lib/client-access';
 import { localDateIso } from '@/lib/daily-layer';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
+import { canAccessProviderConsole } from '@/lib/provider-console-access';
 
 export async function GET(request: Request) {
   try {
     const user = await getUserFromRequest(request);
-    if (!user || user.role !== 'provider') {
+    if (!user || !canAccessProviderConsole(user)) {
       return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     }
 

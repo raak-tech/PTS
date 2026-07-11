@@ -4,6 +4,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { planWeeks, plans, users } from '@/db/schema';
 import { getUserFromCookieHeader } from '@/lib/session';
+import { canAccessProviderConsole } from '@/lib/provider-console-access';
 import { regeneratePlanDraftForUser } from '@/lib/regenerate-plan-for-user';
 import { seedDraftPlanWeeks } from '@/lib/seed-plan-weeks';
 import { recordAudit } from '@/lib/audit';
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
   const headersList = await headers();
   const user = await getUserFromCookieHeader(headersList.get('cookie'));
 
-  if (!user || user.role !== 'provider') {
+  if (!user || !canAccessProviderConsole(user)) {
     return Response.json({ ok: false, reason: 'unauthorized' }, { status: 401 });
   }
 

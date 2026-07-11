@@ -1,5 +1,7 @@
 import { eq } from 'drizzle-orm';
 
+import { isAdminUser } from '@/lib/admin';
+
 import { getDb } from '@/db';
 import { clientCounselor, users } from '@/db/schema';
 
@@ -55,12 +57,15 @@ export async function assertProviderCanAccessClient(
   clientId: string,
 ): Promise<boolean> {
   const db = getDb();
-  const [provider] = await db
-    .select({ role: users.role })
+  const [actor] = await db
+    .select({ role: users.role, email: users.email })
     .from(users)
     .where(eq(users.id, providerId))
     .limit(1);
-  if (provider?.role !== 'provider') return false;
+  if (!actor) return false;
+  if (actor.role === 'admin' || isAdminUser(actor)) return true;
+
+  if (actor.role !== 'provider') return false;
 
   const [client] = await db
     .select({ role: users.role })

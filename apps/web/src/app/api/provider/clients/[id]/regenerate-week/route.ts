@@ -9,6 +9,7 @@ import { recordAudit } from '@/lib/audit';
 import type { GeneratedPlan, WeekPlan } from '@/lib/plan-generator';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
+import { canAccessProviderConsole } from '@/lib/provider-console-access';
 import { buildWeeklySummary } from '@/lib/weekly-summary';
 import { generateWeekPlan } from '@/lib/week-plan-generator';
 
@@ -23,7 +24,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function POST(request: Request, context: RouteContext) {
   try {
     const user = await getUserFromRequest(request);
-    if (!user || user.role !== 'provider') {
+    if (!user || !canAccessProviderConsole(user)) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
 

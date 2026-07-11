@@ -4,22 +4,31 @@ import { eq, inArray, isNull } from 'drizzle-orm';
 
 import { getDb } from '../../../db';
 import { intakeResponses, planWeeks, plans, users } from '../../../db/schema';
+import { isAdminUser } from '@/lib/admin';
 import { getClientCounselorMap, isClientVisibleToProvider } from '../../../lib/client-access';
 import { formatClientContact } from '@/lib/pii';
+import { describePendingPlanWeeks } from '@/lib/provider-console-access';
+import type { GeneratedPlan } from '../../../lib/plan-generator';
 import { getUserFromCookieHeader } from '../../../lib/session';
 import { PlanReviewClient } from './PlanReviewClient';
 import { PendingIntakesClient } from './PendingIntakesClient';
-import type { GeneratedPlan } from '../../../lib/plan-generator';
 
 export const metadata: Metadata = { title: 'Plan review | Provider' };
 
-export default async function ProviderPlansPage() {
+export default async function ProviderPlansPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ highlight?: string }>;
+}) {
   const db = getDb();
   const user = await getUserFromCookieHeader((await headers()).get('cookie'));
+  const sp = (await Promise.resolve(searchParams ?? {})) as { highlight?: string };
+  const highlightPlanId = sp.highlight ?? null;
   const providerId = user?.id ?? '';
-  const assignmentMap = providerId ? await getClientCounselorMap() : {};
+  const isAdmin = isAdminUser(user);
+  const assignmentMap = providerId && !isAdmin ? await getClientCounselorMap() : {};
   const isVisible = (clientId: string) =>
-    providerId ? isClientVisibleToProvider(clientId, providerId, assignmentMap) : true;
+    isAdmin || (providerId ? isClientVisibleToProvider(clientId, providerId, assignmentMap) : true);
 
   // Pending intakes (no plan yet)
   type PendingIntakeRow = { userId: string; painSource: string; hasRedFlags: boolean; isSafe: boolean; createdAt: Date };
@@ -100,6 +109,13 @@ export default async function ProviderPlansPage() {
     intake: intakeByUserId[p.userId] ?? null,
     parsed: JSON.parse(p.generatedContent) as GeneratedPlan,
     weekStatuses: weekStatusByPlan[p.id] ?? {},
+    pendingWeeksLabel: describePendingPlanWeeks(
+      p.status,
+      Object.entries(weekStatusByPlan[p.id] ?? {}).map(([weekNumber, status]) => ({
+        weekNumber: Number(weekNumber),
+        status,
+      })),
+    ),
     hasCrisisNotes: (p.counselorNotes ?? '').includes('CRISIS'),
   }));
 
@@ -137,7 +153,9 @@ export default async function ProviderPlansPage() {
           plan={plan.parsed}
           createdAt={plan.createdAt.toLocaleDateString()}
           initialWeekStatuses={plan.weekStatuses}
+          pendingWeeksLabel={plan.pendingWeeksLabel}
           hasCrisisNotes={plan.hasCrisisNotes}
+          initialExpanded={highlightPlanId === plan.id}
         />
       ))}
 

@@ -14,6 +14,8 @@ import {
 import type { GeneratedPlan } from '@/lib/plan-generator';
 import { regeneratePlanDraftForUser } from '@/lib/regenerate-plan-for-user';
 import { seedDailyFromApprovedPlan } from '@/lib/seed-daily-from-plan';
+import { isAdminUser } from '@/lib/admin';
+import { canAccessProviderConsole } from '@/lib/provider-console-access';
 import { getUserFromRequest } from '@/lib/session';
 
 export const maxDuration = 300;
@@ -30,7 +32,8 @@ export async function GET(request: Request) {
     if (!user) return unauthorized();
 
     const { searchParams } = new URL(request.url);
-    const targetUserId = user.role === 'provider'
+    const targetUserId =
+      user.role === 'provider' || isAdminUser(user)
       ? (searchParams.get('userId') ?? user.id)
       : user.id;
 
@@ -89,7 +92,7 @@ const approveSchema = z.object({
 export async function POST(request: Request) {
   try {
     const user = await getUserFromRequest(request);
-    if (!user || user.role !== 'provider') {
+    if (!user || !canAccessProviderConsole(user)) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
 

@@ -12,6 +12,7 @@ import type { GeneratedPlan, WeekPlan } from '@/lib/plan-generator';
 import { toDateIso } from '@/lib/program-calendar';
 import { seedDailyFromApprovedPlan } from '@/lib/seed-daily-from-plan';
 import { getUserFromRequest } from '@/lib/session';
+import { canAccessProviderConsole } from '@/lib/provider-console-access';
 
 function unauthorized() {
   return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
@@ -30,7 +31,7 @@ export async function PATCH(
 ) {
   try {
     const user = await getUserFromRequest(request);
-    if (!user || user.role !== 'provider') return unauthorized();
+    if (!user || !canAccessProviderConsole(user)) return unauthorized();
 
     const { planId, weekNumber } = await params;
     const weekNum = parseInt(weekNumber, 10);
@@ -135,7 +136,7 @@ export async function POST(
 ) {
   try {
     const user = await getUserFromRequest(request);
-    if (!user || user.role !== 'provider') return unauthorized();
+    if (!user || !canAccessProviderConsole(user)) return unauthorized();
 
     const { planId, weekNumber } = await params;
     const weekNum = parseInt(weekNumber, 10);

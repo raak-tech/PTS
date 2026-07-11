@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 
 import { getDb } from '../../../db';
 import { counselorProfiles } from '../../../db/schema';
+import { canAccessProviderConsole } from '@/lib/provider-console-access';
 import { getUserFromCookieHeader } from '../../../lib/session';
 import { ProfileEditorClient } from './ProfileEditorClient';
 
@@ -22,8 +23,8 @@ function safeParseList(value: string | null): string[] {
 
 export default async function ProviderProfilePage() {
   const user = await getUserFromCookieHeader((await headers()).get('cookie'));
-  if (!user) redirect('/login/mobile?next=/provider/profile');
-  if (user.role !== 'provider') redirect('/');
+  if (!user) redirect('/login?next=/provider/profile');
+  if (!canAccessProviderConsole(user)) redirect('/');
 
   const db = getDb();
 

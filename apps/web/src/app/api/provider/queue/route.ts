@@ -2,9 +2,11 @@ import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 import { getDb } from '@/db';
-import { intakeResponses, messages, plans, users } from '@/db/schema';
+import { intakeResponses, messages, planWeeks, plans, users } from '@/db/schema';
 import { logError } from '@/lib/logger';
+import { describePendingPlanWeeks } from '@/lib/provider-console-access';
 import { getUserFromRequest } from '@/lib/session';
+import { canAccessProviderConsole } from '@/lib/provider-console-access';
 
 function displayLabel(user: { displayName: string | null; phone: string | null; email: string }) {
   if (user.displayName) return user.displayName;
@@ -41,7 +43,7 @@ type IntakeSummaryRow = {
 export async function GET(request: Request) {
   try {
     const user = await getUserFromRequest(request);
-    if (!user || user.role !== 'provider') {
+    if (!user || !canAccessProviderConsole(user)) {
       return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     }
 
@@ -92,6 +94,29 @@ export async function GET(request: Request) {
     const userById = Object.fromEntries(clientUsers.map((u) => [u.id, u]));
     const intakeByUserId = Object.fromEntries(intakes.map((i) => [i.userId, i]));
 
+    const planIds = draftPlans.map((plan) => plan.id);
+    const weekRows =
+      planIds.length > 0
+        ? ((await db
+            .select({
+              planId: planWeeks.planId,
+              weekNumber: planWeeks.weekNumber,
+              status: planWeeks.status,
+            })
+            .from(planWeeks)
+            .where(inArray(planWeeks.planId, planIds))) as {
+            planId: string;
+            weekNumber: number;
+            status: string;
+          }[])
+        : [];
+
+    const weeksByPlan: Record<string, { weekNumber: number; status: string }[]> = {};
+    for (const row of weekRows) {
+      if (!weeksByPlan[row.planId]) weeksByPlan[row.planId] = [];
+      weeksByPlan[row.planId].push({ weekNumber: row.weekNumber, status: row.status });
+    }
+
     const unreadRows = await db
       .select({ fromUserId: messages.fromUserId })
       .from(messages)
@@ -134,6 +159,7 @@ export async function GET(request: Request) {
         clientName: displayLabel(userById[plan.userId] ?? { displayName: null, phone: null, email: 'unknown@unknown.com' }),
         createdAt: plan.createdAt.toISOString(),
         counselorNotes: plan.counselorNotes,
+        pendingWeeksLabel: describePendingPlanWeeks(plan.status, weeksByPlan[plan.id] ?? []),
         intake: intakeByUserId[plan.userId] ?? null,
         generatedContent: plan.generatedContent,
       })),

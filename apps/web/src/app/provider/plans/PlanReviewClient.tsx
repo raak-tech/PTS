@@ -50,7 +50,9 @@ export function PlanReviewClient({
   plan,
   createdAt,
   initialWeekStatuses = {},
+  pendingWeeksLabel,
   hasCrisisNotes = false,
+  initialExpanded = false,
 }: {
   planId: string;
   clientEmail: string;
@@ -59,9 +61,11 @@ export function PlanReviewClient({
   plan: GeneratedPlan;
   createdAt: string;
   initialWeekStatuses?: Record<number, 'draft' | 'edited' | 'approved'>;
+  pendingWeeksLabel?: string;
   hasCrisisNotes?: boolean;
+  initialExpanded?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(initialExpanded);
   const [crisisAcknowledged, setCrisisAcknowledged] = useState(false);
   const [regenStatus, setRegenStatus] = useState<'idle' | 'generating'>('idle');
   const [holisticVisibility, setHolisticVisibility] = useState<HolisticVisibility>(DEFAULT_HOLISTIC_VISIBILITY);
@@ -125,7 +129,7 @@ export function PlanReviewClient({
           <div>
             <p style={{ margin: 0, fontWeight: 700, color: '#111' }}>{clientEmail}</p>
             <p style={{ margin: '2px 0 0', fontSize: 13, color: '#666' }}>
-              Week 1 draft · Generated {createdAt} · {approvedCount}/{PROGRAM_WEEKS} weeks approved
+              {pendingWeeksLabel ?? `Week 1 draft`} · Generated {createdAt} · {approvedCount}/{PROGRAM_WEEKS} weeks approved
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>

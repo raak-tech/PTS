@@ -4,6 +4,7 @@ import { buildProgramMetrics } from '@/lib/client-week-metrics';
 import { assertProviderCanAccessClient } from '@/lib/client-access';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
+import { canAccessProviderConsole } from '@/lib/provider-console-access';
 
 export const maxDuration = 60;
 
@@ -14,7 +15,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function GET(request: Request, context: RouteContext) {
   try {
     const user = await getUserFromRequest(request);
-    if (!user || user.role !== 'provider') {
+    if (!user || !canAccessProviderConsole(user)) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
 

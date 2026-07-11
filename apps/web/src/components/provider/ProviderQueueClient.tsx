@@ -9,6 +9,7 @@ type QueuePlan = {
   clientName: string;
   createdAt: string;
   counselorNotes: string | null;
+  pendingWeeksLabel?: string;
   intake: { hasRedFlags: boolean } | null;
 };
 
@@ -270,7 +271,7 @@ export function ProviderQueueClient() {
               <div>
                 <div style={{ fontWeight: 700 }}>{plan.clientName}</div>
                 <div style={{ fontSize: '0.875rem', color: 'var(--muted)', marginTop: 4 }}>
-                  Draft · {new Date(plan.createdAt).toLocaleDateString()}
+                  {plan.pendingWeeksLabel ?? 'Draft'} · {new Date(plan.createdAt).toLocaleDateString()}
                 </div>
                 {plan.intake?.hasRedFlags ? (
                   <span className="provider-tag provider-tag--danger" style={{ marginTop: 8 }}>
@@ -278,7 +279,7 @@ export function ProviderQueueClient() {
                   </span>
                 ) : null}
               </div>
-              <Link href="/provider/plans" className="actionLink secondary">
+              <Link href={`/provider/plans?highlight=${plan.id}`} className="actionLink secondary">
                 Review →
               </Link>
             </div>

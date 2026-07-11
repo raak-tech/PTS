@@ -1,4 +1,4 @@
-import { desc, eq, ne } from 'drizzle-orm';
+import { desc, eq, inArray, ne } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 
 import { getDb } from '@/db';
@@ -8,6 +8,7 @@ import {
   intakeResponses,
   llmUsage,
   messages,
+  planWeeks,
   plans,
   users,
 } from '@/db/schema';
@@ -35,6 +36,7 @@ export function isMetricDetailKind(value: string): value is MetricDetailKind {
 }
 
 import { displayEmail, displayPhone, displayText, userContactLabel } from '@/lib/pii';
+import { describePendingPlanWeeks } from '@/lib/provider-console-access';
 
 export async function getMetricDetail(kind: MetricDetailKind) {
   const db = getDb();
@@ -228,6 +230,29 @@ export async function getMetricDetail(kind: MetricDetailKind) {
         phone: string | null;
       }[];
 
+      const planIds = rows.map((r) => r.planId);
+      const weekRows =
+        planIds.length > 0
+          ? ((await db
+              .select({
+                planId: planWeeks.planId,
+                weekNumber: planWeeks.weekNumber,
+                status: planWeeks.status,
+              })
+              .from(planWeeks)
+              .where(inArray(planWeeks.planId, planIds))) as {
+              planId: string;
+              weekNumber: number;
+              status: string;
+            }[])
+          : [];
+
+      const weeksByPlan: Record<string, { weekNumber: number; status: string }[]> = {};
+      for (const row of weekRows) {
+        if (!weeksByPlan[row.planId]) weeksByPlan[row.planId] = [];
+        weeksByPlan[row.planId].push({ weekNumber: row.weekNumber, status: row.status });
+      }
+
       const titles: Record<string, string> = {
         plans: 'All plans',
         'pending-plans': 'Pending plan drafts',
@@ -242,6 +267,7 @@ export async function getMetricDetail(kind: MetricDetailKind) {
           userId: r.userId,
           label: userContactLabel(r.displayName, r.email, r.phone),
           status: r.status,
+          pendingWeeks: describePendingPlanWeeks(r.status, weeksByPlan[r.planId] ?? []),
           createdAt: r.createdAt.toISOString(),
           approvedAt: r.approvedAt?.toISOString() ?? null,
           crisisNote: r.counselorNotes?.includes('CRISIS') ?? false,

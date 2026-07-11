@@ -7,6 +7,7 @@ import { clientCounselor } from '@/db/schema';
 import { assertProviderCanAccessClient } from '@/lib/client-access';
 import { recordAudit } from '@/lib/audit';
 import { getUserFromRequest } from '@/lib/session';
+import { canAccessProviderConsole } from '@/lib/provider-console-access';
 
 const bodySchema = z.object({
   required: z.boolean(),
@@ -16,7 +17,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, context: RouteContext) {
   const user = await getUserFromRequest(_request);
-  if (!user || user.role !== 'provider') {
+  if (!user || !canAccessProviderConsole(user)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
@@ -46,7 +47,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
 export async function POST(request: Request, context: RouteContext) {
   const user = await getUserFromRequest(request);
-  if (!user || user.role !== 'provider') {
+  if (!user || !canAccessProviderConsole(user)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
