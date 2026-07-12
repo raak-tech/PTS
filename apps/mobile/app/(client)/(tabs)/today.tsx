@@ -11,7 +11,8 @@ import { NRSFaceScale } from '@/components/daily/NRSFaceScale';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { useAuth } from '@/context/AuthContext';
-import { AyurvedaCard, MusicMomentCard, YogaTrialCard } from '@/components/holistic/HolisticCards';
+import { AyurvedaCard, MusicMomentCard, YogicPracticeCard } from '@/components/holistic/HolisticCards';
+import { weekHolisticYoga } from '@/lib/holisticDisplay';
 import { useCounselorContact, useMusicCatalog, useTodayPlan } from '@/hooks/useClientData';
 import {
   apiGetDailyNote,
@@ -383,8 +384,8 @@ export default function TodayScreen() {
     if (holisticWeek?.ayurvedaBlock) {
       tasks.push({ id: 'ayurveda', label: 'Ayurveda wellness', done: holisticCompleted.ayurveda });
     }
-    if (holisticWeek?.yogaTrial) {
-      tasks.push({ id: 'yoga', label: 'Yoga trial', done: holisticCompleted.yoga });
+    if (holisticWeek && weekHolisticYoga(holisticWeek)) {
+      tasks.push({ id: 'yoga', label: 'Breath & reflection', done: holisticCompleted.yoga });
     }
     if (holisticWeek?.musicMoment) {
       tasks.push({ id: 'music', label: 'Music moment', done: holisticCompleted.music });
@@ -546,16 +547,18 @@ export default function TodayScreen() {
             loading={holisticSaving === 'ayurveda'}
           />
         ) : null;
-      case 'yoga':
-        return holisticWeek?.yogaTrial ? (
-          <YogaTrialCard
+      case 'yoga': {
+        const yogic = holisticWeek ? weekHolisticYoga(holisticWeek) : null;
+        return yogic ? (
+          <YogicPracticeCard
             embedded
-            trial={holisticWeek.yogaTrial}
+            practice={yogic}
             completed={holisticCompleted.yoga}
             onComplete={() => void onHolisticComplete('yoga')}
             loading={holisticSaving === 'yoga'}
           />
         ) : null;
+      }
       case 'music':
         return holisticWeek?.musicMoment ? (
           <MusicMomentCard
@@ -565,7 +568,9 @@ export default function TodayScreen() {
             onComplete={() => void onHolisticComplete('music')}
             loading={holisticSaving === 'music'}
             curatedSpotifyUrl={
-              musicCatalog[purposeToTag(holisticWeek.musicMoment.purpose)]?.spotifyUri
+              holisticWeek.musicMoment.resolvedTracks?.[0]?.url
+                ? undefined
+                : musicCatalog[purposeToTag(holisticWeek.musicMoment.purpose)]?.spotifyUri
             }
           />
         ) : null;

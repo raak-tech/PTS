@@ -5,7 +5,8 @@ import { and, eq } from 'drizzle-orm';
 import type { getDb } from '@/db';
 import { dailyCalendarEntries, dailyReinforcements } from '@/db/schema';
 import { localDateIso, type CalendarBlock } from '@/lib/daily-layer';
-import type { GeneratedPlan } from '@/lib/plan-generator';
+import type { GeneratedPlan } from '@/lib/holistic-plan-types';
+import { ayurvedaDisplayLines, weekHolisticYoga } from '@/lib/holistic-plan-types';
 import { getWeekReinforcementTemplates } from '@/lib/reinforcement-templates';
 
 type Db = ReturnType<typeof getDb>;
@@ -90,39 +91,37 @@ export async function seedDailyFromApprovedPlan(
     });
   });
 
-  if (week.ayurvedaBlock?.practices[0]) {
+  const ayurvedaLines = week.ayurvedaBlock ? ayurvedaDisplayLines(week.ayurvedaBlock) : [];
+  if (ayurvedaLines[0]) {
     blocks.push({
       id: 'ayurveda-0',
       type: 'custom',
-      label: `Ayurveda: ${week.ayurvedaBlock.practices[0].slice(0, 40)}`,
+      label: `Ayurveda: ${ayurvedaLines[0].slice(0, 40)}`,
       plannedTime: '07:30',
       status: 'planned',
     });
   }
 
-  if (week.yogaTrial?.microMovement) {
+  const yogic = weekHolisticYoga(week);
+  if (yogic) {
     blocks.push({
       id: 'yoga-0',
       type: 'custom',
-      label: `Yoga trial: ${week.yogaTrial.microMovement.title}`,
+      label: `Breath & reflection: ${yogic.breathingTechnique.title}`,
       plannedTime: '11:00',
       status: 'planned',
     });
   }
 
-  if (week.musicMoment?.playlist?.title) {
+  const musicLabel =
+    week.musicMoment?.resolvedTracks?.[0]?.title ??
+    week.musicMoment?.playlist?.title ??
+    week.musicMoment?.suggestion;
+  if (musicLabel) {
     blocks.push({
       id: 'music-0',
       type: 'music',
-      label: week.musicMoment.playlist.title,
-      plannedTime: '17:00',
-      status: 'planned',
-    });
-  } else if (week.musicMoment?.suggestion) {
-    blocks.push({
-      id: 'music-0',
-      type: 'music',
-      label: week.musicMoment.suggestion,
+      label: musicLabel.slice(0, 60),
       plannedTime: '17:00',
       status: 'planned',
     });

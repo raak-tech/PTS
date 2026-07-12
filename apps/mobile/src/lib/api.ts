@@ -32,14 +32,28 @@ export type GeneratedPlan = {
     week: number;
     theme: string;
     focus: string;
+    personalizationBasis?: string;
     dailyPractices: { title: string; description: string; duration: string }[];
     weeklyReflection: string;
     counselorNote: string;
-    ayurvedaBlock?: { practices: string[]; rhythmNote: string; disclaimer?: string };
+    ayurvedaBlock?: {
+      dietaryGuidance?: string;
+      foodsToFavour?: string[];
+      foodsToAvoid?: string[];
+      rhythmNote: string;
+      disclaimer?: string;
+      practices?: string[];
+    };
+    yogicPractice?: {
+      breathingTechnique: { title: string; description: string; duration: string };
+      meditation: { title: string; description: string; duration: string };
+      philosophicalFraming: string;
+      disclaimer: string;
+    };
     yogaTrial?: {
       principle: string;
       applicability: string;
-      microMovement: { title: string; description: string; duration: string };
+      microMovement?: { title: string; description: string; duration: string };
       disclaimer: string;
     };
     reinforcementTemplate?: { title: string; bodyText: string };
@@ -47,6 +61,9 @@ export type GeneratedPlan = {
     musicMoment?: {
       purpose: string;
       suggestion: string;
+      mood?: string;
+      searchTerms?: string[];
+      resolvedTracks?: { title: string; artist?: string; url: string }[];
       playlist?: {
         title: string;
         description: string;
@@ -869,6 +886,32 @@ export async function apiSubmitMonthlyCheckIn(
       method: 'POST',
       headers: authHeaders(token),
       body: JSON.stringify({ painLevel, sleepQuality, intention }),
+    }),
+  );
+}
+
+export type FlareSupportMessage = {
+  opening: string;
+  intervention: string;
+  readOut?: string;
+  safety: string;
+};
+
+export async function apiSubmitFlare(
+  token: string,
+  opts: { painLevel?: number; triggerText?: string },
+) {
+  return parseJson<{
+    ok: boolean;
+    flareId: string;
+    safetyConcern: boolean;
+    severity: string;
+    message: FlareSupportMessage;
+  }>(
+    await fetchWithTimeout(`${API_URL}/api/flares`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify(opts),
     }),
   );
 }

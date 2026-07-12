@@ -32,6 +32,7 @@ function applyHolisticVisibility(
   return {
     ...week,
     ayurvedaBlock: visibility.ayurveda ? week.ayurvedaBlock : undefined,
+    yogicPractice: visibility.yoga ? week.yogicPractice : undefined,
     yogaTrial: visibility.yoga ? week.yogaTrial : undefined,
     musicMoment: visibility.music ? week.musicMoment : undefined,
   };

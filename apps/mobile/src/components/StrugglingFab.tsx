@@ -105,6 +105,16 @@ export function StrugglingFab() {
             {mode === 'menu' ? (
               <>
                 <Text style={styles.sheetTitle}>Take a moment</Text>
+                <HitTarget
+                  style={styles.option}
+                  onPress={() => {
+                    close();
+                    router.push('/(client)/profile/flare-up');
+                  }}
+                >
+                  <Text style={styles.optionText}>Pain flare-up</Text>
+                  <Text style={styles.optionHint}>Short guided support when pain spikes</Text>
+                </HitTarget>
                 <HitTarget style={styles.option} onPress={() => setMode('breathe')}>
                   <Text style={styles.optionText}>Grounding breath</Text>
                   <Text style={styles.optionHint}>2-minute pause — no outcome promised</Text>

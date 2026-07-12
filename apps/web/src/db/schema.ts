@@ -242,6 +242,22 @@ export const musicSets = pgTable("music_sets", {
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
 
+/** §7A.3 — resolved / owned music tracks (YouTube, Spotify, owned CDN). */
+export const musicTracks = pgTable("music_tracks", {
+  id: text("id").primaryKey(),
+  provider: text("provider").notNull(),
+  externalId: text("external_id"),
+  assetUrl: text("asset_url"),
+  title: text("title").notNull(),
+  artist: text("artist"),
+  purpose: text("purpose").notNull(),
+  mood: text("mood"),
+  language: text("language"),
+  durationSec: integer("duration_sec"),
+  approvedBy: text("approved_by"),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
 export const holisticCompletions = pgTable("holistic_completions", {
   id: text("id").primaryKey(),
   clientId: text("client_id").notNull(),
@@ -259,6 +275,19 @@ export const weeklyCheckIns = pgTable("weekly_check_ins", {
   weekStartIso: text("week_start_iso").notNull(),
   answersJson: text("answers_json").notNull(),
   submittedAt: timestamp("submitted_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+/** Pain Script Phase G — client flare reports. */
+export const flareEvents = pgTable("flare_events", {
+  id: text("id").primaryKey(),
+  clientId: text("client_id").notNull(),
+  painLevel: integer("pain_level"),
+  triggerText: text("trigger_text"),
+  tagsJson: text("tags_json").notNull().default("[]"),
+  severity: text("severity").notNull().default("low"),
+  safetyConcern: boolean("safety_concern").notNull().default(false),
+  interventionKey: text("intervention_key"),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
 
 export const eveningReflections = pgTable("evening_reflections", {

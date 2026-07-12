@@ -13,6 +13,7 @@ import {
   WEEKLY_CHECK_IN_PROMPTS,
 } from '@/lib/check-in-prompts';
 import { logError } from '@/lib/logger';
+import { handleWeeklyCheckInRescore } from '@/lib/pain-script/flare-orchestration';
 import { canAccessProviderConsole } from '@/lib/provider-console-access';
 import { getUserFromRequest } from '@/lib/session';
 
@@ -140,6 +141,12 @@ export async function POST(request: Request) {
         submittedAt: now,
       });
     }
+
+    void handleWeeklyCheckInRescore({
+      userId: user.id,
+      weekNumber,
+      answers,
+    }).catch((err) => logError('weekly_rescore_async_error', err));
 
     return NextResponse.json({ ok: true });
   } catch (err) {

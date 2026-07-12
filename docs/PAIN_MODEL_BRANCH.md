@@ -1,7 +1,8 @@
 # Pain Script A/B Pilot — `PainModelLearned` branch
 
 **Status:** Active development on branch `PainModelLearned` — **not merged to `master`**  
-**Scope:** MacBook spec Phases A–D + spike integration + cohort A/B APK support  
+**Scope:** MacBook spec Phases A–D + §1A/§7/§7A M1/§7B holistic & music + cohort A/B APK support  
+**Tracker:** [`docs/PAIN_SCRIPT_IMPLEMENTATION_CHECKLIST.md`](./PAIN_SCRIPT_IMPLEMENTATION_CHECKLIST.md) — work through items in order; do not drop.  
 **Clinical prompts:** Ramya-approved `PTS_PainScript_Prompts_DRAFT.md` (MacBook)
 
 ---
@@ -58,7 +59,7 @@ cd apps/mobile
 
 ```bash
 cd apps/web && node scripts/migrate.mjs
-# Applies 0026_pain_script_engine.sql
+# Applies 0026_pain_script_engine.sql + 0027_music_tracks.sql + 0028_flare_events.sql
 ```
 
 ---

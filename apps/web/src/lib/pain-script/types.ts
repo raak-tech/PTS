@@ -1,3 +1,11 @@
+import type {
+  AyurvedaBlock,
+  DailyPractice,
+  MusicMoment,
+  WeekPlan,
+  YogicPractice,
+} from '@/lib/holistic-plan-types';
+import type { ModalityCode } from '@/lib/pain-script/modalities';
 import type { FormulationTag } from '@/lib/pain-script/tags';
 
 export type BeliefItem = {
@@ -70,42 +78,17 @@ export type ProfileSnapshot = {
   completeness: number;
 };
 
-export type TaggedDailyPractice = {
-  title: string;
-  description: string;
-  duration: string;
+export type TaggedDailyPractice = DailyPractice & {
   targets: FormulationTag[];
   mechanism?: string;
+  modality?: ModalityCode;
 };
 
-export type TaggedWeekPlan = {
-  week: number;
-  theme: string;
-  focus: string;
-  targets: FormulationTag[];
-  personalizationBasis?: string;
+export type TaggedWeekPlan = Omit<WeekPlan, 'dailyPractices' | 'ayurvedaBlock' | 'musicMoment' | 'yogicPractice'> & {
   dailyPractices: TaggedDailyPractice[];
-  weeklyReflection: string;
-  counselorNote: string;
-  ayurvedaBlock?: { practices: string[]; rhythmNote: string; disclaimer?: string };
-  yogaTrial?: {
-    principle: string;
-    applicability: string;
-    microMovement: { title: string; description: string; duration: string };
-    disclaimer: string;
-  };
-  reinforcementTemplate?: { title: string; bodyText: string };
-  reinforcementTemplates?: { title: string; bodyText: string }[];
-  musicMoment?: {
-    purpose: string;
-    suggestion: string;
-    playlist: {
-      title: string;
-      description: string;
-      tracks: { title: string; artist: string; note: string }[];
-      spotifySearchQuery: string;
-    };
-  };
+  ayurvedaBlock?: AyurvedaBlock;
+  yogicPractice?: YogicPractice;
+  musicMoment?: MusicMoment;
 };
 
 export type PilotCohort = 'legacy' | 'pain_script';

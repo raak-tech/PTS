@@ -147,6 +147,54 @@ export async function updateFormulationDraft(
     .where(eq(formulations.id, formulationId));
 }
 
+export async function insertRescoreDraftFormulation(opts: {
+  userId: string;
+  intakeResponseId: string;
+  formulation: PainScriptFormulation;
+  counselorNote: string;
+}): Promise<string> {
+  const db = getDb();
+  const now = new Date();
+
+  const [latest] = await db
+    .select({ version: formulations.version })
+    .from(formulations)
+    .where(eq(formulations.userId, opts.userId))
+    .orderBy(desc(formulations.version))
+    .limit(1);
+
+  const version = (latest?.version ?? 0) + 1;
+
+  await db
+    .update(formulations)
+    .set({ status: 'superseded', updatedAt: now })
+    .where(and(eq(formulations.userId, opts.userId), ne(formulations.status, 'approved')));
+
+  const id = randomUUID();
+  await db.insert(formulations).values({
+    id,
+    userId: opts.userId,
+    intakeResponseId: opts.intakeResponseId,
+    version,
+    scriptBeliefs: JSON.stringify(opts.formulation.scriptBeliefs),
+    scriptDisplays: JSON.stringify(opts.formulation.scriptDisplays),
+    reinforcingExperiences: JSON.stringify(opts.formulation.reinforcingExperiences),
+    basicId: JSON.stringify(opts.formulation.basicId),
+    maintenanceHypothesis: opts.formulation.maintenanceHypothesis,
+    primaryTargets: JSON.stringify(opts.formulation.primaryTargets),
+    confidenceJson: JSON.stringify(opts.formulation.confidence),
+    safetyFlag: false,
+    safetyReason: null,
+    source: 'rescore',
+    status: 'draft',
+    counselorNote: opts.counselorNote,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  return id;
+}
+
 export async function approveFormulation(
   formulationId: string,
   counselorId: string,

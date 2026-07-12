@@ -52,6 +52,7 @@ export async function regeneratePlanDraftForUser(userId: string): Promise<string
           biggestChange: saved.biggestChange,
           recoveryGoal: saved.recoveryGoal,
           ayurvedaPreferences: saved.ayurvedaPreferences,
+          onsetType: (saved.onsetType as 'sudden' | 'gradual' | 'mixed' | null) ?? null,
         },
         profile,
         { userId },

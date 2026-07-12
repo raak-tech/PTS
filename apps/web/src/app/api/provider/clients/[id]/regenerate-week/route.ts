@@ -6,8 +6,12 @@ import { getDb } from '@/db';
 import { intakeResponses, planWeeks, plans } from '@/db/schema';
 import { assertProviderCanAccessClient } from '@/lib/client-access';
 import { recordAudit } from '@/lib/audit';
-import type { GeneratedPlan, WeekPlan } from '@/lib/plan-generator';
+import type { GeneratedPlan, WeekPlan } from '@/lib/holistic-plan-types';
 import type { ProtectedFormulation } from '@/lib/confidential/pain-script-framework';
+import { getUserPilotCohort } from '@/lib/pain-script/cohort';
+import { usesPainScriptPath } from '@/lib/pain-script/flags';
+import { getApprovedFormulation } from '@/lib/pain-script/formulation-store';
+import { loadProfileSnapshot } from '@/lib/pain-script/profile-snapshot';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
 import { canAccessProviderConsole } from '@/lib/provider-console-access';
@@ -130,7 +134,7 @@ export async function POST(request: Request, context: RouteContext) {
         try {
           const plan = JSON.parse(draftPlan.generatedContent) as GeneratedPlan;
           priorWeek = plan.weeks.find((w) => w.week === parsed.data.weekNumber);
-          protectedFormulation = plan.protectedFormulation;
+          protectedFormulation = plan.protectedFormulation as ProtectedFormulation | undefined;
         } catch {
           /* ignore */
         }
@@ -146,11 +150,20 @@ export async function POST(request: Request, context: RouteContext) {
       if (approvedContent?.generatedContent) {
         try {
           const plan = JSON.parse(approvedContent.generatedContent) as GeneratedPlan;
-          protectedFormulation = plan.protectedFormulation;
+          protectedFormulation = plan.protectedFormulation as ProtectedFormulation | undefined;
         } catch {
           /* ignore */
         }
       }
+    }
+
+    const cohort = await getUserPilotCohort(clientId);
+    let formulation = null;
+    let profile = null;
+    if (usesPainScriptPath(cohort)) {
+      const approved = await getApprovedFormulation(clientId);
+      formulation = approved?.formulation ?? null;
+      profile = await loadProfileSnapshot(clientId);
     }
 
     const weekDraft = await generateWeekPlan({
@@ -164,6 +177,9 @@ export async function POST(request: Request, context: RouteContext) {
       summary,
       priorWeek,
       protectedFormulation,
+      formulation,
+      profile,
+      onsetType: (intake.onsetType as 'sudden' | 'gradual' | 'mixed' | null) ?? null,
       context: {
         userId: clientId,
         planId: approvedPlan?.id,

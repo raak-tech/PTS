@@ -10,51 +10,17 @@ import {
   recordLlmUsage,
   type LlmUsageContext,
 } from '@/lib/llm-usage';
+import {
+  type GeneratedPlan,
+  type MusicMoment,
+  type WeekPlan,
+  type YogaTrial,
+} from '@/lib/holistic-plan-types';
+import { buildLegacyPlanHolisticSchemaSnippet } from '@/lib/pain-script/prompts';
+import { postProcessGeneratedPlan } from '@/lib/pain-script/plan-post-process';
 
-export type YogaTrial = {
-  principle: string;
-  applicability: string;
-  microMovement: { title: string; description: string; duration: string };
-  disclaimer: string;
-};
-
-export type MusicPlaylist = {
-  title: string;
-  description: string;
-  tracks: { title: string; artist: string; note: string }[];
-  spotifySearchQuery: string;
-};
-
-export type WeekPlan = {
-  week: number;
-  theme: string;
-  focus: string;
-  dailyPractices: { title: string; description: string; duration: string }[];
-  weeklyReflection: string;
-  counselorNote: string;
-  ayurvedaBlock?: { practices: string[]; rhythmNote: string; disclaimer?: string };
-  yogaTrial?: YogaTrial;
-  reinforcementTemplate?: { title: string; bodyText: string };
-  /** Counselor may assign multiple daily read-outs per week. */
-  reinforcementTemplates?: { title: string; bodyText: string }[];
-  musicMoment?: {
-    purpose: string;
-    suggestion: string;
-    playlist: MusicPlaylist;
-  };
-};
-
-export type GeneratedPlan = {
-  overview: string;
-  clientSummary: string; // what the counselor understands about this person
-  weeks: WeekPlan[];
-  keyThemes: string[];
-  watchPoints: string[]; // things the counselor should monitor
-  /** Counselor-only — RAak proprietary formulation. Never show to clients. */
-  protectedFormulation?: ProtectedFormulation;
-  /** Client-safe — pain script cohort only */
-  formulationSummary?: string;
-};
+export type { GeneratedPlan, WeekPlan, YogaTrial, MusicMoment };
+export type MusicPlaylist = NonNullable<MusicMoment['playlist']>;
 
 type IntakeData = {
   painSource: string;
@@ -186,41 +152,7 @@ Generate a JSON object (only JSON, no markdown, no explanation) with this exact 
       ],
       "weeklyReflection": "The weekly reflection question or prompt for the client — one focused question",
       "counselorNote": "What the counselor should look for or discuss this week — 1-2 sentences",
-      "ayurvedaBlock": {
-        "practices": ["1-2 gentle non-movement practices suited to this person"],
-        "rhythmNote": "One sentence on daily rhythm that may help",
-        "disclaimer": "Supportive wellness only — not medical Ayurvedic treatment. Stop if pain increases."
-      },
-      "yogaTrial": {
-        "principle": "One yoga principle (e.g. ahimsa, breath awareness, acceptance) explained in plain language",
-        "applicability": "2-3 sentences on how this principle applies to THIS person's pain situation and confidence",
-        "microMovement": {
-          "title": "Very small optional movement (confidence-building, not exercise prescription)",
-          "description": "What to do, slowly, with stop-if-pain-increases guardrail",
-          "duration": "2-5 min"
-        },
-        "disclaimer": "Yoga-inspired support — not physiotherapy or medical advice. Skip movement if unsure."
-      },
-      "reinforcementTemplate": {
-        "title": "Short title for daily read-out",
-        "bodyText": "2-4 sentences the client reads aloud or internalizes each morning — specific to this week's theme"
-      },
-      "musicMoment": {
-        "purpose": "grounding | activation | flare | reflection",
-        "suggestion": "1-2 sentences on how to listen and why this helps this week",
-        "playlist": {
-          "title": "Curated playlist title for this week",
-          "description": "One sentence on the mood and intent",
-          "tracks": [
-            { "title": "realistic track name", "artist": "artist name", "note": "why this track fits" },
-            { "title": "track 2", "artist": "artist", "note": "why" },
-            { "title": "track 3", "artist": "artist", "note": "why" },
-            { "title": "track 4", "artist": "artist", "note": "why" },
-            { "title": "track 5", "artist": "artist", "note": "why" }
-          ],
-          "spotifySearchQuery": "search phrase to find similar music on Spotify"
-        }
-      }
+      ${buildLegacyPlanHolisticSchemaSnippet().split('\n').slice(1).join('\n      ')}
     }
   ]
 }
@@ -229,8 +161,8 @@ Generate **only Week 1** in the weeks array (one object). Weeks 2–6 will be cr
 Week 1 focus: stabilisation (grounding, understanding, safe foundation).
 
 Make the daily practices specific to this person's situation and goal.
-Yoga trial is SEPARATE from dailyPractices — focus on principles and tiny confidence-building movement, not a workout plan.
-Music playlist tracks should be real, well-known songs where possible (instrumental or gentle vocals for pain support).
+Yogic practice is SEPARATE from dailyPractices — breath, meditation, and philosophy ONLY (no movement).
+Music: output purpose, mood, searchTerms, and language ONLY — do NOT invent track names or artists.
 Keep language warm, non-clinical, and empowering. Avoid jargon.
 Return only valid JSON.`;
 }
@@ -321,6 +253,7 @@ export async function generatePlan(
   try {
     const plan = JSON.parse(cleaned) as GeneratedPlan;
     plan.weeks = plan.weeks.slice(0, 1);
+    const processed = await postProcessGeneratedPlan(plan, { resolveMusic: true });
     await recordLlmUsage({
       operation: 'plan_generation',
       model,
@@ -330,7 +263,7 @@ export async function generatePlan(
       latencyMs,
       requestId: data.id ?? null,
     });
-    return plan;
+    return processed;
   } catch {
     logError('plan_generation_parse_error', new Error('Invalid JSON from LLM'), {
       finishReason,

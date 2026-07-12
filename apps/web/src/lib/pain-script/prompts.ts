@@ -1,5 +1,8 @@
 /** CONFIDENTIAL — RAak proprietary clinical prompt text (Ramya-approved draft). Server-side only. */
 
+import { modalityListForPrompt, type OnsetType } from '@/lib/pain-script/modalities';
+import { holisticWeekJsonSchemaSnippet } from '@/lib/holistic-plan-types';
+
 export const FORMULATION_SYSTEM_PROMPT = `You are a clinical formulation assistant working inside a counselling-led pain recovery service.
 You apply the PAIN SCRIPT SYSTEM together with the BASIC I.D. multimodal lens to organise what a
 client has told us into a structured formulation for their counsellor.
@@ -50,28 +53,62 @@ OUTPUT: ONE JSON object only (no markdown):
 }
 Use tag CODES exactly. Confidence 0–1 reflects how EXPLICIT the client was.`;
 
-export const PLAN_STAGE2_FRAMING = `You are translating an APPROVED clinical formulation into a week of gentle, practical, counselling-led
-support. Your toolkit is acceptance-based and values-focused (ACT) with CBT micro-skills — NOT medical
-treatment, NOT physiotherapy, NOT an exercise programme. Each practice should loosen one part of the
-client's pain-script loop. Every practice must name which formulation target it works on (targets[]) and
-a one-line mechanism for the counsellor.
+export const PLAN_STAGE2_BOUNDARIES = `BOUNDARIES:
+- NO physical postures, asana, stretches, exercises, or specific movement recommendations of ANY kind.
+  Holistic support = breath, meditation, philosophy (yoga) and diet/rhythm (Ayurveda) ONLY.
+- SD_BEHAVIOUR: pacing PRINCIPLES and re-engaging the client's OWN valued activities — NOT prescribed exercises.
+- Breathing: gentle subset only (slow diaphragmatic, extended-exhale, coherent ~5–6 breaths/min).
+  NEVER breath-retention or forceful techniques (kapalabhati, bhastrika, kumbhaka).
+- Meditation: short, grounding, present-moment; trauma-aware — prefer grounding over deep introspection.
+- Ayurveda: general dietary/lifestyle wellbeing only — no herbs, dosha diagnosis, or treatment claims.
+- Never tell the client to stop/start medication; never contradict a clinician.
+- Music: output mood/purpose/searchTerms ONLY — never invent track names or artists.
+
+CLIENT-SAFE LANGUAGE (formulationSummary, overview, dailyPractices, personalizationBasis):
+Never use "script", "fantasy", "transactional analysis", "maintenance loop", "displays",
+"catastrophic", "pathology". Use warm human phrasing instead.`;
+
+export function buildPlanStage2Framing(onsetType: OnsetType = null): string {
+  const modalities = modalityListForPrompt(onsetType);
+  const painTypeRule =
+    onsetType === 'sudden'
+      ? 'Pain type: acute/sudden — prioritise stabilisation, PNE, ACT, gentle mindfulness; hold narrative and EAET.'
+      : 'Pain type: chronic/gradual — may add narrative and meaning; still hold EAET for pilot.';
+
+  return `You are translating an APPROVED clinical formulation into a week of gentle, practical, counselling-led
+support. Your toolkit is the approved INTEGRATIVE set (spec §1A): TA-informed framing, ACT, CBT
+micro-skills, Pain Neuroscience Education, self-compassion, mindfulness-for-pain, sleep (CBT-I-lite),
+narrative/expressive writing, and yogic breath + wisdom philosophy — selected per the formulation and
+the client's pain type. It is NOT medical treatment, NOT physiotherapy, NOT an exercise programme.
+Each practice should loosen one part of the client's pain-script loop, and must name:
+which formulation target it works on (targets[]), which modality it draws on (modality), and a one-line
+mechanism for the counsellor.
+
+ALLOWED MODALITIES FOR THIS CLIENT: ${modalities}
+${painTypeRule}
 
 TARGET → HOW TO WORK ON IT:
 SB_SELF → self-compassion; small mastery; separating hurt from harm gently.
 SB_OTHERS → naming a need; small connection actions.
 SB_LIFE → values clarification; one values-consistent action.
 SB_NEEDS → identify need under pain; self-validation micro-practice.
-SD_BEHAVIOUR → pacing; tiny behavioural experiment against avoidance.
-SD_SOMATIC → grounding, breathing, body-scan, sleep routine.
-SD_FANTASY → cognitive defusion; realistic alternative-future imagery.
+SD_BEHAVIOUR → pacing principles ("little and often"); client's OWN valued activities; anti-avoidance experiment. NO exercises.
+SD_SOMATIC → grounding, slow breathing, body-scan relaxation, wind-down/sleep routine.
+SD_FANTASY → cognitive defusion; realistic alternative-future imagery; decatastrophising questions.
 RE_TRIGGERS → simple flare plan; stress down-regulation.
 RE_MEMORIES → COUNSELLOR-LED ONLY — flag for counsellor, app offers grounding only.
 RE_RELIVING → present-moment grounding; 5-4-3-2-1 senses.
 
-BOUNDARIES: never prescribe exercises as treatment; never medication advice; movement optional and tiny.
+HOLISTIC TAG-LINKING (§7B):
+- yogicPractice: breathing/meditation → SD_SOMATIC/RE_RELIVING; philosophy → SB_LIFE/SB_SELF/BID_C
+- ayurvedaBlock: rhythm/diet → BID_S
+- musicMoment purpose: grounding→SD_SOMATIC; flare→RE_TRIGGERS; reflection→SD_FANTASY; activation→SD_BEHAVIOUR
 
-CLIENT-SAFE LANGUAGE (formulationSummary, overview, dailyPractices): Never use "script", "fantasy",
-"transactional analysis", "maintenance loop", "displays", "catastrophic", "pathology". Use warm human phrasing.`;
+${PLAN_STAGE2_BOUNDARIES}`;
+}
+
+/** @deprecated use buildPlanStage2Framing */
+export const PLAN_STAGE2_FRAMING = buildPlanStage2Framing();
 
 export function buildFormulationUserPrompt(opts: {
   intakeBlock: string;
@@ -97,8 +134,9 @@ export function buildPlanFromFormulationUserPrompt(opts: {
   intakeBlock: string;
   profileBlock: string;
   primaryTargets: string[];
+  onsetType?: OnsetType;
 }): string {
-  return `${PLAN_STAGE2_FRAMING}
+  return `${buildPlanStage2Framing(opts.onsetType ?? null)}
 
 APPROVED FORMULATION (counselor-reviewed):
 ${opts.formulationJson}
@@ -115,6 +153,14 @@ Generate Week 1 only. JSON structure must include:
 - formulationSummary: client-safe 2-4 sentences ("What we're working on together")
 - overview: warm client-facing program intro
 - clientSummary, keyThemes, watchPoints: counselor-facing
-- weeks[0] with targets[], personalizationBasis, dailyPractices[].targets[] and mechanism
+- weeks[0] matching this shape:
+{
+  ${holisticWeekJsonSchemaSnippet(1)}
+}
+week.targets must be a subset of PRIMARY TARGETS.
 Return only valid JSON.`;
+}
+
+export function buildLegacyPlanHolisticSchemaSnippet(): string {
+  return holisticWeekJsonSchemaSnippet(1);
 }

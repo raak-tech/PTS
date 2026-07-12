@@ -165,6 +165,14 @@ export function PlanReviewClient({
               </div>
             )}
 
+            {/* Pain-script client intro (cohort B) */}
+            {plan.formulationSummary ? (
+              <div style={{ marginBottom: 20, padding: '14px 16px', background: '#e8f5e9', borderRadius: 10, border: '1px solid #c8e6c9' }}>
+                <p style={{ margin: '0 0 6px', fontWeight: 600, fontSize: 13 }}>What we&apos;re working on together (client-facing)</p>
+                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: '#333' }}>{plan.formulationSummary}</p>
+              </div>
+            ) : null}
+
             {/* LLM counselor summary */}
             <div style={{ marginBottom: 20 }}>
               <p style={{ margin: '0 0 6px', fontWeight: 600 }}>Counselor summary</p>
@@ -228,7 +236,7 @@ export function PlanReviewClient({
               {(['ayurveda', 'yoga', 'music'] as const).map(key => (
                 <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 14, cursor: 'pointer' }}>
                   <input type="checkbox" checked={holisticVisibility[key]} onChange={() => toggleHolistic(key)} />
-                  {key === 'ayurveda' ? 'Include Ayurveda-informed wellness' : key === 'yoga' ? 'Include yoga principle trial' : 'Include music playlists'}
+                  {key === 'ayurveda' ? 'Include Ayurveda diet & rhythm' : key === 'yoga' ? 'Include breath, meditation & reflection' : 'Include music moment'}
                 </label>
               ))}
             </div>

@@ -4,10 +4,15 @@ import {
   recordLlmUsage,
   type LlmUsageContext,
 } from '@/lib/llm-usage';
-import type { GeneratedPlan, WeekPlan } from '@/lib/plan-generator';
+import type { GeneratedPlan, WeekPlan } from '@/lib/holistic-plan-types';
 import { modelForOperation } from '@/lib/pain-script/models';
 import { buildPlanFromFormulationUserPrompt } from '@/lib/pain-script/prompts';
+import {
+  postProcessGeneratedPlan,
+  validatePlanTags,
+} from '@/lib/pain-script/plan-post-process';
 import { formatProfileSnapshotForPrompt } from '@/lib/pain-script/profile-snapshot';
+import type { OnsetType } from '@/lib/pain-script/modalities';
 import type { PainScriptFormulation, ProfileSnapshot } from '@/lib/pain-script/types';
 
 type PlanIntakeInput = {
@@ -18,6 +23,7 @@ type PlanIntakeInput = {
   biggestChange: string;
   recoveryGoal: string;
   ayurvedaPreferences?: string | null;
+  onsetType?: OnsetType;
 };
 
 function intakeBlock(intake: PlanIntakeInput): string {
@@ -26,7 +32,10 @@ function intakeBlock(intake: PlanIntakeInput): string {
     `Goal: ${intake.recoveryGoal}`,
     `Change: ${intake.biggestChange}`,
     `Duration: ${intake.painDuration}`,
-  ].join('\n');
+    intake.onsetType ? `Onset: ${intake.onsetType}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 export async function generatePlanFromFormulation(
@@ -46,6 +55,7 @@ export async function generatePlanFromFormulation(
     intakeBlock: intakeBlock(intake),
     profileBlock: formatProfileSnapshotForPrompt(profile),
     primaryTargets: formulation.primaryTargets,
+    onsetType: intake.onsetType ?? null,
   });
 
   const controller = new AbortController();
@@ -110,53 +120,26 @@ export async function generatePlanFromFormulation(
   const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
 
   try {
-    type RawWeek = {
-      week?: number;
-      theme: string;
-      focus: string;
-      targets?: string[];
-      personalizationBasis?: string;
-      dailyPractices?: {
-        title: string;
-        description: string;
-        duration: string;
-        targets?: string[];
-        mechanism?: string;
-      }[];
-      weeklyReflection?: string;
-      counselorNote?: string;
-      ayurvedaBlock?: WeekPlan['ayurvedaBlock'];
-      yogaTrial?: WeekPlan['yogaTrial'];
-      reinforcementTemplate?: WeekPlan['reinforcementTemplate'];
-      reinforcementTemplates?: WeekPlan['reinforcementTemplates'];
-      musicMoment?: WeekPlan['musicMoment'];
-    };
-
-    const parsed = JSON.parse(cleaned) as GeneratedPlan & {
-      formulationSummary?: string;
-      weeks?: RawWeek[];
-    };
-
+    const parsed = JSON.parse(cleaned) as GeneratedPlan & { formulationSummary?: string };
     const first = (parsed.weeks ?? [])[0];
     const week: WeekPlan = {
       week: 1,
       theme: first?.theme ?? 'Getting started',
       focus: first?.focus ?? '',
-      dailyPractices: (first?.dailyPractices ?? []).map((p) => ({
-        title: p.title,
-        description: p.description,
-        duration: p.duration,
-      })),
+      targets: first?.targets,
+      personalizationBasis: first?.personalizationBasis,
+      dailyPractices: first?.dailyPractices ?? [],
       weeklyReflection: first?.weeklyReflection ?? '',
       counselorNote: first?.counselorNote ?? '',
       ayurvedaBlock: first?.ayurvedaBlock,
+      yogicPractice: first?.yogicPractice,
       yogaTrial: first?.yogaTrial,
       reinforcementTemplate: first?.reinforcementTemplate,
       reinforcementTemplates: first?.reinforcementTemplates,
       musicMoment: first?.musicMoment,
     };
 
-    const plan: GeneratedPlan & { formulationSummary: string } = {
+    let plan: GeneratedPlan & { formulationSummary: string } = {
       overview: parsed.overview,
       clientSummary: parsed.clientSummary,
       keyThemes: parsed.keyThemes ?? [],
@@ -164,6 +147,17 @@ export async function generatePlanFromFormulation(
       weeks: [week],
       formulationSummary: parsed.formulationSummary ?? parsed.overview,
     };
+
+    plan = (await postProcessGeneratedPlan(plan, {
+      profile,
+      primaryTargets: formulation.primaryTargets,
+      resolveMusic: true,
+    })) as GeneratedPlan & { formulationSummary: string };
+
+    const tagErrors = validatePlanTags(plan, formulation.primaryTargets);
+    if (tagErrors.length) {
+      log('plan_tag_validation_warnings', { count: tagErrors.length, sample: tagErrors[0] });
+    }
 
     await recordLlmUsage({
       operation: 'plan_generation',
