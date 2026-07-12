@@ -17,6 +17,8 @@ export const users = pgTable("users", {
   displayName: text("display_name"),
   expoPushToken: text("expo_push_token"),
   notificationsEnabled: boolean("notifications_enabled").notNull().default(false),
+  /** A/B pilot: 'legacy' (control) | 'pain_script' (clinical formulation path) */
+  pilotCohort: text("pilot_cohort").notNull().default("legacy"),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
 
@@ -120,6 +122,8 @@ export const intakeResponses = pgTable("intake_responses", {
   structurePreference: text("structure_preference"),
   engagementTime: text("engagement_time"),
   ayurvedaPreferences: text("ayurveda_preferences"),
+  /** sudden | gradual | mixed — pain-script intake */
+  onsetType: text("onset_type"),
   // Safety
   hasRedFlags: boolean("has_red_flags").notNull().default(false),
   isSafe: boolean("is_safe").notNull().default(true),
@@ -146,6 +150,8 @@ export const plans = pgTable("plans", {
   userId: text("user_id").notNull(),
   intakeResponseId: text("intake_response_id").notNull(),
   generatedContent: text("generated_content").notNull(),
+  formulationId: text("formulation_id"),
+  formulationVersion: integer("formulation_version"),
   counselorNotes: text("counselor_notes"),
   status: text("status").notNull().default("draft"),
   counselorId: text("counselor_id"),
@@ -361,4 +367,87 @@ export const auditLog = pgTable("audit_log", {
   targetType: text("target_type").notNull(),
   targetId: text("target_id"),
   metadata: text("metadata"), // JSON
+});
+
+// Pain Script formulation — versioned clinical assessment (counselor gate).
+export const formulations = pgTable("formulations", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  intakeResponseId: text("intake_response_id").notNull(),
+  version: integer("version").notNull().default(1),
+  scriptBeliefs: text("script_beliefs").notNull(),
+  scriptDisplays: text("script_displays").notNull(),
+  reinforcingExperiences: text("reinforcing_experiences").notNull(),
+  basicId: text("basic_id").notNull(),
+  maintenanceHypothesis: text("maintenance_hypothesis").notNull(),
+  primaryTargets: text("primary_targets").notNull(),
+  confidenceJson: text("confidence_json"),
+  safetyFlag: boolean("safety_flag").notNull().default(false),
+  safetyReason: text("safety_reason"),
+  source: text("source").notNull().default("llm"),
+  status: text("status").notNull().default("draft"),
+  counselorId: text("counselor_id"),
+  counselorNote: text("counselor_note"),
+  approvedAt: timestamp("approved_at", { mode: "date", withTimezone: true }),
+  approvedBy: text("approved_by"),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+export const clientProfile = pgTable("client_profile", {
+  userId: text("user_id").primaryKey(),
+  lifeRoles: text("life_roles"),
+  workStatus: text("work_status"),
+  returnToWork: text("return_to_work"),
+  livingSituation: text("living_situation"),
+  culturalFrame: text("cultural_frame"),
+  identityBefore: text("identity_before"),
+  whatMissed: text("what_missed"),
+  lifeBackVision: text("life_back_vision"),
+  coreValues: text("core_values"),
+  onsetType: text("onset_type"),
+  trajectory: text("trajectory"),
+  diagnosesContext: text("diagnoses_context"),
+  comorbidities: text("comorbidities"),
+  currentTreatments: text("current_treatments"),
+  whatHelps: text("what_helps"),
+  whoUnderstands: text("who_understands"),
+  engagementPrefs: text("engagement_prefs"),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+export const profileFacts = pgTable("profile_facts", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  key: text("key").notNull(),
+  value: text("value").notNull(),
+  category: text("category").notNull(),
+  sensitive: boolean("sensitive").notNull().default(false),
+  source: text("source").notNull(),
+  confidence: text("confidence"),
+  consentScope: text("consent_scope"),
+  counselorHeld: boolean("counselor_held").notNull().default(false),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+export const profileFieldRequests = pgTable("profile_field_requests", {
+  id: text("id").primaryKey(),
+  clientId: text("client_id").notNull(),
+  counselorId: text("counselor_id").notNull(),
+  fieldKey: text("field_key").notNull(),
+  prompt: text("prompt").notNull(),
+  status: text("status").notNull().default("pending"),
+  answeredAt: timestamp("answered_at", { mode: "date", withTimezone: true }),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
+});
+
+export const consentGrants = pgTable("consent_grants", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  scope: text("scope").notNull(),
+  grantedAt: timestamp("granted_at", { mode: "date", withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { mode: "date", withTimezone: true }),
+  createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });

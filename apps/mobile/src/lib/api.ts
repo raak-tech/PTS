@@ -27,6 +27,7 @@ export type MessageRow = {
 export type GeneratedPlan = {
   overview: string;
   clientSummary: string;
+  formulationSummary?: string;
   weeks: {
     week: number;
     theme: string;
@@ -211,6 +212,16 @@ export async function apiGetScheduleFeedback(token: string, date?: string) {
 export async function apiGetSession(token: string) {
   return parseJson<{ user: SessionUser }>(
     await fetchWithTimeout(`${API_URL}/api/auth/session`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
+}
+
+/** APK B: assign pain_script cohort on first login when build flag is set. */
+export async function apiAssignPilotCohort(token: string) {
+  return parseJson<{ ok: boolean; pilotCohort: 'legacy' | 'pain_script' }>(
+    await fetchWithTimeout(`${API_URL}/api/me/cohort`, {
+      method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     }),
   );

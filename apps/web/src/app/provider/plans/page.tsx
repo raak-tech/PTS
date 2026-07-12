@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { eq, inArray, isNull } from 'drizzle-orm';
 
 import { getDb } from '../../../db';
-import { intakeResponses, planWeeks, plans, users } from '../../../db/schema';
+import { formulations, intakeResponses, planWeeks, plans, users } from '../../../db/schema';
 import { isAdminUser } from '@/lib/admin';
 import { getClientCounselorMap, isClientVisibleToProvider } from '../../../lib/client-access';
 import { formatClientContact } from '@/lib/pii';
@@ -12,6 +12,7 @@ import type { GeneratedPlan } from '../../../lib/plan-generator';
 import { getUserFromCookieHeader } from '../../../lib/session';
 import { PlanReviewClient } from './PlanReviewClient';
 import { PendingIntakesClient } from './PendingIntakesClient';
+import { PendingFormulationsClient } from './PendingFormulationsClient';
 
 export const metadata: Metadata = { title: 'Plan review | Provider' };
 
@@ -45,6 +46,40 @@ export default async function ProviderPlansPage({
     .where(isNull(plans.id))
     .orderBy(intakeResponses.createdAt)) as PendingIntakeRow[];
   const visiblePendingIntakes = pendingIntakes.filter((i) => isVisible(i.userId));
+
+  // Pain Script: formulations awaiting counselor approval
+  const pendingFormulationRows = (await db
+    .select({
+      userId: formulations.userId,
+      status: formulations.status,
+      version: formulations.version,
+      safetyFlag: formulations.safetyFlag,
+      createdAt: formulations.createdAt,
+      email: users.email,
+      pilotCohort: users.pilotCohort,
+    })
+    .from(formulations)
+    .innerJoin(users, eq(formulations.userId, users.id))
+    .where(inArray(formulations.status, ['draft', 'edited']))) as {
+    userId: string;
+    status: string;
+    version: number;
+    safetyFlag: boolean;
+    createdAt: Date;
+    email: string;
+    pilotCohort: string;
+  }[];
+
+  const visiblePendingFormulations = pendingFormulationRows
+    .filter((r) => r.pilotCohort === 'pain_script' && isVisible(r.userId))
+    .map((r) => ({
+      userId: r.userId,
+      email: r.email,
+      status: r.status,
+      version: r.version,
+      safetyFlag: r.safetyFlag,
+      createdAt: r.createdAt.toISOString(),
+    }));
 
   // All draft plans awaiting review
   type PlanRow = { id: string; userId: string; generatedContent: string; counselorNotes: string | null; status: string; createdAt: Date };
@@ -123,6 +158,8 @@ export default async function ProviderPlansPage({
     <>
       <h1 className="provider-page-title">Plan review</h1>
       <p className="provider-page-subtitle">Review Week 1 drafts and approve each week before clients see it.</p>
+
+      <PendingFormulationsClient rows={visiblePendingFormulations} />
 
       {/* Pending intakes section */}
       <PendingIntakesClient

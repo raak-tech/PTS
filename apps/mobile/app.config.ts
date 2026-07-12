@@ -1,23 +1,24 @@
 import type { ExpoConfig } from 'expo/config';
 
 const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? 'https://pts-web-pied.vercel.app';
+const isPainPilot = process.env.EXPO_PUBLIC_PILOT_COHORT === 'pain_script';
 
 const config: ExpoConfig = {
-  name: 'Pain to Strength',
-  slug: 'pts-mobile',
+  name: isPainPilot ? 'PTS Pain (Pilot)' : 'Pain to Strength',
+  slug: isPainPilot ? 'pts-mobile-pain' : 'pts-mobile',
   owner: 'satananth',
   version: '1.0.0',
-  scheme: 'pts',
+  scheme: isPainPilot ? 'pts-pain' : 'pts',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'light',
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.pts.mobile',
+    bundleIdentifier: isPainPilot ? 'com.pts.mobile.painscript' : 'com.pts.mobile',
   },
   android: {
-    package: 'com.pts.mobile',
-    versionCode: 15,
+    package: isPainPilot ? 'com.pts.mobile.painscript' : 'com.pts.mobile',
+    versionCode: isPainPilot ? 16 : 15,
     adaptiveIcon: {
       backgroundColor: '#3D4F44',
       foregroundImage: './assets/android-icon-foreground.png',
@@ -48,6 +49,7 @@ const config: ExpoConfig = {
   ],
   extra: {
     apiUrl,
+    pilotCohort: isPainPilot ? 'pain_script' : 'legacy',
     eas: {
       projectId: 'bfd7da5d-313c-4507-8c00-6fb6fede0d57',
     },

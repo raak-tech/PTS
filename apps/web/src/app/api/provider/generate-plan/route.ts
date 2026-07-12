@@ -6,6 +6,9 @@ import { planWeeks, plans, users } from '@/db/schema';
 import { getUserFromCookieHeader } from '@/lib/session';
 import { assertProviderCanAccessClient } from '@/lib/client-access';
 import { canAccessProviderConsole } from '@/lib/provider-console-access';
+import { getApprovedFormulation, getCurrentFormulation } from '@/lib/pain-script/formulation-store';
+import { getUserPilotCohort } from '@/lib/pain-script/cohort';
+import { usesPainScriptPath } from '@/lib/pain-script/flags';
 import { regeneratePlanDraftForUser } from '@/lib/regenerate-plan-for-user';
 import { seedDraftPlanWeeks } from '@/lib/seed-plan-weeks';
 import { recordAudit } from '@/lib/audit';
@@ -32,6 +35,22 @@ export async function POST(request: Request) {
 
   if (!(await assertProviderCanAccessClient(user.id, userId))) {
     return Response.json({ ok: false, reason: 'forbidden' }, { status: 403 });
+  }
+
+  const cohort = await getUserPilotCohort(userId);
+  if (usesPainScriptPath(cohort)) {
+    const approved = await getApprovedFormulation(userId);
+    if (!approved) {
+      const current = await getCurrentFormulation(userId);
+      return Response.json(
+        {
+          ok: false,
+          reason: current ? 'formulation_not_approved' : 'formulation_missing',
+          detail: 'Approve the clinical formulation before generating Week 1.',
+        },
+        { status: 400 },
+      );
+    }
   }
 
   const db = getDb();
@@ -87,7 +106,16 @@ export async function POST(request: Request) {
   }
 
   // Generate a fresh Week 1 draft.
-  const planId = await regeneratePlanDraftForUser(userId);
+  let planId: string | null;
+  try {
+    planId = await regeneratePlanDraftForUser(userId);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'generation_failed';
+    if (message === 'formulation_not_approved') {
+      return Response.json({ ok: false, reason: 'formulation_not_approved' }, { status: 400 });
+    }
+    return Response.json({ ok: false, reason: 'generation_failed' }, { status: 500 });
+  }
   if (!planId) {
     return Response.json({ ok: false, reason: 'generation_failed' }, { status: 500 });
   }

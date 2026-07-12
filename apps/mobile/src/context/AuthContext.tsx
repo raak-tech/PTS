@@ -2,8 +2,9 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-import { USE_MOCK_AUTH } from '@/config';
+import { IS_PAIN_SCRIPT_COHORT, USE_MOCK_AUTH } from '@/config';
 import {
+  apiAssignPilotCohort,
   apiCheckPhone,
   apiGetSession,
   apiLogout,
@@ -179,7 +180,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const { token: sessionToken, user: apiUser } = await apiVerifyOtp(normalized, code, dataStorageConsent);
-    const sessionUser = mapApiUser(apiUser);
+    if (IS_PAIN_SCRIPT_COHORT) {
+      try {
+        await apiAssignPilotCohort(sessionToken);
+      } catch {
+        /* non-fatal */
+      }
+    }
+    const { user: refreshed } = await apiGetSession(sessionToken);
+    const sessionUser = mapApiUser(refreshed ?? apiUser);
     await clearIntakeDraft();
     await persistSession(sessionToken, sessionUser);
     setToken(sessionToken);

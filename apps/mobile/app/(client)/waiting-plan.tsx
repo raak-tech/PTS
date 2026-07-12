@@ -7,7 +7,8 @@ import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { useAuth } from '@/context/AuthContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
-import { apiGetContacts, apiGetPlan } from '@/lib/api';
+import { apiGetContacts, apiGetPlan, parseGeneratedPlan } from '@/lib/api';
+import { IS_PAIN_SCRIPT_COHORT } from '@/config';
 
 type PlanStatus = 'loading' | 'none' | 'draft' | 'approved';
 
@@ -22,6 +23,7 @@ export default function WaitingPlanScreen() {
   }));
 
   const [counselorId, setCounselorId] = useState<string | null>(null);
+  const [formulationSummary, setFormulationSummary] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -37,6 +39,10 @@ export default function WaitingPlanScreen() {
         return;
       }
       setPlanStatus(plan.status === 'approved' ? 'approved' : 'draft');
+      if (IS_PAIN_SCRIPT_COHORT && plan.generatedContent) {
+        const parsed = parseGeneratedPlan(plan.generatedContent);
+        if (parsed?.formulationSummary) setFormulationSummary(parsed.formulationSummary);
+      }
       if (plan.status === 'approved') {
         await refreshUser();
         router.replace('/');
@@ -74,6 +80,11 @@ export default function WaitingPlanScreen() {
           </Text>
         ) : null}
       </Card>
+      {formulationSummary ? (
+        <Card title="What we're working on together">
+          <Text style={styles.line}>{formulationSummary}</Text>
+        </Card>
+      ) : null}
       {counselorId ? (
         <Button
           label="Message counselor"

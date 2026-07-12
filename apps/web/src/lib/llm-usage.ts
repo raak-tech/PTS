@@ -4,7 +4,13 @@ import { getDb } from '@/db';
 import { llmUsage } from '@/db/schema';
 import { logError } from '@/lib/logger';
 
-export type LlmOperation = 'plan_generation' | 'week_generation' | 'intake_extraction';
+export type LlmOperation =
+  | 'plan_generation'
+  | 'week_generation'
+  | 'intake_extraction'
+  | 'formulation_generation'
+  | 'formulation_rescore'
+  | 'flare_classify';
 
 export type LlmUsageContext = {
   userId?: string;

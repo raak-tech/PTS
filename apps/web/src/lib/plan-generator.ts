@@ -52,6 +52,8 @@ export type GeneratedPlan = {
   watchPoints: string[]; // things the counselor should monitor
   /** Counselor-only — RAak proprietary formulation. Never show to clients. */
   protectedFormulation?: ProtectedFormulation;
+  /** Client-safe — pain script cohort only */
+  formulationSummary?: string;
 };
 
 type IntakeData = {
