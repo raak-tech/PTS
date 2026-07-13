@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
@@ -12,18 +12,19 @@ import { spacing } from '@/theme';
 export default function MessageThreadScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token, user } = useAuth();
+  const threadRef = useRef<ScrollView>(null);
   const [title, setTitle] = useState('Messages');
   const [messages, setMessages] = useState<{ id: string; fromUserId: string; body: string }[]>([]);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const styles = useThemedStyles((c) => ({
-    thread: { flex: 1, gap: 10, paddingVertical: 8 },
+    thread: { gap: 10, paddingVertical: 8 },
     bubble: { maxWidth: '80%', padding: 12, borderRadius: 16 },
     theirs: { alignSelf: 'flex-start' as const, backgroundColor: c.surface, borderWidth: 1, borderColor: c.border },
     mine: { alignSelf: 'flex-end' as const, backgroundColor: c.primary },
     mineText: { color: c.onPrimary },
     text: { color: c.text, fontSize: 15, lineHeight: 22 },
-    composer: { gap: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: c.border },
+    composer: { gap: 8 },
     input: {
       borderWidth: 1.5,
       borderColor: c.border,
@@ -38,6 +39,10 @@ export default function MessageThreadScreen() {
     sendDisabled: { color: c.faint },
   }));
 
+  const scrollThreadToEnd = useCallback(() => {
+    threadRef.current?.scrollToEnd({ animated: true });
+  }, []);
+
   const load = useCallback(async () => {
     if (!token || !id) return;
     const [{ messages: rows }, contacts] = await Promise.all([
@@ -50,7 +55,8 @@ export default function MessageThreadScreen() {
         ? contacts.counselor.name
         : contacts.clients?.find((c) => c.id === id)?.name;
     if (name) setTitle(name);
-  }, [token, id]);
+    setTimeout(scrollThreadToEnd, 100);
+  }, [token, id, scrollThreadToEnd]);
 
   useEffect(() => {
     void load();
@@ -68,9 +74,31 @@ export default function MessageThreadScreen() {
     }
   };
 
+  const composer = (
+    <View style={styles.composer}>
+      <TextField
+        style={styles.input}
+        placeholder="Type a message…"
+        value={draft}
+        onChangeText={setDraft}
+        onFocus={scrollThreadToEnd}
+      />
+      <Pressable style={styles.send} onPress={onSend} disabled={sending || !draft.trim()}>
+        <Text style={[styles.sendText, (sending || !draft.trim()) && styles.sendDisabled]}>Send</Text>
+      </Pressable>
+    </View>
+  );
+
   return (
-    <Screen title={title} subtitle="Secure messaging" scroll={false}>
-      <View style={styles.thread}>
+    <Screen title={title} subtitle="Secure messaging" scroll={false} footer={composer}>
+      <ScrollView
+        ref={threadRef}
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.thread}
+        keyboardShouldPersistTaps="always"
+        keyboardDismissMode="on-drag"
+        onContentSizeChange={scrollThreadToEnd}
+      >
         {messages.map((m) => {
           const mine = m.fromUserId === user?.id;
           return (
@@ -79,18 +107,7 @@ export default function MessageThreadScreen() {
             </View>
           );
         })}
-      </View>
-      <View style={styles.composer}>
-        <TextField
-          style={styles.input}
-          placeholder="Type a message…"
-          value={draft}
-          onChangeText={setDraft}
-        />
-        <Pressable style={styles.send} onPress={onSend} disabled={sending || !draft.trim()}>
-          <Text style={[styles.sendText, (sending || !draft.trim()) && styles.sendDisabled]}>Send</Text>
-        </Pressable>
-      </View>
+      </ScrollView>
     </Screen>
   );
 }

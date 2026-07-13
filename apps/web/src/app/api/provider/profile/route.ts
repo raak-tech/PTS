@@ -1,19 +1,19 @@
 import { headers } from 'next/headers';
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { getDb } from '@/db';
 import { counselorProfiles } from '@/db/schema';
+import { recordAudit } from '@/lib/audit';
+import { ensureCounselorProfile } from '@/lib/counselor-profile';
+import { logError } from '@/lib/logger';
 import { getUserFromCookieHeader } from '@/lib/session';
 import { canAccessProviderConsole } from '@/lib/provider-console-access';
-import { recordAudit } from '@/lib/audit';
-import { logError } from '@/lib/logger';
 
 const schema = z.object({
   fullName: z.string().min(1),
   title: z.string().min(1),
   credentials: z.string().optional(),
-  bio: z.string().min(1),
+  bio: z.string(),
   calendlyUrl: z.union([z.string().url(), z.literal('')]).optional(),
   specialisations: z.array(z.string()).optional(),
   languages: z.array(z.string()).optional(),
@@ -34,19 +34,39 @@ export async function PATCH(request: Request) {
     }
 
     const db = getDb();
+    const now = new Date();
+
+    await ensureCounselorProfile(user.id, user.displayName);
 
     await db
-      .update(counselorProfiles)
-      .set({
+      .insert(counselorProfiles)
+      .values({
+        userId: user.id,
         fullName: parsed.data.fullName,
         title: parsed.data.title,
         credentials: parsed.data.credentials ?? null,
         bio: parsed.data.bio,
         calendlyUrl: parsed.data.calendlyUrl?.trim() || null,
-        specialisations: parsed.data.specialisations ? JSON.stringify(parsed.data.specialisations) : JSON.stringify([]),
+        specialisations: parsed.data.specialisations
+          ? JSON.stringify(parsed.data.specialisations)
+          : JSON.stringify([]),
         languages: parsed.data.languages ? JSON.stringify(parsed.data.languages) : JSON.stringify([]),
+        createdAt: now,
       })
-      .where(eq(counselorProfiles.userId, user.id));
+      .onConflictDoUpdate({
+        target: counselorProfiles.userId,
+        set: {
+          fullName: parsed.data.fullName,
+          title: parsed.data.title,
+          credentials: parsed.data.credentials ?? null,
+          bio: parsed.data.bio,
+          calendlyUrl: parsed.data.calendlyUrl?.trim() || null,
+          specialisations: parsed.data.specialisations
+            ? JSON.stringify(parsed.data.specialisations)
+            : JSON.stringify([]),
+          languages: parsed.data.languages ? JSON.stringify(parsed.data.languages) : JSON.stringify([]),
+        },
+      });
 
     void recordAudit({
       actorUserId: user.id,

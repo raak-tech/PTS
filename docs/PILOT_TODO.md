@@ -1,6 +1,6 @@
 # PTS Pilot — Consolidated Todo (single source of truth)
 
-**Last updated:** 2026-07-04 (Run I — client workspace week sub-tabs + edit propagation)  
+**Last updated:** 2026-07-13 (deferred intake quality / LLM cost / payment gates)  
 **Purpose:** One execution queue for dev runs, APK drops, and counselor pilot.  
 **Rule:** Add new work here. Other docs keep product context only — link here instead of duplicating todos.
 
@@ -237,6 +237,39 @@ Build 11 shipped client + API. **Run A + Run B (2026-07-02)** aligned counselor 
 - [x] `/api/me/contacts` 500 fixed (production verified)
 - [x] **Runs D–H (build 14):** counselor claim-on-first-action, scoped queues, Message-counselor gating, inline plan editing, pain sparklines, admin SLA panel, monthly check-ins + graduation, intake cleanup cron, pending-intake waiting UX
 - [x] APK build 14 at `apps/mobile/dist/pts-mobile-release.apk` — installed on Pixel 7 2026-07-03
+
+---
+
+## Deferred — Intake quality, LLM cost, and payment gates
+
+**Context (2026-07-13):** Avoid burning OpenRouter on nonsense intake; align client payment with deliverable value (Week 1), not raw LLM calls. **No code yet** — pick up when pilot traffic justifies it.
+
+**Policy (target):** Cheap automation for intake structure; expensive AI only when intake is complete and counselor is ready to deliver Week 1; **payment only after Week 1 approval** (or explicit enrollment post–counselor review).
+
+### Tier 0 — Free gates (before any LLM)
+- [ ] Max length cap on intake free-text (anti-spam)
+- [ ] Heuristic nonsense detection (keyboard mash, repeated chars, too few distinct words)
+- [ ] Per-user / per-phone rate limits on `POST /api/intake/extract`
+- [ ] Idempotency / cache: same text hash → return cached extraction (avoid double-billing on retries)
+
+### Tier 1 — Cheap on-topic check
+- [ ] Lightweight classifier or small model: “personal health/sleep/stress concern?” → block extraction LLM if off-topic
+- [ ] Friendly UX copy when blocked (not a raw error)
+
+### Tier 2 — Tighten existing extraction gate
+- [ ] Review round-3 escape hatch (`canSubmit` when `round >= 3` even if required fields weak) — require minimum bar, not blind submit
+- [ ] Segment-specific required fields (e.g. sleep pattern for sleep segment, not only pain-shaped fields)
+- [ ] Counselor queue flag: “low-quality intake” when confidence low
+
+### Tier 3 — Expensive LLM (formulation / Week 1)
+- [ ] Ensure formulation + Week 1 generation never run without complete intake + counselor action (audit current pain-script path)
+- [ ] Admin dashboard: LLM spend per client / per intake session (extend `llm_usage`)
+
+### Payment & commercial
+- [ ] Define paywall placement: **after Week 1 approved & released** (not on intake submit or background formulation)
+- [ ] Copy: clients pay for counselor-reviewed program, not “AI processing”
+- [ ] Refund / decline path if intake unusable or counselor declines case
+- [ ] OpenRouter hard spend cap + alerts for pilot
 
 ---
 

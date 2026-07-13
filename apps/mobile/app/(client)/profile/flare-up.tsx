@@ -83,7 +83,18 @@ export default function FlareUpScreen() {
   }
 
   return (
-    <Screen title="Flare-up support" subtitle="When pain spikes">
+    <Screen
+      title="Flare-up support"
+      subtitle="When pain spikes"
+      scrollToEndOnKeyboard
+      footer={
+        <Button
+          label={loading ? 'Getting support…' : 'Get support now'}
+          onPress={() => void onSubmit()}
+          loading={loading}
+        />
+      }
+    >
       <Text style={styles.body}>
         Tell us what&apos;s happening — we&apos;ll offer a short, supportive next step. This is not diagnosis or
         treatment.
@@ -100,9 +111,6 @@ export default function FlareUpScreen() {
           multiline
           placeholder="e.g. slept badly, did too much yesterday, stress at work…"
         />
-      </View>
-      <View style={{ marginTop: 20 }}>
-        <Button label={loading ? 'Getting support…' : 'Get support now'} onPress={() => void onSubmit()} loading={loading} />
       </View>
       <Text style={styles.alert}>
         Seek urgent medical care for red-flag symptoms: new severe weakness, loss of bladder/bowel control, fever with

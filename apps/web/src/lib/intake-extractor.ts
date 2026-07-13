@@ -379,6 +379,14 @@ export async function extractIntake(
       latencyMs,
       errorText: `HTTP ${response.status}: ${err.slice(0, 500)}`,
     });
+    if (response.status === 401) {
+      throw new Error('LLM API auth failed — OpenRouter key missing or invalid on the server');
+    }
+    if (response.status === 404 && err.includes('guardrail')) {
+      throw new Error(
+        'LLM model policy blocked this request — allow models at openrouter.ai/settings/privacy',
+      );
+    }
     throw new Error(`LLM API error ${response.status}`);
   }
 

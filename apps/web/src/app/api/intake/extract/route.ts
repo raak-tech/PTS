@@ -3,6 +3,11 @@ import { z } from 'zod';
 
 import { extractIntake } from '@/lib/intake-extractor';
 import { mapExtractionToIntake } from '@/lib/intake-mappers';
+import {
+  assessIntakeTextQuality,
+  isExtractionUsable,
+  toClientSummary,
+} from '@/lib/intake-quality';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
 
@@ -36,6 +41,14 @@ export async function POST(request: Request) {
     const { segmentType, freeText, round, priorExtraction } =
       parsed.data;
 
+    const textQuality = assessIntakeTextQuality(freeText);
+    if (!textQuality.ok) {
+      return NextResponse.json(
+        { error: 'text_quality', detail: textQuality.clientMessage },
+        { status: 422 },
+      );
+    }
+
     const result = await extractIntake(
       {
         segmentType,
@@ -45,6 +58,12 @@ export async function POST(request: Request) {
       },
       { userId: user.id },
     );
+
+    const extractionUsable = isExtractionUsable(
+      result.extracted,
+      result.summary,
+    );
+    const clientSummary = toClientSummary(result.summary, segmentType);
 
     // Map to DB shape for the client to preview what would be saved
     const mapped = mapExtractionToIntake(result.extracted);
@@ -58,6 +77,8 @@ export async function POST(request: Request) {
       lowConfidenceRequired: result.lowConfidenceRequired,
       followUpQuestions: result.followUpQuestions,
       summary: result.summary,
+      clientSummary,
+      extractionUsable,
       overallConfidence: result.overallConfidence,
       mapped, // DB-ready shape for the confirmation card
     });

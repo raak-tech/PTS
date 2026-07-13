@@ -228,6 +228,14 @@ export function ProviderClientWorkspaceClient({
     });
   }, [clientId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || window.location.hash !== '#admin-notes') return;
+    if (tab !== 'overview') return;
+    window.requestAnimationFrame(() => {
+      document.getElementById('admin-notes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [tab, notes.length]);
+
   const onResolveNote = async (noteId: string) => {
     setResolvingNoteId(noteId);
     try {
@@ -457,7 +465,7 @@ export function ProviderClientWorkspaceClient({
 
       <div className="provider-tab-panel" data-active={tab === 'overview'} role="tabpanel">
         {unresolvedNotes.length > 0 ? (
-          <section className="provider-panel provider-panel--attention">
+          <section id="admin-notes" className="provider-panel provider-panel--attention">
             <h2>Admin notes ({unresolvedNotes.length})</h2>
             <div style={{ display: 'grid', gap: 8 }}>
               {unresolvedNotes.map((note) => (

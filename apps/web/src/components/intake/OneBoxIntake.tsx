@@ -19,6 +19,8 @@ export type ExtractResponse = {
   lowConfidenceRequired: string[];
   followUpQuestions: string[];
   summary: string;
+  clientSummary?: string;
+  extractionUsable?: boolean;
   overallConfidence: number;
   mapped: IntakeInsertShape;
   error?: string;
@@ -33,6 +35,8 @@ export type ExtractionComplete = {
   missingRequired: string[];
   lowConfidenceRequired: string[];
   summary: string;
+  clientSummary: string;
+  extractionUsable: boolean;
   overallConfidence: number;
   rounds: number;
   freeText: string;
@@ -144,9 +148,10 @@ export function OneBoxIntake({ segmentType, onExtractionComplete }: Props) {
             return;
           }
           throw new Error(
-            (body as { detail?: string }).detail ??
-              (body as { error?: string }).error ??
-              "Something went wrong extracting your intake. Please try again.",
+            typeof (body as { detail?: unknown }).detail === "string"
+              ? (body as { detail: string }).detail
+              : (body as { error?: string }).error ??
+                  "Something went wrong extracting your intake. Please try again.",
           );
         }
 
@@ -154,6 +159,13 @@ export function OneBoxIntake({ segmentType, onExtractionComplete }: Props) {
 
         if (!data.ok) {
           throw new Error(data.detail ?? "Extraction failed. Please try again.");
+        }
+
+        if (data.extractionUsable === false) {
+          throw new Error(
+            data.clientSummary ??
+              "We could not understand that. Please describe your situation in plain sentences.",
+          );
         }
 
         // If follow-up needed and rounds remain, show follow-up questions
@@ -174,6 +186,10 @@ export function OneBoxIntake({ segmentType, onExtractionComplete }: Props) {
           missingRequired: data.missingRequired,
           lowConfidenceRequired: data.lowConfidenceRequired,
           summary: data.summary,
+          clientSummary:
+            data.clientSummary ??
+            data.summary.replace(/\b[Tt]he client(?:'s)?\b/g, "You"),
+          extractionUsable: data.extractionUsable ?? true,
           overallConfidence: data.overallConfidence,
           rounds: r,
           freeText,

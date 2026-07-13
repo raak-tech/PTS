@@ -1,11 +1,8 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { eq } from 'drizzle-orm';
-
-import { getDb } from '../../../db';
-import { counselorProfiles } from '../../../db/schema';
 import { canAccessProviderConsole } from '@/lib/provider-console-access';
+import { ensureCounselorProfile } from '@/lib/counselor-profile';
 import { getUserFromCookieHeader } from '../../../lib/session';
 import { ProfileEditorClient } from './ProfileEditorClient';
 
@@ -26,17 +23,7 @@ export default async function ProviderProfilePage() {
   if (!user) redirect('/login?next=/provider/profile');
   if (!canAccessProviderConsole(user)) redirect('/');
 
-  const db = getDb();
-
-  const [profile] = await db
-    .select()
-    .from(counselorProfiles)
-    .where(eq(counselorProfiles.userId, user.id))
-    .limit(1);
-
-  if (!profile) {
-    redirect('/provider');
-  }
+  const profile = await ensureCounselorProfile(user.id, user.displayName);
 
   const initialData = {
     fullName: profile.fullName,

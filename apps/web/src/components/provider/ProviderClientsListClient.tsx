@@ -100,20 +100,38 @@ export function ProviderClientsListClient({
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {client.hasRedFlag ? (
-                      <span className="provider-tag provider-tag--danger">Red flags</span>
+                      <Link
+                        href={`/provider/clients/${client.id}?tab=overview`}
+                        className="provider-tag provider-tag--danger provider-tag--link"
+                      >
+                        Red flags
+                      </Link>
                     ) : null}
                     {client.unreadCount > 0 ? (
-                      <span className="provider-tag provider-tag--warn">{client.unreadCount} unread</span>
+                      <Link
+                        href={`/provider/clients/${client.id}?tab=messages`}
+                        className="provider-tag provider-tag--warn provider-tag--link"
+                      >
+                        {client.unreadCount} unread
+                      </Link>
                     ) : null}
                     {client.noteCount > 0 ? (
-                      <span className="provider-tag provider-tag--warn">
+                      <Link
+                        href={`/provider/clients/${client.id}?tab=overview#admin-notes`}
+                        className="provider-tag provider-tag--warn provider-tag--link"
+                      >
                         {client.noteCount} admin note{client.noteCount !== 1 ? 's' : ''}
-                      </span>
+                      </Link>
                     ) : null}
                     {onTrack ? (
                       <span className="provider-tag provider-tag--ok">On track</span>
                     ) : (
-                      <span className="provider-tag provider-tag--warn">Needs follow-up</span>
+                      <Link
+                        href={`/provider/clients/${client.id}?tab=overview`}
+                        className="provider-tag provider-tag--warn provider-tag--link"
+                      >
+                        Needs follow-up
+                      </Link>
                     )}
                   </div>
                 </div>
