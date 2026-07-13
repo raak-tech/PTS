@@ -4,6 +4,7 @@ import { and, desc, eq, ne } from 'drizzle-orm';
 
 import { getDb } from '@/db';
 import { formulations } from '@/db/schema';
+import type { FormulationRescoreResult } from '@/lib/pain-script/formulation-rescore';
 import type { FormulationGenerationResult, PainScriptFormulation } from '@/lib/pain-script/types';
 
 export type StoredFormulation = {
@@ -12,13 +13,24 @@ export type StoredFormulation = {
   intakeResponseId: string;
   version: number;
   status: string;
+  source: string;
   formulation: PainScriptFormulation;
   safetyFlag: boolean;
   safetyReason: string | null;
   counselorNote: string | null;
+  rescoreResult: FormulationRescoreResult | null;
   approvedAt: Date | null;
   approvedBy: string | null;
 };
+
+function parseRescoreJson(raw: string | null): FormulationRescoreResult | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as FormulationRescoreResult;
+  } catch {
+    return null;
+  }
+}
 
 function rowToFormulation(row: typeof formulations.$inferSelect): StoredFormulation {
   return {
@@ -27,6 +39,7 @@ function rowToFormulation(row: typeof formulations.$inferSelect): StoredFormulat
     intakeResponseId: row.intakeResponseId,
     version: row.version,
     status: row.status,
+    source: row.source,
     formulation: {
       scriptBeliefs: JSON.parse(row.scriptBeliefs),
       scriptDisplays: JSON.parse(row.scriptDisplays),
@@ -39,6 +52,7 @@ function rowToFormulation(row: typeof formulations.$inferSelect): StoredFormulat
     safetyFlag: row.safetyFlag,
     safetyReason: row.safetyReason,
     counselorNote: row.counselorNote,
+    rescoreResult: parseRescoreJson(row.rescoreJson),
     approvedAt: row.approvedAt,
     approvedBy: row.approvedBy,
   };
@@ -152,6 +166,8 @@ export async function insertRescoreDraftFormulation(opts: {
   intakeResponseId: string;
   formulation: PainScriptFormulation;
   counselorNote: string;
+  rescoreResult: FormulationRescoreResult;
+  gateReasons?: string[];
 }): Promise<string> {
   const db = getDb();
   const now = new Date();
@@ -188,6 +204,10 @@ export async function insertRescoreDraftFormulation(opts: {
     source: 'rescore',
     status: 'draft',
     counselorNote: opts.counselorNote,
+    rescoreJson: JSON.stringify({
+      ...opts.rescoreResult,
+      gateReasons: opts.gateReasons ?? [],
+    }),
     createdAt: now,
     updatedAt: now,
   });
@@ -201,6 +221,18 @@ export async function approveFormulation(
 ): Promise<void> {
   const db = getDb();
   const now = new Date();
+  const [row] = await db
+    .select({ userId: formulations.userId })
+    .from(formulations)
+    .where(eq(formulations.id, formulationId))
+    .limit(1);
+  if (!row) throw new Error('formulation_not_found');
+
+  await db
+    .update(formulations)
+    .set({ status: 'superseded', updatedAt: now })
+    .where(and(eq(formulations.userId, row.userId), eq(formulations.status, 'approved')));
+
   await db
     .update(formulations)
     .set({

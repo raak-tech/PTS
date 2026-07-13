@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { SCRIPT_TAGS, type FormulationTag } from '@/lib/pain-script/tags';
 import type { StoredFormulation } from '@/lib/pain-script/formulation-store';
+import { ApprovedFormulationSnapshot, RescoreReviewPanel } from '@/components/provider/RescoreReviewPanel';
 
 export function FormulationReviewClient({
   userId,
@@ -14,6 +15,7 @@ export function FormulationReviewClient({
   clientEmail: string;
 }) {
   const [data, setData] = useState<StoredFormulation | null>(null);
+  const [approvedFormulation, setApprovedFormulation] = useState<StoredFormulation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -23,9 +25,14 @@ export function FormulationReviewClient({
     setError('');
     try {
       const res = await fetch(`/api/provider/formulations/${userId}`, { credentials: 'include' });
-      const json = (await res.json()) as { formulation?: StoredFormulation; error?: string };
+      const json = (await res.json()) as {
+        formulation?: StoredFormulation;
+        approvedFormulation?: StoredFormulation | null;
+        error?: string;
+      };
       if (!res.ok) throw new Error(json.error ?? 'load_failed');
       setData(json.formulation ?? null);
+      setApprovedFormulation(json.approvedFormulation ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load');
     } finally {
@@ -84,6 +91,11 @@ export function FormulationReviewClient({
       <h1 style={{ margin: '0 0 8px', fontSize: 22 }}>Formulation review</h1>
       <p style={{ margin: '0 0 20px', color: '#444' }}>
         {clientEmail} · v{data.version} · <strong>{data.status}</strong>
+        {data.source === 'rescore' ? (
+          <span style={{ marginLeft: 8, background: '#fff8e1', padding: '2px 8px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
+            Weekly rescore
+          </span>
+        ) : null}
         {data.safetyFlag ? (
           <span style={{ marginLeft: 8, color: '#b71c1c', fontWeight: 700 }}>⚠ Safety flag</span>
         ) : null}
@@ -92,6 +104,18 @@ export function FormulationReviewClient({
       <div style={{ background: '#fce4ec', border: '2px solid #f48fb1', borderRadius: 10, padding: 14, marginBottom: 20, fontSize: 12, color: '#880e4f' }}>
         CONFIDENTIAL / PROTECTED IP — RAak Pain Script System. Counselor eyes only.
       </div>
+
+      {data.source === 'rescore' && data.rescoreResult ? (
+        <>
+          <RescoreReviewPanel
+            rescore={data.rescoreResult}
+            approvedVersion={approvedFormulation?.version}
+          />
+          {approvedFormulation ? (
+            <ApprovedFormulationSnapshot approved={approvedFormulation} />
+          ) : null}
+        </>
+      ) : null}
 
       <section style={{ marginBottom: 20 }}>
         <h2 style={{ fontSize: 16 }}>Maintenance hypothesis</h2>

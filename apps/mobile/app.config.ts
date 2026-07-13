@@ -18,7 +18,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: isPainPilot ? 'com.pts.mobile.painscript' : 'com.pts.mobile',
-    versionCode: isPainPilot ? 16 : 15,
+    versionCode: isPainPilot ? 17 : 15,
     adaptiveIcon: {
       backgroundColor: '#3D4F44',
       foregroundImage: './assets/android-icon-foreground.png',

@@ -4,6 +4,7 @@ import { Text } from 'react-native';
 import { AppBuildInfo } from '@/components/AppBuildInfo';
 import { Button } from '@/components/Button';
 import { ShareWithCounselorCard } from '@/components/ShareWithCounselorCard';
+import { IS_PAIN_SCRIPT_COHORT } from '@/config';
 import { useAuth } from '@/context/AuthContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 
@@ -19,6 +20,9 @@ export function ClientProfileContent({ layout = 'stack' }: Props) {
   }));
 
   const items = [
+    ...(IS_PAIN_SCRIPT_COHORT
+      ? [{ label: 'About you', href: '/(client)/profile/about-you' as const }]
+      : []),
     { label: 'Safety guidelines', href: '/(client)/profile/safety' },
     { label: 'Privacy & data policy', href: '/(client)/profile/data' },
     { label: 'Flare-up support', href: '/(client)/profile/flare-up' },

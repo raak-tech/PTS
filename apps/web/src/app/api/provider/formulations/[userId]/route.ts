@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { assertProviderCanAccessClient } from '@/lib/client-access';
-import { getCurrentFormulation, updateFormulationDraft } from '@/lib/pain-script/formulation-store';
+import { getApprovedFormulation, getCurrentFormulation, updateFormulationDraft } from '@/lib/pain-script/formulation-store';
 import type { PainScriptFormulation } from '@/lib/pain-script/types';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
@@ -23,7 +23,9 @@ export async function GET(request: Request, context: RouteContext) {
     if (!stored) {
       return NextResponse.json({ error: 'not_found' }, { status: 404 });
     }
-    return NextResponse.json({ ok: true, formulation: stored });
+    const approved =
+      stored.source === 'rescore' ? await getApprovedFormulation(userId) : null;
+    return NextResponse.json({ ok: true, formulation: stored, approvedFormulation: approved });
   } catch (err) {
     logError('formulation_get_error', err);
     return NextResponse.json({ error: 'internal' }, { status: 500 });

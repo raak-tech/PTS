@@ -417,6 +417,7 @@ export const formulations = pgTable("formulations", {
   status: text("status").notNull().default("draft"),
   counselorId: text("counselor_id"),
   counselorNote: text("counselor_note"),
+  rescoreJson: text("rescore_json"),
   approvedAt: timestamp("approved_at", { mode: "date", withTimezone: true }),
   approvedBy: text("approved_by"),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),

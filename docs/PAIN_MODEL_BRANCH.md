@@ -43,6 +43,15 @@ Control cohort (A): unchanged intake → counselor Generate Week 1 (no formulati
 
 ---
 
+## Preview deploy (2026-07-13)
+
+**Preview URL:** `https://pts-kkiijcgf6-sat-ananths-projects.vercel.app`  
+**Flags:** `PAIN_SCRIPT_ENABLED=true` (Preview), `DATABASE_URL` shared with Production  
+**SSO:** Disabled on preview for APK/device testing  
+**APK B:** `apps/mobile/dist/pts-mobile-pain-pilot.apk` (versionCode 17, API = preview URL above)
+
+---
+
 ## Build APK B
 
 ```bash
@@ -59,7 +68,7 @@ cd apps/mobile
 
 ```bash
 cd apps/web && node scripts/migrate.mjs
-# Applies 0026_pain_script_engine.sql + 0027_music_tracks.sql + 0028_flare_events.sql
+# Applies 0026_pain_script_engine.sql + 0027_music_tracks.sql + 0028_flare_events.sql + 0029_formulation_rescore_json.sql
 ```
 
 ---

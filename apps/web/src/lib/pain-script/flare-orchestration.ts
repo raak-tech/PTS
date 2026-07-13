@@ -52,6 +52,8 @@ export async function handleWeeklyCheckInRescore(opts: {
     intakeResponseId: approved.intakeResponseId,
     formulation: approved.formulation,
     counselorNote: result.note,
+    rescoreResult: result,
+    gateReasons: gate.reasons,
   });
 
   log('rescore_draft_created', { userId: opts.userId, reasons: gate.reasons });

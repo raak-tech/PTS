@@ -54,6 +54,7 @@ export default async function ProviderPlansPage({
       status: formulations.status,
       version: formulations.version,
       safetyFlag: formulations.safetyFlag,
+      source: formulations.source,
       createdAt: formulations.createdAt,
       email: users.email,
       pilotCohort: users.pilotCohort,
@@ -65,6 +66,7 @@ export default async function ProviderPlansPage({
     status: string;
     version: number;
     safetyFlag: boolean;
+    source: string;
     createdAt: Date;
     email: string;
     pilotCohort: string;
@@ -78,6 +80,7 @@ export default async function ProviderPlansPage({
       status: r.status,
       version: r.version,
       safetyFlag: r.safetyFlag,
+      source: r.source,
       createdAt: r.createdAt.toISOString(),
     }));
 

@@ -87,9 +87,9 @@
 
 | ID | Spec | Task | Status |
 |----|------|------|--------|
-| F1 | §8 | Stage 3 rescore + non-LLM gate | [~] gate + rescore LLM + draft formulation on material change |
-| F2 | §12 | Flare classifier + intervention library | [~] classifier, copy lib, POST /api/flares, mobile flare-up |
-| F3 | §6B | Full progressive profile UI | [ ] |
+| F1 | §8 | Stage 3 rescore + non-LLM gate | [x] gate, LLM, draft + counselor review UI |
+| F2 | §12 | Flare classifier + intervention library | [x] classifier, copy, API, mobile flare-up |
+| F3 | §6B | Full progressive profile UI | [x] APIs, About You screen, consent, field requests |
 | F4 | §7A M2 | Owned-IP music library | [—] |
 | F5 | §1A | `MOD_EAET`, `MOD_PEER` | [—] |
 | F6 | §7B.4 | `holistic_items` curated library | [—] |
@@ -111,7 +111,7 @@
 | Date | Items completed | Notes |
 |------|-----------------|-------|
 | 2026-07-12 AM | Phases A–D (original) | Formulation gate, cohort A/B |
-| 2026-07-12 PM | F1–F2 (partial) | Rescore gate, flare API, mobile flare-up flow |
+| 2026-07-13 AM | F1–F3 | Rescore counselor UI; F3 progressive profile + About You |
 
 ---
 

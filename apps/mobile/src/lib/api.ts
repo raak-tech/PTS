@@ -915,3 +915,67 @@ export async function apiSubmitFlare(
     }),
   );
 }
+
+export type ClientProfileField = {
+  key: string;
+  label: string;
+  value: string | null;
+  sensitive: boolean;
+  consentScope: 'medical' | null;
+  editable: boolean;
+  lockedReason?: string;
+};
+
+export type ClientProfileView = {
+  fields: ClientProfileField[];
+  completeness: number;
+  completenessLabel: string;
+  pendingFieldRequests: {
+    id: string;
+    fieldKey: string;
+    fieldLabel: string;
+    prompt: string;
+    status: string;
+    createdAt: string;
+  }[];
+  consentGrants: { scope: 'medical'; granted: boolean; grantedAt: string | null }[];
+  microPrompt: { fieldKey: string; label: string; prompt: string } | null;
+};
+
+export async function apiGetClientProfile(token: string) {
+  return parseJson<{ ok: boolean; profile: ClientProfileView }>(
+    await fetchWithTimeout(`${API_URL}/api/profile`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
+}
+
+export async function apiUpdateClientProfile(token: string, patch: Record<string, string | null>) {
+  return parseJson<{ ok: boolean; profile: ClientProfileView }>(
+    await fetchWithTimeout(`${API_URL}/api/profile`, {
+      method: 'PATCH',
+      headers: authHeaders(token),
+      body: JSON.stringify(patch),
+    }),
+  );
+}
+
+export async function apiSetProfileConsent(token: string, scope: 'medical', granted: boolean) {
+  return parseJson<{ ok: boolean; consentGrants: ClientProfileView['consentGrants'] }>(
+    await fetchWithTimeout(`${API_URL}/api/profile/consent`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ scope, granted }),
+    }),
+  );
+}
+
+export async function apiAnswerProfileFieldRequest(token: string, requestId: string, value: string) {
+  return parseJson<{ ok: boolean; profile: ClientProfileView }>(
+    await fetchWithTimeout(`${API_URL}/api/profile/field-requests`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ requestId, value }),
+    }),
+  );
+}
