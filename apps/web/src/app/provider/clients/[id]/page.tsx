@@ -145,19 +145,33 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
     .where(eq(intakeResponses.userId, id))
     .limit(1);
 
-  // Fetch the latest intake session (one-box flow) for confidence data
-  const [latestSession] = await db
-    .select({
-      confidenceScores: intakeSessions.confidenceScores,
-      rawText: intakeSessions.rawText,
-      rounds: intakeSessions.rounds,
-      overallConfidence: intakeSessions.overallConfidence,
-      summary: intakeSessions.summary,
-    })
-    .from(intakeSessions)
-    .where(eq(intakeSessions.userId, id))
-    .orderBy(desc(intakeSessions.createdAt))
-    .limit(1);
+  // Fetch the latest intake session (one-box flow) for confidence data — optional.
+  let latestSession:
+    | {
+        confidenceScores: string;
+        rawText: string;
+        rounds: number;
+        overallConfidence: string | null;
+        summary: string | null;
+      }
+    | undefined;
+  try {
+    const [row] = await db
+      .select({
+        confidenceScores: intakeSessions.confidenceScores,
+        rawText: intakeSessions.rawText,
+        rounds: intakeSessions.rounds,
+        overallConfidence: intakeSessions.overallConfidence,
+        summary: intakeSessions.summary,
+      })
+      .from(intakeSessions)
+      .where(eq(intakeSessions.userId, id))
+      .orderBy(desc(intakeSessions.createdAt))
+      .limit(1);
+    latestSession = row;
+  } catch {
+    latestSession = undefined;
+  }
 
   const hasCrisisNotes =
     Boolean(latestPlan?.counselorNotes && /crisis/i.test(latestPlan.counselorNotes)) ||
