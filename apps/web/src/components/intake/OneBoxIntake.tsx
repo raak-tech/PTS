@@ -168,8 +168,8 @@ export function OneBoxIntake({ segmentType, onExtractionComplete }: Props) {
           );
         }
 
-        // If follow-up needed and rounds remain, show follow-up questions
-        if (!data.requiredFieldsMet && r < 3 && data.followUpQuestions.length > 0) {
+        // Required gaps OR Spec Phase E coverage asks (onset / thin cells) while rounds remain
+        if (r < 3 && data.followUpQuestions.length > 0 && (!data.requiredFieldsMet || r === 1)) {
           setPriorExtraction(JSON.stringify(data.extracted));
           setFollowUpQuestions(data.followUpQuestions);
           setFollowUpAnswers(new Array(data.followUpQuestions.length).fill(""));

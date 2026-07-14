@@ -29,6 +29,8 @@ export type IntakeFormData = {
   socialSupport: string;
   structurePreference: string;
   engagementTime: string;
+  /** sudden | gradual | mixed — optional, used for pain-script modalities */
+  onsetType: string;
   energyPattern: string;
   dinacharyaOpenness: string;
   breathStillnessOpenness: string;
@@ -65,6 +67,7 @@ export const emptyIntake: IntakeFormData = {
   socialSupport: '',
   structurePreference: '',
   engagementTime: '',
+  onsetType: '',
   energyPattern: '',
   dinacharyaOpenness: '',
   breathStillnessOpenness: '',
@@ -143,6 +146,10 @@ export function intakeToApiPayload(data: IntakeFormData) {
     structurePreference: data.structurePreference || undefined,
     engagementTime: data.engagementTime || undefined,
     ayurvedaPreferences: ayurveda,
+    onsetType:
+      data.onsetType === 'sudden' || data.onsetType === 'gradual' || data.onsetType === 'mixed'
+        ? data.onsetType
+        : undefined,
     hasRedFlags: data.hasRedFlags,
     isSafe: data.isSafe,
     consentGiven: data.consentGiven,

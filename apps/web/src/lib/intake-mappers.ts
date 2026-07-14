@@ -26,6 +26,7 @@ export type IntakeInsertShape = {
   structurePreference: string | null;
   engagementTime: string | null;
   ayurvedaPreferences: string | null;
+  onsetType: 'sudden' | 'gradual' | 'mixed' | null;
   hasRedFlags: boolean;
   isSafe: boolean;
   consentGiven: boolean;
@@ -94,6 +95,13 @@ export function mapExtractionToIntake(
       ? extracted.painSource.value
       : 'general';
 
+  const onsetRaw = extracted.onsetType?.value;
+  const onsetType =
+    typeof onsetRaw === 'string' &&
+    ['sudden', 'gradual', 'mixed'].includes(onsetRaw)
+      ? (onsetRaw as 'sudden' | 'gradual' | 'mixed')
+      : null;
+
   return {
     painSource: painSource || 'general',
     painSourceOther:
@@ -126,6 +134,7 @@ export function mapExtractionToIntake(
       stringOrNull(extracted.structurePreference.value),
     engagementTime: stringOrNull(extracted.engagementTime.value),
     ayurvedaPreferences: ayurvedaStr,
+    onsetType,
     hasRedFlags: Boolean(extracted.hasRedFlags.value),
     isSafe: extracted.isSafe.value !== false,
     consentGiven: true, // Consent is implicitly given via confirmation card
@@ -157,6 +166,7 @@ export function fieldLabel(field: string): string {
     structurePreference: 'Structure preference',
     engagementTime: 'Best time of day',
     ayurvedaPreferences: 'Ayurveda preferences',
+    onsetType: 'How it started',
     hasRedFlags: 'Safety flags',
     isSafe: 'Safe environment',
   };

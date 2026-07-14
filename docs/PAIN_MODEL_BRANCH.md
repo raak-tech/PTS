@@ -89,10 +89,10 @@ No automated analytics in this branch — per product decision.
 1. **Formulation gate** — separate gate for pilot (no auto-approve)
 2. **Client target labels** — friendly labels in mobile `painScriptTags.ts`
 3. **Prompts** — Ramya-approved MacBook draft
-4. **Rescore** — deferred (Phase G, not in A–D)
-5. **Intake** — 1 opener + ≤3 follow-ups (partial; `onsetType` added)
-6. **Profile** — minimal `clientProfile` seed from intake
-7. **Flare copy** — deferred (Phase G)
+4. **Rescore** — Stage 3 draft + counselor review UI shipped (checklist F1)
+5. **Intake** — 1 opener + ≤3 follow-ups (partial; `onsetType` extract+persist in progress)
+6. **Profile** — `clientProfile` seed from intake + About You / field requests (checklist F3)
+7. **Flare** — classifier + mobile flare-up flow shipped (checklist F2; separate from crisis)
 
 ---
 

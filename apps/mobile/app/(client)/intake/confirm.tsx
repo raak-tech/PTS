@@ -30,6 +30,7 @@ const FIELD_LABELS: Record<string, string> = {
   activitiesAffected: 'Activities affected',
   biggestChange: 'Biggest change',
   recoveryGoal: 'Your goal',
+  onsetType: 'How it started',
   ageRange: 'Age range',
   gender: 'Gender',
   occupation: 'Occupation',
@@ -111,6 +112,7 @@ export default function ConfirmScreen() {
       socialSupport: String(mapped.socialSupport ?? ''),
       structurePreference: String(mapped.structurePreference ?? ''),
       engagementTime: String(mapped.engagementTime ?? ''),
+      onsetType: String(mapped.onsetType ?? ''),
       hasRedFlags: Boolean(mapped.hasRedFlags ?? false),
       isSafe: mapped.isSafe !== false,
       consentGiven: true,
@@ -172,8 +174,9 @@ export default function ConfirmScreen() {
 
         <View style={{ gap: spacing.xs }}>
           <Text style={{ fontSize: 13, fontWeight: '700' as const, color: '#666' }}>KEY DETAILS</Text>
-          {REQUIRED_FIELDS.map((field) => {
+          {([...REQUIRED_FIELDS, 'onsetType'] as const).map((field) => {
             const d = getFieldDisplay(field);
+            if (field === 'onsetType' && d.confidence === 0 && d.value === 'Not provided yet') return null;
             return (
               <View key={field} style={styles.field}>
                 <Text style={styles.fieldName}>{FIELD_LABELS[field] ?? field}</Text>
@@ -186,9 +189,18 @@ export default function ConfirmScreen() {
           })}
         </View>
 
-        {!allRequiredMet && result.followUpQuestions?.length > 0 && round < 3 ? (
+        {result.followUpQuestions?.length > 0 && round < 3 && !allRequiredMet ? (
           <View style={{ gap: spacing.sm }}>
             <Text style={{ fontSize: 13, fontWeight: '700' as const, color: '#666' }}>A COUPLE QUICK QUESTIONS</Text>
+            {result.followUpQuestions.map((q: string, i: number) => (
+              <Text key={i} style={styles.followUp}>{q}</Text>
+            ))}
+          </View>
+        ) : null}
+
+        {result.followUpQuestions?.length > 0 && round < 3 && allRequiredMet ? (
+          <View style={{ gap: spacing.sm }}>
+            <Text style={{ fontSize: 13, fontWeight: '700' as const, color: '#666' }}>OPTIONAL — HELPS US PERSONALIZE</Text>
             {result.followUpQuestions.map((q: string, i: number) => (
               <Text key={i} style={styles.followUp}>{q}</Text>
             ))}

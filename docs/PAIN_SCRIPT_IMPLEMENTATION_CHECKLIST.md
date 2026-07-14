@@ -112,6 +112,7 @@
 |------|-----------------|-------|
 | 2026-07-12 AM | Phases A–D (original) | Formulation gate, cohort A/B |
 | 2026-07-14 | Spec H QA | Cohort B formulation→approve→Week 1; client sees `formulationSummary` + `personalizationBasis` (prod) |
+| 2026-07-14 | Spec Phase E (partial) | Extract+persist `onsetType`; ≤3 coverage follow-ups for thin onset/meaning/coping cells |
 | 2026-07-13 AM | F1–F3 | Rescore counselor UI; F3 progressive profile + About You |
 
 ---
