@@ -1,7 +1,6 @@
-import { API_URL } from '@/config';
+import { API_URL, IS_PAIN_SCRIPT_COHORT } from '@/config';
 import { intakeToApiPayload, type IntakeFormData } from '@/lib/intake';
 import type { SessionUser } from '@/types';
-
 const REQUEST_TIMEOUT_MS = 12_000;
 
 type ApiError = { error: string };
@@ -239,7 +238,10 @@ export async function apiAssignPilotCohort(token: string) {
   return parseJson<{ ok: boolean; pilotCohort: 'legacy' | 'pain_script' }>(
     await fetchWithTimeout(`${API_URL}/api/me/cohort`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders(token),
+      body: JSON.stringify({
+        pilotCohort: IS_PAIN_SCRIPT_COHORT ? 'pain_script' : 'legacy',
+      }),
     }),
   );
 }

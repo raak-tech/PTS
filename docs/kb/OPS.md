@@ -20,9 +20,25 @@ See `apps/web/.env.example` and `docs/BEFORE_PRODUCTION.md`. Never commit live k
 | `OTP_TEST_MODE` | Fixed OTP `123456` (pilot only) |
 | `MSG91_*` | Live SMS — required when test mode removed |
 | `ADMIN_EMAILS` | Web admin |
-| `PAIN_SCRIPT_ENABLED` | Pain-script pathway on preview/prod as configured |
+| `PAIN_SCRIPT_ENABLED` | Pain-script pathway — set `true` on Production for cohort B APK QA |
 
 `vercel env pull` may show empty encrypted values; runtime can still work — verify with `/api/health` and `/api/health/llm`.
+
+## Spec H — cohort B QA (formulation → Week 1)
+
+```bash
+cd apps/web
+PTS_CLIENT_PHONE=9988776655 PTS_API_URL=https://pts-web-pied.vercel.app \
+  node scripts/qa-cohort-b-formulation.mjs
+```
+
+Pass criteria: `formulationSummary` + Week 1 `personalizationBasis` on client `/api/plans`.
+
+Notes:
+- `POST /api/me/cohort` accepts `{ pilotCohort: "pain_script" }` from APK B (not only server `NEXT_PUBLIC_PILOT_COHORT`).
+- `POST /api/provider/generate-plan` uses Bearer via `getUserFromRequest` (not cookie-only).
+- Approved **legacy** plans without `formulationSummary` are not overwritten by generate-plan — use counselor `POST /api/plans` `{ action: "regenerate" }` then approve. The QA script does this automatically.
+- OTP send requires `dataStorageConsent: true`.
 
 ## Deploy
 

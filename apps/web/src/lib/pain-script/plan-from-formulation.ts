@@ -117,10 +117,28 @@ export async function generatePlanFromFormulation(
   const data = (await response.json()) as OpenRouterResponse;
   const usage = parseOpenRouterUsage(data.usage);
   const raw = data.choices[0]?.message?.content ?? '';
-  const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+  const cleaned = raw
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+
+  const parsePlanJson = (text: string): GeneratedPlan & { formulationSummary?: string } => {
+    try {
+      return JSON.parse(text) as GeneratedPlan & { formulationSummary?: string };
+    } catch {
+      const start = text.indexOf('{');
+      const end = text.lastIndexOf('}');
+      if (start >= 0 && end > start) {
+        return JSON.parse(text.slice(start, end + 1)) as GeneratedPlan & {
+          formulationSummary?: string;
+        };
+      }
+      throw new Error('no_json_object');
+    }
+  };
 
   try {
-    const parsed = JSON.parse(cleaned) as GeneratedPlan & { formulationSummary?: string };
+    const parsed = parsePlanJson(cleaned);
     const first = (parsed.weeks ?? [])[0];
     const week: WeekPlan = {
       week: 1,

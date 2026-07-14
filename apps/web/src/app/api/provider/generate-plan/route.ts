@@ -1,9 +1,8 @@
-import { headers } from 'next/headers';
 import { and, desc, eq } from 'drizzle-orm';
 
 import { getDb } from '@/db';
 import { planWeeks, plans, users } from '@/db/schema';
-import { getUserFromCookieHeader } from '@/lib/session';
+import { getUserFromRequest } from '@/lib/session';
 import { assertProviderCanAccessClient } from '@/lib/client-access';
 import { canAccessProviderConsole } from '@/lib/provider-console-access';
 import { getApprovedFormulation, getCurrentFormulation } from '@/lib/pain-script/formulation-store';
@@ -19,8 +18,7 @@ import { displayEmail } from '@/lib/pii';
 import type { GeneratedPlan } from '@/lib/plan-generator';
 
 export async function POST(request: Request) {
-  const headersList = await headers();
-  const user = await getUserFromCookieHeader(headersList.get('cookie'));
+  const user = await getUserFromRequest(request);
 
   if (!user || !canAccessProviderConsole(user)) {
     return Response.json({ ok: false, reason: 'unauthorized' }, { status: 401 });
@@ -73,36 +71,54 @@ export async function POST(request: Request) {
       .where(and(eq(planWeeks.planId, existing.id), eq(planWeeks.weekNumber, 1)))
       .limit(1);
 
+    let droppedForRegen = false;
+
     if (week1) {
-      // Genuinely initiated already — nothing to do.
+      // Pain Script: legacy Week 1 without formulationSummary is not Spec H–ready —
+      // drop draft and regenerate from approved formulation.
+      let missingPainSummary = false;
+      if (usesPainScriptPath(cohort) && existing.status !== 'approved') {
+        try {
+          const parsed = JSON.parse(existing.generatedContent) as { formulationSummary?: string };
+          missingPainSummary = !String(parsed.formulationSummary ?? '').trim();
+        } catch {
+          missingPainSummary = true;
+        }
+      }
+      if (!missingPainSummary) {
+        return Response.json({ ok: false, reason: 'plan_exists' }, { status: 200 });
+      }
+      await db.delete(planWeeks).where(eq(planWeeks.planId, existing.id));
+      await db.delete(plans).where(eq(plans.id, existing.id));
+      log('generate_plan_dropped_legacy_pain_draft', { userId, planId: existing.id });
+      droppedForRegen = true;
+    } else if (existing.status === 'approved') {
+      // No Week 1 row. Never touch an approved plan.
       return Response.json({ ok: false, reason: 'plan_exists' }, { status: 200 });
     }
 
-    // No Week 1 row. Never touch an approved plan.
-    if (existing.status === 'approved') {
-      return Response.json({ ok: false, reason: 'plan_exists' }, { status: 200 });
-    }
+    if (!droppedForRegen) {
+      // Draft plan missing Week 1 — try to repair cheaply from the existing
+      // generated content before spending another LLM call.
+      let repaired = false;
+      try {
+        const parsed = JSON.parse(existing.generatedContent) as GeneratedPlan;
+        repaired = await seedDraftPlanWeeks(existing.id, parsed);
+      } catch (err) {
+        logError('generate_plan_repair_parse_failed', err, { userId, planId: existing.id });
+      }
 
-    // Draft plan missing Week 1 — try to repair cheaply from the existing
-    // generated content before spending another LLM call.
-    let repaired = false;
-    try {
-      const parsed = JSON.parse(existing.generatedContent) as GeneratedPlan;
-      repaired = await seedDraftPlanWeeks(existing.id, parsed);
-    } catch (err) {
-      logError('generate_plan_repair_parse_failed', err, { userId, planId: existing.id });
-    }
+      if (repaired) {
+        log('generate_plan_repaired', { userId, planId: existing.id });
+        await claimClientCounselor(userId, user.id);
+        return Response.json({ ok: true, planId: existing.id, repaired: true });
+      }
 
-    if (repaired) {
-      log('generate_plan_repaired', { userId, planId: existing.id });
-      await claimClientCounselor(userId, user.id);
-      return Response.json({ ok: true, planId: existing.id, repaired: true });
+      // Generated content is unusable — drop the broken draft and regenerate fresh.
+      await db.delete(planWeeks).where(eq(planWeeks.planId, existing.id));
+      await db.delete(plans).where(eq(plans.id, existing.id));
+      log('generate_plan_dropped_broken_draft', { userId, planId: existing.id });
     }
-
-    // Generated content is unusable — drop the broken draft and regenerate fresh.
-    await db.delete(planWeeks).where(eq(planWeeks.planId, existing.id));
-    await db.delete(plans).where(eq(plans.id, existing.id));
-    log('generate_plan_dropped_broken_draft', { userId, planId: existing.id });
   }
 
   // Generate a fresh Week 1 draft.

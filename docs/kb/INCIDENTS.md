@@ -19,6 +19,21 @@ Append new incidents at the **top** (newest first). Status: `open` | `mitigated`
 
 ---
 
+### 2026-07-14 — Spec H QA blockers (cohort, formulation JSON, generate-plan auth, legacy plan)
+- **Status:** closed
+- **Surfaces:** web API + pain-script cohort B
+- **Symptoms:** Cohort B stuck: APK cohort ignored; formulation regenerate `500 invalid JSON`; Bearer generate-plan `401`; clients with approved legacy Week 1 never got `formulationSummary` / `personalizationBasis`.
+- **Root cause:**
+  1. `POST /api/me/cohort` only used server `NEXT_PUBLIC_PILOT_COHORT`, ignoring mobile body.
+  2. Formulation LLM JSON parse too brittle (fence/truncation).
+  3. `generate-plan` used cookie-only auth.
+  4. `generate-plan` returns `plan_exists` for approved plans; client GET prefers approved — legacy approved hid Spec H fields.
+- **Fix:** Accept `{ pilotCohort: 'pain_script' }` from client; JSON extract + `response_format` + intake fallback formulation; `getUserFromRequest` on generate-plan; regenerate+approve via `/api/plans` for legacy (script `qa-cohort-b-formulation.mjs`). Prod redeployed 2026-07-14. QA client `9988776655`: **9/9 pass**.
+- **Prevention:** Run Spec H script after pain-path deploys; see [`OPS.md`](OPS.md) § Spec H.
+- **Reviewed:** 2026-07-14
+
+---
+
 ### 2026-07-14 — Mobile launch crash: duplicate Expo Router screen `intake`
 - **Status:** closed
 - **Surfaces:** mobile Android (Pixel), iOS (same JS bundle / Expo Router)
