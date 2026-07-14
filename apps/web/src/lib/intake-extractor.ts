@@ -131,7 +131,7 @@ Extract the following fields from the client's words. For each field:
 Fields to extract:
 1. painSource — one of: "workplace", "accident", "sports", "general", "other" (string)
 2. painSourceOther — if painSource is "other", what the client specified (string or null)
-3. painDescription — what the client is experiencing, in their own framing. 1-3 sentences (string)
+3. painDescription — what the person is experiencing, paraphrasing their words in second person ("You feel…") or their own "I" words. NEVER write "the client" or "they". 1-3 sentences (string)
 4. painDuration — one of: "under1m", "1to3m", "3to6m", "6to12m", "over1y" (string or null)
 5. activitiesAffected — which daily activities are impacted, as a JSON array of strings. E.g., ["sitting at desk", "playing with kids"]. Empty array if not mentioned.
 6. biggestChange — the single biggest change the client has experienced. 1-2 sentences (string)
@@ -175,7 +175,7 @@ ADDITIONAL OUTPUTS (beyond the field extractions):
 - Also ask about thin coverage cells when useful for counseling: sudden vs gradual onset; what the pain means about them / others; what tends to make a bad day worse; how they cope day to day.
 - Maximum 3 questions total. Priority: required-field gaps first, then onsetType if missing, then one coverage question for thin meaning/coping/reinforcers.
 - If all required fields are solid and onset is known, return empty array (or at most one light coverage question before round 3).
-- Write a 1-2 sentence natural-language summary of the client's situation.
+- Write a 1-2 sentence natural-language summary in second person ("You are…"). NEVER start with "The client".
 
 Return ONLY valid JSON (no markdown, no explanation) with this structure:
 {

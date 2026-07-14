@@ -188,7 +188,7 @@ export function OneBoxIntake({ segmentType, onExtractionComplete }: Props) {
           summary: data.summary,
           clientSummary:
             data.clientSummary ??
-            data.summary.replace(/\b[Tt]he client(?:'s)?\b/g, "You"),
+            data.summary.replace(/\b[Tt]he client(?:'s)?\b/g, "You").replace(/\bYou is\b/g, "You are"),
           extractionUsable: data.extractionUsable ?? true,
           overallConfidence: data.overallConfidence,
           rounds: r,

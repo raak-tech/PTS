@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { webTheme as t } from "@/lib/web-theme";
 import { fieldLabel } from "@/lib/intake-mappers";
 import type { ExtractionResult } from "@/lib/intake-extractor";
 import type { IntakeInsertShape } from "@/lib/intake-mappers";
+import { formatIntakeFieldValue, toClientSummary } from "@/lib/intake-quality";
+import { webTheme as t } from "@/lib/web-theme";
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -53,18 +54,7 @@ function formatFieldValue(
     return value ? "Yes" : "No";
   }
 
-  // activitiesAffected might be a JSON array string
-  if (fieldName === "activitiesAffected") {
-    try {
-      const arr = JSON.parse(value);
-      if (Array.isArray(arr) && arr.length > 0) return arr.join(", ");
-      return String(value);
-    } catch {
-      return String(value);
-    }
-  }
-
-  return String(value);
+  return formatIntakeFieldValue(value, fieldName);
 }
 
 // ── Confidence badge ───────────────────────────────────────────
@@ -317,7 +307,7 @@ export default function IntakeConfirmPage() {
   const extractionUsable = data.extractionUsable !== false;
   const displaySummary =
     data.clientSummary?.trim() ||
-    data.summary.replace(/\b[Tt]he client(?:'s)?\b/g, "You");
+    toClientSummary(data.summary ?? "", data.segmentType);
 
   if (!extractionUsable) {
     return (

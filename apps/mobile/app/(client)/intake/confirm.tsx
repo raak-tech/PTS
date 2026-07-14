@@ -41,7 +41,7 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 function formatFieldForDisplay(fieldName: string, value: unknown): string {
-  return formatIntakeFieldValue(value);
+  return formatIntakeFieldValue(value, fieldName);
 }
 
 export default function ConfirmScreen() {
@@ -65,21 +65,16 @@ export default function ConfirmScreen() {
     confidence: { fontSize: 11, color: c.muted, marginTop: 2 },
     summary: { fontSize: 14, color: c.text, lineHeight: 21, fontStyle: 'italic' as const, backgroundColor: c.surface, padding: spacing.md, borderRadius: 10, borderWidth: 1, borderColor: c.border },
     followUp: { fontSize: 14, color: c.text, lineHeight: 20, paddingLeft: spacing.sm, borderLeftWidth: 3, borderLeftColor: c.accent },
-    note: { fontSize: 13, color: c.muted, textAlign: 'center' as const, marginTop: spacing.sm },
     rewrite: { fontSize: 15, color: c.text, lineHeight: 22, textAlign: 'center' as const },
   }));
 
-  const confidenceIcon = (confidence: number) => {
-    if (confidence >= 0.85) return '✅';
-    if (confidence > 0) return '⚠️';
-    return '❌';
-  };
-
   const getFieldDisplay = (fieldName: string) => {
     const field = result.extracted?.[fieldName];
-    if (!field) return { icon: '❌', value: 'Not provided yet', confidence: 0 };
-    const val = formatFieldForDisplay(fieldName, field.value);
-    return { icon: confidenceIcon(field.confidence), value: val, confidence: field.confidence };
+    if (!field) return { value: 'Not provided yet', confidence: 0 };
+    return {
+      value: formatFieldForDisplay(fieldName, field.value),
+      confidence: typeof field.confidence === 'number' ? field.confidence : 0,
+    };
   };
 
   const allRequiredMet = result.requiredFieldsMet === true;
@@ -180,10 +175,7 @@ export default function ConfirmScreen() {
             return (
               <View key={field} style={styles.field}>
                 <Text style={styles.fieldName}>{FIELD_LABELS[field] ?? field}</Text>
-                <Text style={styles.fieldValue}>{d.icon} {d.value}</Text>
-                {d.confidence > 0 ? (
-                  <Text style={styles.confidence}>Confidence: {Math.round(d.confidence * 100)}%</Text>
-                ) : null}
+                <Text style={styles.fieldValue}>{d.value}</Text>
               </View>
             );
           })}
@@ -214,10 +206,6 @@ export default function ConfirmScreen() {
               They may reach out if they need more detail.
             </Text>
           </View>
-        ) : null}
-
-        {result.overallConfidence ? (
-          <Text style={styles.note}>Overall confidence: {Math.round(result.overallConfidence * 100)}%</Text>
         ) : null}
 
         <View style={{ gap: spacing.sm }}>

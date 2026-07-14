@@ -42,6 +42,30 @@ Release builds ignore developer `.env` LAN URLs (`EXPO_NO_DOTENV=1` in gradle sc
 
 ---
 
+## Auth / roles (one APK, two trees)
+
+OTP login is shared. Routing is by `user.role` from the API (`app/index.tsx`):
+
+| Role | Tree | Intent |
+|------|------|--------|
+| `client` | `app/(client)/*` | Full client journey (intake → waiting-plan → today/program/messages) |
+| `provider` | `app/(provider)/*` | Counselor mobile — **not** the web workspace; still richer than “messages only” today |
+
+Layouts gate incorrectly-role access with redirect to login (`ClientLayout` / `ProviderLayout`). **Same APK binary** — counselor content on a client phone means a **client-route bug** (wrong copy), not that they logged into the counselor tree.
+
+### Client copy invariant
+
+Intake extract LLM often writes counselor third person. Client confirm must rewrite via `toClientFacingText` / never show confidence % or “the client…”. See [`INTAKE.md`](INTAKE.md).
+
+### Counselor mobile scope (as of Jul 2026)
+
+Present: queue, pending intakes + generate plan, client list, messages, engagement, Week 1 plan review/approve, link to web for Weeks 2+.  
+**Not** on mobile: formulation review UI, full week editor, About-you / field-request deep clinical tooling.
+
+If product wants “basic only,” shrink `(provider)` to queue summary + messages + deep-link to web.
+
+---
+
 ## Auth / test
 
 - OTP test mode: phone OTP `123456` when `OTP_TEST_MODE` on API.

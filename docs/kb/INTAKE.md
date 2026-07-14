@@ -8,11 +8,12 @@
 
 ## Product invariants
 
-1. Never show counselor-facing phrasing (“the client…”) to the end user — use `clientSummary` / `toClientSummary`.
+1. Never show counselor-facing phrasing (“the client…”) to the end user — use `clientSummary` / `toClientSummary` / `toClientFacingText` on **summary and narrative fields** (`painDescription`, etc.). Fix “You is” agreement after swaps.
 2. Never render raw `null`, `"null"`, `[]`, or `"{}"` in confirm UI — use format helpers (`formatIntakeFieldValue` / web `formatFieldValue`).
-3. Do not call the expensive extract LLM on obvious garbage — `assessIntakeTextQuality` → HTTP 422 before OpenRouter.
-4. If the model returns nothing usable (`extractionUsable === false`), require rewrite; do not “Start program” on empty intake.
-5. Round ≥ 3 escape hatch must not bypass **usable** extraction (counselor surrender ≠ blank confirm).
+3. Do not show extract **confidence %** or clinical checkmarks on the **client** confirm screen — those are counselor QA signals.
+4. Do not call the expensive extract LLM on obvious garbage — `assessIntakeTextQuality` → HTTP 422 before OpenRouter.
+5. If the model returns nothing usable (`extractionUsable === false`), require rewrite; do not “Start program” on empty intake.
+6. Round ≥ 3 escape hatch must not bypass **usable** extraction (counselor surrender ≠ blank confirm).
 
 ---
 
