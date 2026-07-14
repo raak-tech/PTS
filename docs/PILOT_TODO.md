@@ -1,37 +1,46 @@
 # PTS Pilot — Consolidated Todo (single source of truth)
 
-**Last updated:** 2026-07-14 (knowledge base + APK 22)  
-**Purpose:** One execution queue for dev runs, APK drops, and counselor pilot.  
-**Rule:** Add new work here. Other docs keep product context only — link here instead of duplicating todos.
+**Last updated:** 2026-07-14 (Spec H QA pass; Phase E onsetType; client intake copy fix; APK B v25)
 
-**Knowledge base (incidents / pitfalls):** [`docs/kb/README.md`](kb/README.md) — agents must capture learnings after crashes; weekly review via `REVIEW_CHECKLIST.md`.
+**Session snapshot (2026-07-14 evening):**
+- **Branch:** `PainModelLearned` (ahead of master; not merged).
+- **Web:** production https://pts-web-pied.vercel.app — Spec H path + Phase E extract + client `toClientFacingText` live.
+- **Mobile:** pain-pilot APK **versionCode 25** — `apps/mobile/dist/pts-mobile-pain-pilot.apk` → prod API, `com.pts.mobile.painscript`.
+- **QA account:** client `9988776655` (OTP `123456`); counselor `+919900000002`.
+- **Spec H:** formulation → approve → Week 1 with `formulationSummary` + `personalizationBasis` — API script **9/9**.
+- **Do not commit:** WhatsApp screenshots / secrets.
 
-**Session snapshot (2026-07-04):**
-- **Run I shipped (web):** Plan tab week sub-tabs, per-week `WeekEditor` (edit + approve every round), per-week activity panel, cross-week patterns, and the edit→client propagation fix. `tsc` + `next build` green.
-- **Web:** production at https://pts-web-pied.vercel.app (redeploy after commit/push).
-- **Mobile:** APK **build 14** (`versionCode=14`) at `apps/mobile/dist/pts-mobile-release.apk` — installed on Pixel 7 (`2A101FDH200DWJ`). No mobile change in Run I.
-- **DB:** no new migration in Run I. `0024_monthly_check_ins.sql` applied (local + production via build migrate).
-- **Deferred:** MSG91 go-live, `CRON_SECRET` (optional until 90-day intake cleanup cron is wanted), Sentry/staging.
-- **Next:** §5 device QA pass; verify the Week-1 approve→client flow end-to-end on the waiting client.
-
-**Process (required before multi-surface code):** [`DEV_WORKFLOW.md`](DEV_WORKFLOW.md) — Analyze → Document → Review → Build  
-**Related (not execution queues):** `PROJECT_BRIEF.md`, `PROVIDER_WORKFLOW.md`, `MOBILE_APP_UX.md`, `DECISIONS.md`  
-**Long-term backlog (strategic):** `BACKLOG.md` — tracks 10+ product areas; **pilot work is pulled from this file**
+**Process:** [`DEV_WORKFLOW.md`](DEV_WORKFLOW.md) · KB [`kb/README.md`](kb/README.md)
 
 ---
 
-## Kickoff bar for next dev run
+## Tomorrow (2026-07-15) — kickoff list
 
-**Build 14 (client) on device.** Runs D–H complete (mapping, enrichment, SLA, post-week-6, infra). **Next:** §5 device QA pass on Pixel 7 (crisis gate, C7, OTP autofill).
+| # | Item | Why |
+|---|------|-----|
+| 1 | Install/verify APK B **v25** on Pixel — re-run intake confirm; no “The client…”, no confidence %, soft pain-source labels | Close tonight’s client-copy bug on device |
+| 2 | Spec H **device** smoke — waiting-plan `formulationSummary`, week `personalizationBasis`, flare ≠ crisis | API 9/9; device not fully signed off |
+| 3 | Spec Phase E **depth** — coverage follow-ups on thin cells with real multi-round intake; verify `onsetType` lands in DB → formulation/plan modalities | Partial ship; needs end-to-end proof |
+| 4 | Close **§16** decisions with Ramya (music M1/M2, Ayurveda sign-off, SD_BEHAVIOUR, modality set, EAET) | Unblocks post-pilot library work |
+| 5 | Optional: copy MacBook Pain Script **spec** into `docs/specs/` for line-by-line checklist | Tailscale/Mac source often unreachable |
+| 6 | Pilot ops hygiene — MSG91 / `CRON_SECRET` / Sentry only if go-live week | Deferred unless recruitment starts |
+
+**Leave deferred:** curated `holistic_items`, owned-IP music M2, `MOD_EAET`/`MOD_PEER`.
+
+---
+
+## Kickoff bar (legacy pilot UX)
+
+Pain Script path is primary on `PainModelLearned`. Control APK §5 device QA still open if cohort A is in the pilot.
 
 | # | Must-have | Status |
 |---|---|---|
-| 1 | Profile reachable + sign out + build info on **waiting-plan** | ✅ build 11 |
-| 2 | Client **share with counselor** on Profile (§2) | ✅ build 11 |
-| 3 | Initial LLM → **Week 1 only** + counselor comment gate before Week 2+ (§3) | ✅ API + workspace Plan tab |
-| 4 | At least one read-out voice item (client replay **or** counselor playback) | ✅ client + counselor web + mobile |
-| 5 | `/api/me/contacts` 500 fixed | ✅ deployed |
-| **Next** | **§5 device QA** on APK 14 (5a crisis gate, 5b C7, 5g weekly check-in, 5h OTP autofill) | 📋 QA |
+| 1 | Profile reachable + sign out + build info on **waiting-plan** | ✅ |
+| 2 | Client **share with counselor** on Profile (§2) | ✅ |
+| 3 | Initial LLM → **Week 1 only** + counselor comment gate before Week 2+ (§3) | ✅ |
+| 4 | At least one read-out voice item | ✅ |
+| 5 | `/api/me/contacts` 500 fixed | ✅ |
+| **Parked** | §5 device QA on control APK (5a/5b/5g/5h) | 📋 if cohort A runs |
 
 ---
 
