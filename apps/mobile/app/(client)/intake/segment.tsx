@@ -1,4 +1,4 @@
-import { Stack, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
@@ -34,9 +34,7 @@ export default function SegmentScreen() {
   };
 
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <Screen title="I'm here for help with..." subtitle="Choose what fits best. You can skip this.">
+    <Screen title="I'm here for help with..." subtitle="Choose what fits best. You can skip this.">
       <View style={{ gap: spacing.md }}>
         {SEGMENTS.map((seg) => (
           <HitTarget
@@ -57,6 +55,5 @@ export default function SegmentScreen() {
         </HitTarget>
       </View>
     </Screen>
-    </>
   );
 }

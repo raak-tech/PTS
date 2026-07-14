@@ -35,6 +35,7 @@
     "web": "expo start --web --port 8081",
     "local": "expo start --web --port 8081 --host lan",
     "typecheck": "tsc --noEmit",
+    "check:routes": "bash ./scripts/check-expo-routes.sh",
     "build:apk": "eas build -p android --profile preview --non-interactive",
     "build:apk:prod": "eas build -p android --profile production --non-interactive",
     "build:apk:gradle": "bash ./scripts/build-apk-gradle.sh",

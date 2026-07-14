@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
@@ -143,23 +143,18 @@ export default function ConfirmScreen() {
 
   if (!extractionUsable) {
     return (
-      <>
-        <Stack.Screen options={{ headerShown: false }} />
-        <Screen title={screenTitle} subtitle="We need a clear description before we can continue.">
-          <View style={{ gap: spacing.md }}>
-            <Text style={styles.rewrite}>{displaySummary}</Text>
-            <Button label="Rewrite my answer" onPress={handleRewrite} />
-            <Button label="Go back" variant="ghost" onPress={() => router.back()} />
-          </View>
-        </Screen>
-      </>
+      <Screen title={screenTitle} subtitle="We need a clear description before we can continue.">
+        <View style={{ gap: spacing.md }}>
+          <Text style={styles.rewrite}>{displaySummary}</Text>
+          <Button label="Rewrite my answer" onPress={handleRewrite} />
+          <Button label="Go back" variant="ghost" onPress={() => router.back()} />
+        </View>
+      </Screen>
     );
   }
 
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <Screen
+    <Screen
       title={screenTitle}
       subtitle={
         allRequiredMet
@@ -223,6 +218,5 @@ export default function ConfirmScreen() {
         </View>
       </View>
     </Screen>
-    </>
   );
 }

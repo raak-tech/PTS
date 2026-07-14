@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
@@ -91,9 +91,7 @@ export default function OneBoxScreen() {
   };
 
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <Screen
+    <Screen
       title={round > 1 ? 'A couple more details' : 'Tell us what is going on'}
       subtitle={
         round > 1
@@ -124,6 +122,5 @@ export default function OneBoxScreen() {
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </View>
     </Screen>
-    </>
   );
 }

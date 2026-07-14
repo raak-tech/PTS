@@ -3,6 +3,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+./scripts/check-expo-routes.sh
+
 export EXPO_PUBLIC_PILOT_COHORT=pain_script
 export EXPO_PUBLIC_API_URL="${EXPO_PUBLIC_API_URL:-https://pts-web-pied.vercel.app}"
 
