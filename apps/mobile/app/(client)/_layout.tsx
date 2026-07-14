@@ -24,9 +24,6 @@ export default function ClientLayout() {
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="intake" options={{ title: 'Assessment', headerShown: false }} />
-      <Stack.Screen name="intake/segment" options={{ headerShown: false }} />
-      <Stack.Screen name="intake/onebox" options={{ headerShown: false }} />
-      <Stack.Screen name="intake/confirm" options={{ headerShown: false }} />
       <Stack.Screen name="intake-complete" options={{ title: 'Complete' }} />
       <Stack.Screen name="graduation" options={{ title: 'Graduation', headerShown: false }} />
       <Stack.Screen name="waiting-plan" options={{ title: 'Your plan' }} />

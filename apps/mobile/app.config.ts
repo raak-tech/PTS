@@ -18,7 +18,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: isPainPilot ? 'com.pts.mobile.painscript' : 'com.pts.mobile',
-    versionCode: isPainPilot ? 20 : 15,
+    versionCode: isPainPilot ? 21 : 15,
     softwareKeyboardLayoutMode: 'resize',
     adaptiveIcon: {
       backgroundColor: '#3D4F44',
