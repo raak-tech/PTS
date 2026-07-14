@@ -1,8 +1,10 @@
 # PTS Pilot — Consolidated Todo (single source of truth)
 
-**Last updated:** 2026-07-13 (deferred intake quality / LLM cost / payment gates)  
+**Last updated:** 2026-07-14 (knowledge base + APK 22)  
 **Purpose:** One execution queue for dev runs, APK drops, and counselor pilot.  
 **Rule:** Add new work here. Other docs keep product context only — link here instead of duplicating todos.
+
+**Knowledge base (incidents / pitfalls):** [`docs/kb/README.md`](kb/README.md) — agents must capture learnings after crashes; weekly review via `REVIEW_CHECKLIST.md`.
 
 **Session snapshot (2026-07-04):**
 - **Run I shipped (web):** Plan tab week sub-tabs, per-week `WeekEditor` (edit + approve every round), per-week activity panel, cross-week patterns, and the edit→client propagation fix. `tsc` + `next build` green.
@@ -290,6 +292,7 @@ OTP (pilot): `123456` for test numbers.
 | Document | Role now |
 |----------|----------|
 | **`PILOT_TODO.md`** | **← Active execution queue (this file)** |
+| **`docs/kb/`** | **← Incidents, mobile/intake/ops learnings; continuous capture + review** |
 | **`DEV_WORKFLOW.md`** | **← Analyze → Document → Review → Build (required before §9 code)** |
 | `docs/plans/2026-07-02-section-9-counselor-alignment.md` | **§9 feature spec (shipped Run A–C)** |
 | `BACKLOG.md` | Long-term product backlog by track |

@@ -1,0 +1,12 @@
+---
+description: Intake extraction and confirm UX constraints
+globs: apps/web/src/**/intake/**/*,apps/web/src/lib/intake*.ts,apps/mobile/app/**/intake/**
+alwaysApply: false
+---
+
+# Intake
+
+- Pre-LLM text quality: `assessIntakeTextQuality` — do not remove without replacing an equivalent gate.
+- Client UI must use `clientSummary` / `toClientSummary` and format helpers — never raw extraction JSON.
+- Honour `extractionUsable`; blank/garbled extracts must force rewrite, not program start.
+- Deferred cost/rate/paywall work stays in `PILOT_TODO.md` Deferred section — see `docs/kb/INTAKE.md`.

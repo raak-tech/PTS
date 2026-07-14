@@ -5,7 +5,7 @@
 **Status:** Active — required for pilot execution work in `PILOT_TODO.md`  
 **Supersedes:** Ad-hoc “code first, document later” for any multi-role or cross-surface change.
 
-**Related:** `PILOT_TODO.md` (execution queue), `DECISIONS.md` (product/architecture decisions), `docs/plans/` (feature specs), `AUTOPILOT_POLICY.md` (automation boundaries).
+**Related:** `PILOT_TODO.md` (execution queue), `DECISIONS.md` (product/architecture decisions), `docs/plans/` (feature specs), `docs/kb/` (**knowledge base** — incidents & pitfalls), `AUTOPILOT_POLICY.md` (automation boundaries).
 
 ---
 
@@ -114,8 +114,9 @@ If the change **amends a prior decision** (e.g. Week-1-first vs full 6-week gene
 3. After build: run acceptance criteria; mark items in spec and `PILOT_TODO.md`.
 4. Update **feature inventory** in `PILOT_TODO.md` §9 (or relevant section).
 5. Deploy web if API changed; note build number if mobile changed.
+6. If the build uncovered a reusable pitfall or closed an incident, update `docs/kb/` (skill **capture-learning**).
 
-**Definition of done:** All acceptance criteria checked; `PILOT_TODO` updated; outdated docs listed in spec marked updated or ticketed.
+**Definition of done:** All acceptance criteria checked; `PILOT_TODO` updated; outdated docs listed in spec marked updated or ticketed; new learnings captured in `docs/kb/` when applicable.
 
 ---
 
@@ -128,6 +129,7 @@ If the change **amends a prior decision** (e.g. Week-1-first vs full 6-week gene
 | *What to build next* | `PILOT_TODO.md` |
 | *How to build process-wise* | `DEV_WORKFLOW.md` (this file) |
 | *Why we chose X* | `DECISIONS.md` |
+| *Incidents / pitfalls / ops recipes* | `docs/kb/` (knowledge base) |
 | *How counselors work* | `PROVIDER_WORKFLOW.md` |
 | *Detailed feature design* | `docs/plans/YYYY-MM-DD-*.md` |
 | *Long-term product tracks* | `BACKLOG.md` |
@@ -136,11 +138,14 @@ If the change **amends a prior decision** (e.g. Week-1-first vs full 6-week gene
 
 When starting a `PILOT_TODO` item, the agent should:
 
-1. Read `DEV_WORKFLOW.md` and the linked spec (create spec if missing).
+1. Read `DEV_WORKFLOW.md`, relevant `docs/kb/` pages, and the linked spec (create spec if missing).
 2. Refuse to write production code until Phase 3 gate is satisfied **or** user explicitly waives with reason recorded.
 3. After coding, update spec acceptance criteria and `PILOT_TODO.md` in the same session.
+4. After crashes or hard-won fixes, run skill **capture-learning** (update `docs/kb/` + `CAPTURE_LOG.md`).
+5. On weekly request or before major release, run skill **kb-review**.
 
-**User phrase to enforce:** *“Follow DEV_WORKFLOW — spec first”* or *“§9 spec approved, proceed to build.”*
+**User phrase to enforce:** *“Follow DEV_WORKFLOW — spec first”* or *“§9 spec approved, proceed to build.”*  
+**KB phrases:** *“capture this learning”* · *“KB review”*
 
 ### Per dev run ritual (≈15 min before code)
 
