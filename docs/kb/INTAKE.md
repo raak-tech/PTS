@@ -11,9 +11,12 @@
 1. Never show counselor-facing phrasing (“the client…”) to the end user — use `clientSummary` / `toClientSummary` / `toClientFacingText` on **summary and narrative fields** (`painDescription`, etc.). Fix “You is” agreement after swaps.
 2. Never render raw `null`, `"null"`, `[]`, or `"{}"` in confirm UI — use format helpers (`formatIntakeFieldValue` / web `formatFieldValue`).
 3. Do not show extract **confidence %** or clinical checkmarks on the **client** confirm screen — those are counselor QA signals.
-4. Do not call the expensive extract LLM on obvious garbage — `assessIntakeTextQuality` → HTTP 422 before OpenRouter.
-5. If the model returns nothing usable (`extractionUsable === false`), require rewrite; do not “Start program” on empty intake.
-6. Round ≥ 3 escape hatch must not bypass **usable** extraction (counselor surrender ≠ blank confirm).
+4. Follow-ups: after round 1 confirm, **one** structured pack (`follow-up` stepper) with per-question answers + curated fills for thin slots (max ~5). Do not dump users back into a blank onebox for gap-fill.
+5. Key details on confirm are **editable**. `biggestChange` = life impact since this started; `recoveryGoal` = what they want next (label: “What's changed most for you”).
+6. Do not call the expensive extract LLM on obvious garbage — `assessIntakeTextQuality` → HTTP 422 before OpenRouter.
+7. If the model returns nothing usable (`extractionUsable === false`), require rewrite; do not “Start program” on empty intake.
+8. After one follow-up pack (round ≥ 2), allow start even if some fields stay soft — counselor can follow up.
+9. **Draft resume:** incomplete one-box intake persists locally (AsyncStorage) and on server (`GET/PUT/DELETE /api/intake/draft`). On reopen, offer Continue / Start over. Clear draft on **Start my program** and **Start over**; sign-out clears local only (server draft kept for same account).
 
 ---
 
@@ -24,6 +27,8 @@
 - `summary` — may be counselor-ish; keep for counselor/tools if needed
 - `clientSummary` — safe for mobile/web confirm UI
 - `extractionUsable` — boolean gate for client confirmation
+
+`GET|PUT|DELETE /api/intake/draft` — mid-flow one-box resume payload (`intake_flow_drafts`). One row per user.
 
 Health: `GET /api/health/llm` — OpenRouter key present/usable on the deployment.
 

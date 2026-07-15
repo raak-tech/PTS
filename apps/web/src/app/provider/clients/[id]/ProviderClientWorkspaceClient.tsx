@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 
 import { CounselorReadOutEditor } from '@/components/CounselorReadOutEditor';
 import { PainSparkline } from '@/components/PainSparkline';
+import { IntakeContextRail } from '@/components/provider/IntakeContextRail';
 import { IntakeDataBar } from '@/components/provider/IntakeDataBar';
 import { ProgramPatternsPanel } from '@/components/provider/ProgramPatternsPanel';
 import { WeekActivityPanel } from '@/components/provider/WeekActivityPanel';
@@ -73,6 +74,8 @@ type IntakeSummary = {
   painSource: string;
   painDescription: string;
   recoveryGoal: string;
+  biggestChange?: string;
+  onsetType?: string;
   hasRedFlags: boolean;
   isSafe: boolean;
   completedAt: string | null;
@@ -119,15 +122,22 @@ type Props = {
   intake?: IntakeSummary | null;
   planStatus?: string | null;
   intakeDataBar?: IntakeDataBarData | null;
-  initialTab?: 'overview' | 'plan' | 'readouts' | 'messages';
+  initialTab?: 'activity' | 'plan' | 'messages' | 'notes' | 'overview' | 'readouts';
   initialWeek?: number;
 };
 
-const TABS = [
-  { id: 'overview' as const, label: 'Overview' },
-  { id: 'plan' as const, label: 'Plan' },
-  { id: 'readouts' as const, label: 'Read-outs' },
-  { id: 'messages' as const, label: 'Messages' },
+type ChartTab = 'activity' | 'plan' | 'messages' | 'notes';
+
+function normalizeTab(tab: Props['initialTab']): ChartTab {
+  if (tab === 'plan' || tab === 'messages' || tab === 'notes') return tab;
+  return 'activity';
+}
+
+const TABS: { id: ChartTab; label: string }[] = [
+  { id: 'plan', label: 'Plan' },
+  { id: 'activity', label: 'Activity' },
+  { id: 'messages', label: 'Messages' },
+  { id: 'notes', label: 'Notes' },
 ];
 
 export function ProviderClientWorkspaceClient({
@@ -143,10 +153,10 @@ export function ProviderClientWorkspaceClient({
   intake = null,
   planStatus = null,
   intakeDataBar = null,
-  initialTab = 'overview',
+  initialTab = 'plan',
   initialWeek = 1,
 }: Props) {
-  const [tab, setTab] = useState(initialTab);
+  const [tab, setTab] = useState<ChartTab>(() => normalizeTab(initialTab));
   const [activeWeek, setActiveWeek] = useState<number>(initialWeek);
   const [weekContents, setWeekContents] = useState<Record<number, WeekPlan>>(initialWeekContents);
   const [crisisAcknowledged, setCrisisAcknowledged] = useState(false);
@@ -176,6 +186,16 @@ export function ProviderClientWorkspaceClient({
   const approvedCount = Object.values(weekStatuses).filter((s) => s === 'approved').length;
   const nextWeekNumber = approvedCount + 1;
   const clientShares = overview.artifacts.filter((a) => a.kind === 'counselor-share');
+
+  const selectChartTab = (next: ChartTab) => {
+    setTab(next);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', next);
+      if (next !== 'plan') url.searchParams.delete('week');
+      window.history.replaceState(null, '', url.toString());
+    }
+  };
 
   const weekDisplayStatus = (weekNum: number): WeekDisplayStatus =>
     weekStatuses[weekNum] ?? 'not_started';
@@ -230,11 +250,16 @@ export function ProviderClientWorkspaceClient({
 
   useEffect(() => {
     if (typeof window === 'undefined' || window.location.hash !== '#admin-notes') return;
-    if (tab !== 'overview') return;
+    setTab('notes');
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', 'notes');
+      window.history.replaceState(null, '', url.toString());
+    }
     window.requestAnimationFrame(() => {
       document.getElementById('admin-notes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
-  }, [tab, notes.length]);
+  }, [notes.length]);
 
   const onResolveNote = async (noteId: string) => {
     setResolvingNoteId(noteId);
@@ -376,12 +401,18 @@ export function ProviderClientWorkspaceClient({
       clearTimeout(timer);
       const data = await res.json();
       if (!res.ok || !data.ok) {
+        if (data.reason === 'formulation_not_approved' || data.reason === 'formulation_missing') {
+          window.location.assign(`/provider/formulations/${clientId}`);
+          return;
+        }
         const reason =
           data.reason === 'plan_exists'
             ? 'Week 1 is already generated — reload to see it.'
             : data.reason === 'generation_failed'
               ? 'Generation failed. Confirm the client completed intake, then retry.'
-              : data.reason ?? 'Could not generate Week 1.';
+              : data.reason === 'unauthorized'
+                ? 'Session expired — sign in with email, then retry.'
+                : data.reason ?? 'Could not generate Week 1.';
         setApproveError(reason);
         return;
       }
@@ -437,18 +468,36 @@ export function ProviderClientWorkspaceClient({
 
   return (
     <>
+      <p style={{ margin: '0 0 8px' }}>
+        <Link href="/provider/clients" style={{ fontSize: 14, fontWeight: 600 }}>
+          ← Caseload
+        </Link>
+      </p>
       <h1 className="provider-page-title" style={{ marginTop: 8 }}>
         {clientLabel}
       </h1>
       {summary ? (
-        <p className="provider-page-subtitle" style={{ marginBottom: 20 }}>
+        <p className="provider-page-subtitle" style={{ marginBottom: 16 }}>
           {summary}
         </p>
       ) : (
-        <p className="provider-page-subtitle">Client workspace</p>
+        <p className="provider-page-subtitle" style={{ marginBottom: 16 }}>
+          Client chart
+        </p>
       )}
 
-      <div className="provider-tabs" role="tablist" aria-label="Client sections">
+      <IntakeContextRail
+        painSource={intake?.painSource}
+        painDescription={intake?.painDescription}
+        recoveryGoal={intake?.recoveryGoal}
+        biggestChange={intake?.biggestChange}
+        onsetType={intake?.onsetType}
+        hasRedFlags={intake?.hasRedFlags}
+        isSafe={intake?.isSafe}
+        completedAt={intake?.completedAt}
+      />
+
+      <div className="provider-tabs" role="tablist" aria-label="Client chart modes">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -456,17 +505,19 @@ export function ProviderClientWorkspaceClient({
             role="tab"
             className="provider-tab"
             aria-selected={tab === t.id}
-            onClick={() => setTab(t.id)}
+            onClick={() => selectChartTab(t.id)}
           >
             {t.label}
           </button>
         ))}
       </div>
 
-      <div className="provider-tab-panel" data-active={tab === 'overview'} role="tabpanel">
-        {unresolvedNotes.length > 0 ? (
-          <section id="admin-notes" className="provider-panel provider-panel--attention">
-            <h2>Admin notes ({unresolvedNotes.length})</h2>
+      <div className="provider-tab-panel" data-active={tab === 'notes'} role="tabpanel">
+        <section id="admin-notes" className="provider-panel">
+          <h2>Notes</h2>
+          {unresolvedNotes.length === 0 ? (
+            <p style={{ margin: 0, color: 'var(--muted)', fontSize: 14 }}>No open admin notes.</p>
+          ) : (
             <div style={{ display: 'grid', gap: 8 }}>
               {unresolvedNotes.map((note) => (
                 <div key={note.id} className="provider-queue-item">
@@ -486,41 +537,16 @@ export function ProviderClientWorkspaceClient({
                 </div>
               ))}
             </div>
-          </section>
-        ) : null}
+          )}
+        </section>
+      </div>
 
-        {intake ? (
-          <section className="provider-panel">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-              <h2 style={{ margin: 0 }}>Intake</h2>
-              {intake.hasRedFlags || !intake.isSafe ? (
-                <span className="provider-tag provider-tag--danger">Red flags</span>
-              ) : null}
-            </div>
-            <ul style={{ margin: '12px 0 0', paddingLeft: 18, lineHeight: 1.7 }}>
-              <li>
-                <strong>Pain source:</strong> {intake.painSource}
-              </li>
-              <li>
-                <strong>Description:</strong> {intake.painDescription}
-              </li>
-              <li>
-                <strong>Recovery goal:</strong> {intake.recoveryGoal}
-              </li>
-              {intake.completedAt ? (
-                <li>
-                  <strong>Submitted:</strong> {new Date(intake.completedAt).toLocaleDateString()}
-                </li>
-              ) : null}
-            </ul>
-          </section>
-        ) : null}
-
+      <div className="provider-tab-panel" data-active={tab === 'activity'} role="tabpanel">
         <section className="provider-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ margin: 0 }}>Plan status</h2>
-            <button type="button" onClick={() => setTab('plan')} style={{ fontSize: 13 }}>
-              Open Plan tab →
+            <button type="button" onClick={() => selectChartTab('plan')} style={{ fontSize: 13 }}>
+              Open Plan →
             </button>
           </div>
           <p style={{ marginTop: 12, marginBottom: 0, fontSize: 14 }}>
@@ -534,7 +560,7 @@ export function ProviderClientWorkspaceClient({
           <section className="provider-panel">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ margin: 0 }}>Recent messages</h2>
-              <button type="button" onClick={() => setTab('messages')} style={{ fontSize: 13 }}>
+              <button type="button" onClick={() => selectChartTab('messages')} style={{ fontSize: 13 }}>
                 Open thread →
               </button>
             </div>
@@ -1036,7 +1062,7 @@ export function ProviderClientWorkspaceClient({
         })()}
       </div>
 
-      <div className="provider-tab-panel" data-active={tab === 'readouts'} role="tabpanel">
+      <div className="provider-tab-panel" data-active={tab === 'activity'} role="tabpanel">
         <section className="provider-panel">
           <h2>Daily read-outs</h2>
           <CounselorReadOutEditor

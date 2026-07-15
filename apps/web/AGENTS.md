@@ -8,5 +8,6 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - [`docs/kb/README.md`](../../docs/kb/README.md) — index
 - Intake / LLM: [`docs/kb/INTAKE.md`](../../docs/kb/INTAKE.md)
+- Counselor web: [`docs/kb/COUNSELOR_WEB.md`](../../docs/kb/COUNSELOR_WEB.md)
 - Deploy / env: [`docs/kb/OPS.md`](../../docs/kb/OPS.md)
 - Capture lessons with skill **capture-learning**; weekly audit with **kb-review**

@@ -481,3 +481,10 @@ export const consentGrants = pgTable("consent_grants", {
   revokedAt: timestamp("revoked_at", { mode: "date", withTimezone: true }),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
+
+/** Mid-flow one-box intake draft (client resume). Cleared on confirm complete. */
+export const intakeFlowDrafts = pgTable("intake_flow_drafts", {
+  userId: text("user_id").primaryKey(),
+  payloadJson: text("payload_json").notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true }).notNull(),
+});

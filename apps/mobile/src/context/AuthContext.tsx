@@ -14,6 +14,7 @@ import {
 } from '@/lib/api';
 import { clearIntakeDraft } from '@/hooks/useIntakeDraft';
 import type { IntakeFormData } from '@/lib/intake';
+import { clearOneBoxDraftEverywhere } from '@/lib/intake-draft-sync';
 import { normalizePhone } from '@/lib/phone';
 import { findAccountByPhone, MOCK_OTP } from '@/mock/data';
 import type { SessionUser } from '@/types';
@@ -220,10 +221,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const updated = { ...user, intakeComplete: true };
         setUser(updated);
         await persistSession(token, updated);
+        await clearOneBoxDraftEverywhere(null);
+        await clearIntakeDraft();
         return;
       }
 
       await apiSubmitIntake(token, payload);
+      await clearOneBoxDraftEverywhere(token);
+      await clearIntakeDraft();
       await refreshUser();
     },
     [user, token, refreshUser],

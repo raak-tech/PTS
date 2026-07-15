@@ -21,7 +21,7 @@ function safeParseList(value: string | null): string[] {
 export default async function ProviderProfilePage() {
   const user = await getUserFromCookieHeader((await headers()).get('cookie'));
   if (!user) redirect('/login?next=/provider/profile');
-  if (!canAccessProviderConsole(user)) redirect('/');
+  if (!canAccessProviderConsole(user)) redirect('/login?error=provider-only');
 
   const profile = await ensureCounselorProfile(user.id, user.displayName);
 

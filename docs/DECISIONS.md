@@ -118,3 +118,9 @@ Use this to record decisions that affect architecture, product scope, safety/pri
 - **Why:** Pilot showed global counselor queues and clients messaging counselors before any mapping existed. Claim ties ownership to clinical action; scoping reduces queue noise.
 - **Alternatives considered:** Admin-assigned mapping only (rejected — adds ops overhead); invite-code linking (rejected — superseded demo model).
 - **Consequences / follow-ups:** Mobile hides "Message counselor" until mapped. `PROVIDER_ASSIGNMENT.md` documents the model. Push on new `counselor-share` goes to assigned counselor only.
+
+- **Date:** 2026-07-16
+- **Decision:** **Counselor mobile = Bridge mode** relative to web Caseload + Client Chart. Phone: Queue, messages, Week 1 approve, L1 snippets, read-out playback, deep-links with `?tab=`. Web: Formulation, WeekEditor, Apply/edit weeks 2–6, Notes, holistic visibility. Do not ship cosmetic controls on phone (e.g. holistic switches that do not POST).
+- **Why:** Align mobile with Chart IA without porting the full workplace; stop thin Apply and fake holistic toggles from bypassing clinical gates.
+- **Alternatives considered:** Basic-only shrink (queue+messages+web only — deferred); Chart-lite tab shell on phone (deferred — more build, less bridge clarity).
+- **Consequences / follow-ups:** Spec `docs/plans/2026-07-16-counselor-mobile-bridge.md`; update `docs/kb/MOBILE.md`.

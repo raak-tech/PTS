@@ -115,6 +115,7 @@ Pain Script path is primary on `PainModelLearned`. Control APK §5 device QA sti
 - [x] Counselor “open web workspace” link from mobile client detail.
 - [x] **Provider mobile parity** — §9.6, APK 12.
 - [x] All **6 weeks visible** in mobile plan review — Week 1 + Weeks 2–6 **locked cards** (Run C2, APK 13).
+- [x] **Counselor mobile Bridge (2026-07-16)** — Chart `?tab=` deep-links; L1 Client story; formulation generate escape; demote Apply / fake holistic toggles; Chart-lite client detail. Spec: `docs/plans/2026-07-16-counselor-mobile-bridge.md`.
 - [x] Locked week teaser cards on Program tab — Run C1: `releasedWeeks` fallback → `[1]`, test-clock respects releasedWeeks, week detail locked guard (APK 13).
 - [x] Weekly check-in one-question-at-a-time flow (`program/check-in.tsx`); device QA pending.
 - [ ] 6-box OTP — verify Android autofill / paste on Pixel.
@@ -136,7 +137,7 @@ Pain Script path is primary on `PainModelLearned`. Control APK §5 device QA sti
 - [x] **Per-week activity panel** — `GET /api/provider/clients/[id]/week/[n]/activity` + `WeekActivityPanel` (read-outs, blocks, check-ins, pain, reflections, holistic) (Run I).
 - [x] **Cross-week patterns** — `client-week-metrics.ts` + `GET /api/provider/clients/[id]/program-metrics` + `ProgramPatternsPanel` (adherence/read-out/pain trends table) (Run I).
 - [x] **Plan review queue slimmed** — cards link into the workspace Plan tab ("Open in workspace") (Run I).
-
+- [x] **Caseload + Client Chart IA (2026-07-15)** — four layers; Layer-1 rail; Plan/Activity/Messages/Notes; `/provider/plans` → Caseload filter; Generate Week 1 + formulations on Caseload; light theme; POST logout. Spec: `docs/plans/2026-07-15-counselor-chart-ia.md`. Ship: `…-ship.md`. KB: `docs/kb/COUNSELOR_WEB.md`.
 ---
 
 ## 10. 🟠 Super Admin Panel

@@ -1,5 +1,6 @@
 import { API_URL, IS_PAIN_SCRIPT_COHORT } from '@/config';
 import { intakeToApiPayload, type IntakeFormData } from '@/lib/intake';
+import type { OneBoxIntakeDraft } from '@/lib/intake-draft';
 import type { SessionUser } from '@/types';
 const REQUEST_TIMEOUT_MS = 12_000;
 
@@ -263,6 +264,35 @@ export async function apiSubmitIntake(token: string, data: IntakeFormData) {
   );
 }
 
+export async function apiGetIntakeDraft(token: string) {
+  const res = await fetchWithTimeout(`${API_URL}/api/intake/draft`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (res.status === 404) {
+    return { draft: null as OneBoxIntakeDraft | null };
+  }
+  return parseJson<{ draft: OneBoxIntakeDraft }>(res);
+}
+
+export async function apiPutIntakeDraft(token: string, draft: OneBoxIntakeDraft) {
+  return parseJson<{ ok: boolean }>(
+    await fetchWithTimeout(`${API_URL}/api/intake/draft`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify({ draft }),
+    }),
+  );
+}
+
+export async function apiDeleteIntakeDraft(token: string) {
+  return parseJson<{ ok: boolean }>(
+    await fetchWithTimeout(`${API_URL}/api/intake/draft`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
+}
+
 export async function apiGetPlan(token: string, userId?: string) {
   const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
   return parseJson<{ ok: boolean; plan: PlanRow | null }>(
@@ -503,6 +533,13 @@ export async function apiGetProviderClientMeta(token: string, clientId: string) 
     ok: boolean;
     planId: string | null;
     weekStatuses: Record<number, 'draft' | 'edited' | 'approved'>;
+    intake: {
+      painSource: string;
+      painDescription: string;
+      recoveryGoal: string;
+      hasRedFlags: boolean;
+      isSafe: boolean;
+    } | null;
     clientUpdates: { id: string; title: string; bodyText: string; createdAt: string }[];
   }>(
     await fetchWithTimeout(`${API_URL}/api/provider/clients/${clientId}/plan-meta`, {
@@ -627,6 +664,8 @@ export async function apiGetPendingIntakes(token: string) {
       userId: string;
       anonEmail: string;
       painSource: string;
+      painDescription?: string;
+      recoveryGoal?: string;
       submittedAt: string;
       hasRedFlags: boolean;
       isSafe: boolean;

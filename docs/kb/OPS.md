@@ -49,6 +49,14 @@ cd apps/web && npx vercel deploy --prod --yes   # production
 
 Mobile installs hit **production** API unless `EXPO_PUBLIC_API_URL` points elsewhere.
 
+### Counselor web smoke (after prod deploy)
+
+1. Email login → https://pts-web-pied.vercel.app/provider/clients  
+2. Caseload engagement chips resolve (or “unavailable”).  
+3. Chart Client story rail on Plan tab.  
+4. GET `/logout` shows confirm (does not clear session); Sign out form POSTs.  
+5. Full checklist: [`docs/plans/2026-07-15-counselor-chart-ia-ship.md`](../plans/2026-07-15-counselor-chart-ia-ship.md)
+
 ## Sharing with collaborators
 
 - **iOS builder (API = prod):** only `apps/mobile/.env` with `EXPO_PUBLIC_API_URL` + optional `EXPO_PUBLIC_PILOT_COHORT=pain_script` — see `.env.example`.

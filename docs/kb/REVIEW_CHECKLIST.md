@@ -5,7 +5,7 @@ Agent assist: skill **kb-review**.
 
 ## Pass 1 — Integrity (15 min)
 
-- [ ] `CAPTURE_LOG.md` entries since last review match new INCIDENTS / MOBILE / INTAKE / OPS changes
+- [ ] `CAPTURE_LOG.md` entries since last review match new INCIDENTS / MOBILE / INTAKE / COUNSELOR_WEB / OPS changes
 - [ ] Every `open` incident has an owner or next action
 - [ ] No secrets accidentally pasted into KB files (`rg -i 'sk-|api[_-]?key|password=' docs/kb`)
 - [ ] Links to commits/paths still resolve on current branch
@@ -14,9 +14,9 @@ Agent assist: skill **kb-review**.
 
 - [ ] MOBILE Expo Router rules still match `apps/mobile/app` layout (`npm run check:routes` green)
 - [ ] INTAKE API fields (`clientSummary`, `extractionUsable`) still present in extract route
+- [ ] COUNSELOR_WEB matches live routes: Caseload home, `/provider/plans` redirect, POST logout, Chart rail
 - [ ] OPS production URL and env guidance match `apps/mobile/eas.json` / `BEFORE_PRODUCTION.md`
 - [ ] `PILOT_TODO.md` deferred items not silently duplicated or contradicted in KB
-
 ## Pass 3 — Prune (10 min)
 
 - [ ] Mark outdated items with `Superseded: YYYY-MM-DD → <link>` or delete obsolete bullets

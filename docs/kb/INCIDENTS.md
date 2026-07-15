@@ -19,6 +19,24 @@ Append new incidents at the **top** (newest first). Status: `open` | `mitigated`
 
 ---
 
+### 2026-07-15 — Counselor web: silent logout, stuck Caseload loading, dual OTP, plans unauthorized
+- **Status:** closed
+- **Surfaces:** web counselor (`/provider/*`), `/login/mobile`, `/logout`
+- **Symptoms:**
+  1. Opening Profile (or hovering logout link) signed counselors out — then Plan/Generate showed `unauthorized` and Caseload stuck on “Loading today's progress…”.
+  2. Mobile login showed phone+Send OTP and OTP entry **both at once**.
+  3. Plan review contrast hard to read on mixed themes; intake missing across fragmented counselor pages.
+- **Root cause:**
+  1. GET `/logout` revoked the session; Next.js `<Link href="/logout">` **prefetch** cleared cookies without a user click.
+  2. Engagement fetch treated any failure / missing row as forever-loading (no `r.ok` / terminal state).
+  3. Mobile login rendered send + verify forms in one view.
+  4. Multiple counselor “homes” (`/provider/plans` vs clients vs overview) hid Layer-1 intake; redirect of plans without restoring Generate/formulations left queue gaps.
+- **Fix:** POST-only logout (GET = confirm HTML); Caseload/Chart IA (rail + tabs); light console; stepped OTP + email nudge for provider/admin; Generate Week 1 + pending formulations on Caseload; engagement `unavailable` state; `/provider/plans` → Caseload filter / highlight. Prod deploy 2026-07-15. Docs: [`COUNSELOR_WEB.md`](COUNSELOR_WEB.md), [`../plans/2026-07-15-counselor-chart-ia-ship.md`](../plans/2026-07-15-counselor-chart-ia-ship.md).
+- **Prevention:** Rule `.cursor/rules/counselor-web.mdc`; never Link-prefetch logout; always terminate engagement UI on fetch error.
+- **Reviewed:**
+
+---
+
 ### 2026-07-14 — Spec H QA blockers (cohort, formulation JSON, generate-plan auth, legacy plan)
 - **Status:** closed
 - **Surfaces:** web API + pain-script cohort B

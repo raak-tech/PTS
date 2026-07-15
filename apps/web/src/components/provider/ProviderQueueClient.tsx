@@ -182,7 +182,7 @@ export function ProviderQueueClient() {
               <li key={p.id}>
                 <span className="provider-tag provider-tag--danger">Crisis note</span>{' '}
                 {p.clientName} —{' '}
-                <Link href="/provider/plans">Review plan</Link>
+                <Link href="/provider/clients?filter=plans">Review plan</Link>
               </li>
             ))}
             {urgentIntakes.map((i) => (
@@ -280,7 +280,7 @@ export function ProviderQueueClient() {
                 ) : null}
               </div>
               <Link href={`/provider/plans?highlight=${plan.id}`} className="actionLink secondary">
-                Review →
+                Open chart →
               </Link>
             </div>
           ))}

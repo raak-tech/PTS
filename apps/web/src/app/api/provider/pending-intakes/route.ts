@@ -22,6 +22,9 @@ export async function GET(request: Request) {
     type PendingIntakeRow = {
       userId: string;
       painSource: string;
+      painSourceOther: string | null;
+      painDescription: string;
+      recoveryGoal: string;
       hasRedFlags: boolean;
       isSafe: boolean;
       createdAt: Date;
@@ -31,6 +34,9 @@ export async function GET(request: Request) {
       .select({
         userId: intakeResponses.userId,
         painSource: intakeResponses.painSource,
+        painSourceOther: intakeResponses.painSourceOther,
+        painDescription: intakeResponses.painDescription,
+        recoveryGoal: intakeResponses.recoveryGoal,
         hasRedFlags: intakeResponses.hasRedFlags,
         isSafe: intakeResponses.isSafe,
         createdAt: intakeResponses.createdAt,
@@ -75,7 +81,9 @@ export async function GET(request: Request) {
         anonEmail: formatClientContact(client),
         clientPhone: client.phone,
         clientEmail: client.email,
-        painSource: intake.painSource,
+        painSource: intake.painSourceOther ?? intake.painSource,
+        painDescription: intake.painDescription,
+        recoveryGoal: intake.recoveryGoal,
         submittedAt: intake.createdAt.toISOString(),
         hasRedFlags: intake.hasRedFlags,
         isSafe: intake.isSafe,

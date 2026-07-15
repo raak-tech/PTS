@@ -11,6 +11,7 @@ Canonical docs live under `docs/kb/` (start at `docs/kb/README.md`).
 
 - Mobile / Expo / APK / iOS → read `docs/kb/MOBILE.md` and open incidents in `docs/kb/INCIDENTS.md`
 - Intake / LLM extract / confirm UX → read `docs/kb/INTAKE.md`
+- Counselor web `/provider` → read `docs/kb/COUNSELOR_WEB.md` and `docs/plans/2026-07-15-counselor-chart-ia.md`
 - Deploy / env / collaborator setup → read `docs/kb/OPS.md`
 - Task queue → `docs/PILOT_TODO.md` (not the KB)
 
@@ -29,4 +30,5 @@ Weekly / on request: skill **kb-review** + `docs/kb/REVIEW_CHECKLIST.md`.
 
 - Never create Expo `foo.tsx` beside `foo/` (launch crash). Run `apps/mobile` `npm run check:routes` before APK builds.
 - Never show raw `null`/`[]` or counselor-phrased summaries on client intake confirm.
+- Never revoke counselor session on GET `/logout` (Next prefetch). Caseload is the only counselor home — see `COUNSELOR_WEB.md`.
 - Do not commit secrets; never put API keys in the KB.

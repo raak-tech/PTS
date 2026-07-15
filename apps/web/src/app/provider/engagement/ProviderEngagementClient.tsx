@@ -125,7 +125,7 @@ export function ProviderEngagementClient() {
                 <Link href={`/messages?with=${c.clientId}`} className="actionLink secondary">
                   Message
                 </Link>
-                <Link href={`/provider/plans`} className="actionLink secondary">
+                <Link href={`/provider/clients?filter=plans`} className="actionLink secondary">
                   Plans
                 </Link>
               </div>

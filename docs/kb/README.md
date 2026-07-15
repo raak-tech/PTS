@@ -15,6 +15,7 @@
 | [`INCIDENTS.md`](INCIDENTS.md) | Production/device crashes, broken releases, root cause, fix, prevention |
 | [`MOBILE.md`](MOBILE.md) | Expo Router, APK/iOS builds, keyboard, auth on device |
 | [`INTAKE.md`](INTAKE.md) | One-box intake, LLM extract quality, confirm UX |
+| [`COUNSELOR_WEB.md`](COUNSELOR_WEB.md) | Counselor web Caseload + Client Chart IA, logout/auth pitfalls |
 | [`OPS.md`](OPS.md) | Vercel, Neon, env sharing, test accounts, deploy commands |
 | [`REVIEW_CHECKLIST.md`](REVIEW_CHECKLIST.md) | Periodic human + agent review of this KB |
 | [`CAPTURE_LOG.md`](CAPTURE_LOG.md) | Append-only log of KB updates (who/what/when) |

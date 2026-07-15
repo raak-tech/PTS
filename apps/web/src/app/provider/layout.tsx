@@ -9,7 +9,7 @@ export default async function ProviderLayout({ children }: { children: React.Rea
   const user = await getUserFromCookieHeader((await headers()).get('cookie'));
 
   if (!user) {
-    redirect('/login?next=/provider/plans');
+    redirect('/login?next=/provider/clients');
   }
 
   if (user.role !== 'provider' && !isAdminUser(user)) {

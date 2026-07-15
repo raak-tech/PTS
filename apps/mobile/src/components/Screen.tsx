@@ -47,12 +47,15 @@ export function Screen({
   const keyboardHeight = useKeyboardHeight();
   const scrollRef = useRef<ScrollView>(null);
 
+  // Android: window resize alone often still clips sticky footers under Gboard —
+  // lift the footer by the measured keyboard height. iOS uses KAV padding instead.
+  // Must be applied outside useThemedStyles (that hook only deps on theme colors).
+  const androidKeyboardLift =
+    Platform.OS === 'android' && keyboardHeight > 0 ? keyboardHeight : 0;
+
   const styles = useThemedStyles((c) => ({
     safe: { flex: 1, backgroundColor: c.bg },
     avoid: { flex: 1 },
-    scroll: {
-      paddingBottom: spacing.md + insets.bottom + (footer ? 0 : keyboardHeight),
-    },
     inner: { padding: spacing.lg, gap: spacing.md, flexGrow: 1 },
     innerFlex: { flex: 1 },
     title: { fontSize: 28, fontWeight: '800' as const, color: c.text, letterSpacing: -0.5 },
@@ -60,12 +63,25 @@ export function Screen({
     footer: {
       paddingHorizontal: spacing.lg,
       paddingTop: spacing.sm,
-      paddingBottom: Math.max(insets.bottom, spacing.sm),
-      borderTopWidth: footer ? 1 : 0,
+      borderTopWidth: 1,
       borderTopColor: c.border,
       backgroundColor: c.bg,
+      elevation: 4,
+      shadowColor: '#000',
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: -2 },
     },
   }));
+
+  const scrollContentStyle = {
+    paddingBottom: spacing.md + (footer ? spacing.sm : insets.bottom + keyboardHeight),
+  };
+
+  const footerStyle = {
+    ...styles.footer,
+    paddingBottom: Math.max(insets.bottom, spacing.sm) + androidKeyboardLift,
+  };
 
   const keyboardVerticalOffset =
     Platform.OS === 'ios'
@@ -101,8 +117,8 @@ export function Screen({
     scroll && !footer ? (
       <ScrollView
         ref={scrollRef}
-        style={Platform.OS === 'web' ? { flex: 1 } : { flex: 1 }}
-        contentContainerStyle={styles.scroll}
+        style={{ flex: 1 }}
+        contentContainerStyle={scrollContentStyle}
         keyboardShouldPersistTaps="always"
         keyboardDismissMode="on-drag"
         nestedScrollEnabled
@@ -115,7 +131,7 @@ export function Screen({
       <ScrollView
         ref={scrollRef}
         style={{ flex: 1 }}
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={scrollContentStyle}
         keyboardShouldPersistTaps="always"
         keyboardDismissMode="on-drag"
         nestedScrollEnabled
@@ -140,7 +156,7 @@ export function Screen({
           <AppHeader title={title} subtitle={subtitle} right={headerRight} />
         ) : null}
         {mainContent}
-        {footer ? <View style={styles.footer}>{footer}</View> : null}
+        {footer ? <View style={footerStyle}>{footer}</View> : null}
       </KeyboardAvoidingView>
     </View>
   );

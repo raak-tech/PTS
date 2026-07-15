@@ -1,11 +1,13 @@
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { HitTarget } from '@/components/HitTarget';
 import { Screen } from '@/components/Screen';
+import { useAuth } from '@/context/AuthContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
+import { persistOneBoxDraft } from '@/lib/intake-draft-sync';
 import { spacing } from '@/theme';
 
 const SEGMENTS = [
@@ -18,23 +20,61 @@ const SEGMENTS = [
 
 export default function SegmentScreen() {
   const router = useRouter();
-  const [selected, setSelected] = useState<string | null>(null);
+  const { token } = useAuth();
+  const { segmentType: resumeSegment } = useLocalSearchParams<{ segmentType?: string }>();
+  const [selected, setSelected] = useState<string | null>(resumeSegment ?? null);
+  const selectedLabel = SEGMENTS.find((s) => s.key === selected)?.label;
   const styles = useThemedStyles((c) => ({
-    card: { backgroundColor: c.surface, borderRadius: 14, borderWidth: 2, borderColor: c.border, padding: spacing.lg, gap: spacing.sm },
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      borderWidth: 2,
+      borderColor: c.border,
+      padding: spacing.lg,
+      gap: spacing.sm,
+    },
     cardSelected: { borderColor: c.accent, backgroundColor: c.successBg },
     emoji: { fontSize: 28 },
     label: { fontSize: 16, fontWeight: '700' as const, color: c.text },
     hint: { fontSize: 13, color: c.muted, lineHeight: 19 },
-    skip: { textAlign: 'center' as const, marginTop: spacing.lg },
-    skipText: { fontSize: 14, color: c.muted },
+    footerHint: { fontSize: 13, color: c.muted, textAlign: 'center' as const, marginBottom: spacing.xs },
   }));
 
+  useEffect(() => {
+    if (resumeSegment) setSelected(resumeSegment);
+  }, [resumeSegment]);
+
   const handleContinue = () => {
-    router.push({ pathname: '/(client)/intake/onebox', params: { segmentType: selected ?? undefined } });
+    if (!selected) return;
+    void persistOneBoxDraft({ step: 'segment', segmentType: selected }, token);
+    router.push({ pathname: '/(client)/intake/onebox', params: { segmentType: selected } });
+  };
+
+  const handleSkip = () => {
+    void persistOneBoxDraft({ step: 'onebox', segmentType: 'other', freeText: '' }, token);
+    router.push({ pathname: '/(client)/intake/onebox', params: { segmentType: 'other' } });
   };
 
   return (
-    <Screen title="I'm here for help with..." subtitle="Choose what fits best. You can skip this.">
+    <Screen
+      title="I'm here for help with..."
+      subtitle="Choose what fits best. You can skip this."
+      footer={
+        <View style={{ gap: spacing.sm }}>
+          {selected ? (
+            <Text style={styles.footerHint}>Selected: {selectedLabel}</Text>
+          ) : (
+            <Text style={styles.footerHint}>Select a topic to continue</Text>
+          )}
+          <Button
+            label={selectedLabel ? `Continue with ${selectedLabel}` : 'Continue'}
+            onPress={handleContinue}
+            disabled={!selected}
+          />
+          <Button label="Skip — just let me type" variant="ghost" onPress={handleSkip} />
+        </View>
+      }
+    >
       <View style={{ gap: spacing.md }}>
         {SEGMENTS.map((seg) => (
           <HitTarget
@@ -49,10 +89,6 @@ export default function SegmentScreen() {
             <Text style={styles.hint}>{seg.hint}</Text>
           </HitTarget>
         ))}
-        <Button label="Continue" onPress={handleContinue} disabled={!selected} />
-        <HitTarget style={styles.skip} onPress={() => router.push('/(client)/intake/onebox')}>
-          <Text style={styles.skipText}>Skip — just let me type</Text>
-        </HitTarget>
       </View>
     </Screen>
   );

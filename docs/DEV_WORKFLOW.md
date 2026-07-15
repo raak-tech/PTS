@@ -185,7 +185,7 @@ When starting a `PILOT_TODO` item, the agent should:
 | Role | Surface | Before | After |
 |------|---------|--------|-------|
 | Client | Mobile Today | … | … |
-| Counselor | Web `/provider/plans` | … | … |
+| Counselor | Web `/provider/clients` (Caseload) + Chart | … | … |
 
 ### PILOT_TODO item link
 

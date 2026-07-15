@@ -13,6 +13,7 @@ This repository uses a **durable knowledge base**. Read it before mobile/release
 
 - Mobile: [`apps/mobile/AGENTS.md`](apps/mobile/AGENTS.md) + [`docs/kb/MOBILE.md`](docs/kb/MOBILE.md)
 - Web: [`apps/web/AGENTS.md`](apps/web/AGENTS.md)
+- Counselor web: [`docs/kb/COUNSELOR_WEB.md`](docs/kb/COUNSELOR_WEB.md) + IA [`docs/plans/2026-07-15-counselor-chart-ia.md`](docs/plans/2026-07-15-counselor-chart-ia.md) + ship [`docs/plans/2026-07-15-counselor-chart-ia-ship.md`](docs/plans/2026-07-15-counselor-chart-ia-ship.md)
 
 ## Continuous capture & review
 

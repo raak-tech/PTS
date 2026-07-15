@@ -86,7 +86,7 @@ export function FormulationReviewClient({
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 20px' }}>
       <p style={{ margin: '0 0 4px', fontSize: 13, color: '#666' }}>
-        <Link href="/provider/plans">← Plans</Link>
+        <Link href="/provider/clients">← Caseload</Link>
       </p>
       <h1 style={{ margin: '0 0 8px', fontSize: 22 }}>Formulation review</h1>
       <p style={{ margin: '0 0 20px', color: '#444' }}>
@@ -178,7 +178,7 @@ export function FormulationReviewClient({
         </button>
         {data.status === 'approved' ? (
           <Link
-            href="/provider/plans"
+            href="/provider/clients?filter=plans"
             style={{ padding: '10px 18px', background: '#111', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 600 }}
           >
             Generate Week 1 from plans queue →

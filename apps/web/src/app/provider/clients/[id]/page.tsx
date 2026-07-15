@@ -24,9 +24,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: client ? `Client | Counselor` : 'Client not found' };
 }
 
-function parseTab(tab?: string): 'overview' | 'plan' | 'readouts' | 'messages' {
-  if (tab === 'plan' || tab === 'readouts' || tab === 'messages') return tab;
-  return 'overview';
+function parseTab(tab?: string): 'activity' | 'plan' | 'messages' | 'notes' {
+  if (tab === 'plan' || tab === 'messages' || tab === 'notes') return tab;
+  if (tab === 'activity' || tab === 'overview' || tab === 'readouts') return 'activity';
+  return 'plan';
 }
 
 export default async function ProviderClientDetailPage({ params, searchParams }: Props) {
@@ -137,6 +138,8 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
       painSourceOther: intakeResponses.painSourceOther,
       painDescription: intakeResponses.painDescription,
       recoveryGoal: intakeResponses.recoveryGoal,
+      biggestChange: intakeResponses.biggestChange,
+      onsetType: intakeResponses.onsetType,
       hasRedFlags: intakeResponses.hasRedFlags,
       isSafe: intakeResponses.isSafe,
       completedAt: intakeResponses.completedAt,
@@ -195,6 +198,8 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
               painSource: intake.painSourceOther ?? intake.painSource,
               painDescription: intake.painDescription,
               recoveryGoal: intake.recoveryGoal,
+              biggestChange: intake.biggestChange ?? '',
+              onsetType: intake.onsetType ?? '',
               hasRedFlags: intake.hasRedFlags,
               isSafe: intake.isSafe,
               completedAt: intake.completedAt ? intake.completedAt.toISOString() : null,

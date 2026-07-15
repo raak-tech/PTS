@@ -12,6 +12,7 @@ export default function IntakeLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="segment" />
       <Stack.Screen name="onebox" />
+      <Stack.Screen name="follow-up" />
       <Stack.Screen name="confirm" />
       <Stack.Screen name="legacy" />
     </Stack>

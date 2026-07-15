@@ -2,7 +2,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 import { getDb } from '@/db';
-import { planWeeks, plans, supportArtifacts, userConsents } from '@/db/schema';
+import { intakeResponses, planWeeks, plans, supportArtifacts, userConsents } from '@/db/schema';
 import { assertProviderCanAccessClient } from '@/lib/client-access';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
@@ -67,10 +67,32 @@ export async function GET(_request: Request, context: RouteContext) {
             .limit(20)) as ShareRow[])
         : [];
 
+    const [intake] = await db
+      .select({
+        painSource: intakeResponses.painSource,
+        painSourceOther: intakeResponses.painSourceOther,
+        painDescription: intakeResponses.painDescription,
+        recoveryGoal: intakeResponses.recoveryGoal,
+        hasRedFlags: intakeResponses.hasRedFlags,
+        isSafe: intakeResponses.isSafe,
+      })
+      .from(intakeResponses)
+      .where(eq(intakeResponses.userId, clientId))
+      .limit(1);
+
     return NextResponse.json({
       ok: true,
       planId: latestPlan?.id ?? null,
       weekStatuses,
+      intake: intake
+        ? {
+            painSource: intake.painSourceOther ?? intake.painSource,
+            painDescription: intake.painDescription,
+            recoveryGoal: intake.recoveryGoal,
+            hasRedFlags: intake.hasRedFlags,
+            isSafe: intake.isSafe,
+          }
+        : null,
       clientUpdates: shareRows.map((a) => ({
         id: a.id,
         title: a.title,

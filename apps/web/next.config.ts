@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV === "development";
+
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -9,11 +11,11 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
+      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data:",
+      "img-src 'self' data: https://images.unsplash.com",
       "font-src 'self'",
-      "connect-src 'self'",
+      `connect-src 'self'${isDev ? " ws://localhost:3000 ws://192.168.1.3:3000" : ""}`,
       "frame-ancestors 'none'",
     ].join("; "),
   },
@@ -21,7 +23,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  allowedDevOrigins: ["127.0.0.1"],
+  allowedDevOrigins: ["127.0.0.1", "192.168.1.3"],
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

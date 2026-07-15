@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
@@ -8,6 +8,7 @@ import { TextField } from '@/components/TextField';
 import { API_URL } from '@/config';
 import { useAuth } from '@/context/AuthContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
+import { persistOneBoxDraft } from '@/lib/intake-draft-sync';
 import { spacing } from '@/theme';
 
 const SEGMENT_HINTS: Record<string, string> = {
@@ -19,53 +20,93 @@ const SEGMENT_HINTS: Record<string, string> = {
 };
 
 export default function OneBoxScreen() {
-  const { segmentType, round: roundParam, priorExtraction } = useLocalSearchParams<{
+  const { segmentType, round: roundParam, priorExtraction, draftText } = useLocalSearchParams<{
     segmentType?: string;
     round?: string;
     priorExtraction?: string;
+    draftText?: string;
   }>();
   const router = useRouter();
   const { token } = useAuth();
-  const [text, setText] = useState('');
+  const [text, setText] = useState(typeof draftText === 'string' ? draftText : '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const round = parseInt(roundParam ?? '1', 10);
-  const hint = SEGMENT_HINTS[segmentType ?? ''] ?? 'Tell us what is going on — write freely, we will figure out the rest.';
+  const hint =
+    SEGMENT_HINTS[segmentType ?? ''] ??
+    'Tell us what is going on — write freely, we will figure out the rest.';
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const styles = useThemedStyles((c) => ({
     hint: { fontSize: 14, color: c.muted, marginBottom: spacing.md, lineHeight: 21 },
     input: {
-      borderWidth: 1.5, borderColor: c.border, borderRadius: 14, padding: spacing.lg,
-      backgroundColor: c.surface, fontSize: 16, minHeight: 160, textAlignVertical: 'top' as const,
-      fontFamily: 'System', lineHeight: 24,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      borderRadius: 14,
+      padding: spacing.lg,
+      backgroundColor: c.surface,
+      fontSize: 16,
+      minHeight: 160,
+      textAlignVertical: 'top' as const,
+      fontFamily: 'System',
+      lineHeight: 24,
     },
     charCount: { fontSize: 12, color: c.muted, textAlign: 'right' as const, marginTop: spacing.xs },
     error: { color: c.danger, fontSize: 14, marginTop: spacing.sm },
+    footerHint: { fontSize: 13, color: c.muted, textAlign: 'center' as const },
   }));
 
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, []);
+
+  const onChangeText = (next: string) => {
+    setText(next);
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      void persistOneBoxDraft(
+        {
+          step: 'onebox',
+          segmentType: segmentType ?? 'other',
+          freeText: next,
+          round,
+        },
+        token,
+      );
+    }, 400);
+  };
+
   const handleSubmit = async () => {
-    if (text.trim().length < 30) { setError('Tell us a bit more — at least a sentence.'); return; }
+    if (text.trim().length < 30) {
+      setError('Tell us a bit more — at least a sentence.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
       const res = await fetch(`${API_URL}/api/intake/extract`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ segmentType: segmentType ?? 'other', freeText: text, round, priorExtraction: priorExtraction ?? undefined }),
+        body: JSON.stringify({
+          segmentType: segmentType ?? 'other',
+          freeText: text,
+          round,
+          priorExtraction: priorExtraction ?? undefined,
+        }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         const msg =
           typeof (body as { detail?: unknown }).detail === 'string'
             ? (body as { detail: string }).detail
-            : (body as { error?: string }).error ?? 'extraction failed';
+            : ((body as { error?: string }).error ?? 'extraction failed');
         throw new Error(msg);
       }
       const result = body as {
         extractionUsable?: boolean;
         clientSummary?: string;
-        requiredFieldsMet?: boolean;
-        followUpQuestions?: string[];
       };
       if (result.extractionUsable === false) {
         setError(
@@ -74,10 +115,21 @@ export default function OneBoxScreen() {
         );
         return;
       }
+      const resultJson = JSON.stringify(body);
+      await persistOneBoxDraft(
+        {
+          step: 'confirm',
+          segmentType: segmentType ?? 'other',
+          freeText: text,
+          round,
+          resultJson,
+        },
+        token,
+      );
       router.push({
         pathname: '/(client)/intake/confirm',
         params: {
-          result: JSON.stringify(body),
+          result: resultJson,
           freeText: text,
           segmentType: segmentType ?? 'other',
           round: String(round),
@@ -90,6 +142,9 @@ export default function OneBoxScreen() {
     }
   };
 
+  const canContinue = text.trim().length >= 30;
+  const charsNeeded = Math.max(0, 30 - text.trim().length);
+
   return (
     <Screen
       title={round > 1 ? 'A couple more details' : 'Tell us what is going on'}
@@ -100,12 +155,19 @@ export default function OneBoxScreen() {
       }
       scrollToEndOnKeyboard
       footer={
-        <Button
-          label={loading ? 'Analysing...' : round > 1 ? 'Send' : 'Continue'}
-          onPress={handleSubmit}
-          disabled={text.trim().length < 30 || loading}
-          loading={loading}
-        />
+        <View style={{ gap: spacing.sm }}>
+          {!canContinue && !loading ? (
+            <Text style={styles.footerHint}>
+              Keep going — about {charsNeeded} more character{charsNeeded === 1 ? '' : 's'}
+            </Text>
+          ) : null}
+          <Button
+            label={loading ? 'Analysing...' : round > 1 ? 'Send' : 'Continue'}
+            onPress={handleSubmit}
+            disabled={!canContinue || loading}
+            loading={loading}
+          />
+        </View>
       }
     >
       <View style={{ gap: spacing.md }}>
@@ -115,7 +177,7 @@ export default function OneBoxScreen() {
           multiline
           placeholder="Start typing..."
           value={text}
-          onChangeText={setText}
+          onChangeText={onChangeText}
           accessibilityLabel="Tell us what is going on"
         />
         <Text style={styles.charCount}>{text.length} characters</Text>

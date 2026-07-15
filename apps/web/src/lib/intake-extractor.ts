@@ -134,8 +134,8 @@ Fields to extract:
 3. painDescription — what the person is experiencing, paraphrasing their words in second person ("You feel…") or their own "I" words. NEVER write "the client" or "they". 1-3 sentences (string)
 4. painDuration — one of: "under1m", "1to3m", "3to6m", "6to12m", "over1y" (string or null)
 5. activitiesAffected — which daily activities are impacted, as a JSON array of strings. E.g., ["sitting at desk", "playing with kids"]. Empty array if not mentioned.
-6. biggestChange — the single biggest change the client has experienced. 1-2 sentences (string)
-7. recoveryGoal — what the client wants to achieve. 1-2 sentences, in their words (string)
+6. biggestChange — how life feels DIFFERENT since this started (impact so far: what they lost, stopped, or struggle with now). NOT the goal. 1-2 sentences (string)
+7. recoveryGoal — what they want going forward / what “better” looks like. Separate from biggestChange. 1-2 sentences (string)
 8. recoveryTimeline — when the client expects to see results (string or null)
 9. ageRange — one of: "under18", "18to24", "25to34", "35to44", "45to54", "55to64", "over65" (string or null)
 10. gender — "male", "female", "nonbinary", "other" (string or null)
@@ -173,8 +173,8 @@ CRITICAL RULES:
 ADDITIONAL OUTPUTS (beyond the field extractions):
 - If required fields are missing or low confidence, generate conversational follow-up questions. These should sound like a person asking, not a form. E.g., instead of "Enter pain duration" write "How long has this been going on? Even roughly helps."
 - Also ask about thin coverage cells when useful for counseling: sudden vs gradual onset; what the pain means about them / others; what tends to make a bad day worse; how they cope day to day.
-- Maximum 3 questions total. Priority: required-field gaps first, then onsetType if missing, then one coverage question for thin meaning/coping/reinforcers.
-- If all required fields are solid and onset is known, return empty array (or at most one light coverage question before round 3).
+- Maximum 5 questions total. Priority: required-field gaps first, then onsetType if missing, then coverage (meaning / coping / reinforcers).
+- If all required fields are solid and onset is known, return empty array (or at most one light coverage question before round 2).
 - Write a 1-2 sentence natural-language summary in second person ("You are…"). NEVER start with "The client".
 
 Return ONLY valid JSON (no markdown, no explanation) with this structure:
@@ -277,7 +277,7 @@ function parseExtractionResponse(raw: string): {
   return {
     extracted: data.extracted as ExtractedIntake,
     followUpQuestions: Array.isArray(data.followUpQuestions)
-      ? data.followUpQuestions.slice(0, 3)
+      ? data.followUpQuestions.slice(0, 5)
       : [],
     summary: typeof data.summary === 'string' ? data.summary : '',
   };
@@ -325,7 +325,16 @@ function computeGateStatus(
   };
 }
 
-/** Spec Phase E — fill thin onset / meaning / coping cells with conversational asks (≤3 total). */
+function fieldThin(field: { value: unknown; confidence: number } | undefined): boolean {
+  if (!field) return true;
+  const v = field.value;
+  if (v === null || v === undefined || v === '') return true;
+  if (Array.isArray(v) && v.length === 0) return true;
+  if (typeof v === 'string' && v.trim().length < 8) return true;
+  return field.confidence > 0 && field.confidence < 0.7;
+}
+
+/** Spec Phase E — curated + coverage asks for one structured second pass (≤5). */
 function enrichCoverageFollowUps(
   extracted: ExtractedIntake,
   llmQuestions: string[],
@@ -334,22 +343,41 @@ function enrichCoverageFollowUps(
 ): string[] {
   const questions = [...llmQuestions];
   const addUnique = (q: string) => {
-    if (questions.length >= 3) return;
+    if (questions.length >= 5) return;
     const key = q.toLowerCase();
     if (questions.some((x) => x.toLowerCase() === key)) return;
     questions.push(q);
   };
 
-  const onset = extracted.onsetType;
-  if (!onset?.value || onset.confidence < 0.7) {
+  if (round >= 3) return questions.slice(0, 5);
+
+  if (fieldThin(extracted.painDuration)) {
+    addUnique(
+      'How long has this been going on — even a rough sense like a few weeks or several months would help.',
+    );
+  }
+  if (fieldThin(extracted.activitiesAffected)) {
+    addUnique(
+      'Which parts of your day does this get in the way of — work, family time, sleep, movement, or something else?',
+    );
+  }
+  if (fieldThin(extracted.biggestChange)) {
+    addUnique(
+      'Since this started, what feels most different in your life — not your goal, but how day-to-day feels now?',
+    );
+  }
+  if (fieldThin(extracted.recoveryGoal)) {
+    addUnique('What would “better” look like for you — what are you hoping to get back to?');
+  }
+  if (fieldThin(extracted.onsetType)) {
     addUnique(
       'Did this start suddenly after something specific, or did it build gradually over time?',
     );
   }
 
-  const painSegments = new Set(['pain', 'injury_recovery', 'other']);
-  if (!painSegments.has(segmentType) || round >= 3) {
-    return questions.slice(0, 3);
+  const coverageSegments = new Set(['pain', 'injury_recovery', 'sleep', 'anxiety', 'other']);
+  if (!coverageSegments.has(segmentType)) {
+    return questions.slice(0, 5);
   }
 
   let signals: Record<string, unknown> | null = null;
@@ -363,7 +391,9 @@ function enrichCoverageFollowUps(
   }
 
   const beliefs = (signals?.scriptBeliefs ?? null) as Record<string, unknown> | null;
-  const hasSelfBelief = Boolean(beliefs && typeof beliefs.self === 'string' && beliefs.self.trim());
+  const hasSelfBelief = Boolean(
+    beliefs && typeof beliefs.self === 'string' && beliefs.self.trim(),
+  );
   const displays = (signals?.scriptDisplays ?? null) as Record<string, unknown> | null;
   const behaviours = Array.isArray(displays?.behaviours) ? displays.behaviours : [];
   const reinforcers = Array.isArray(signals?.reinforcingExperiences)
@@ -372,15 +402,19 @@ function enrichCoverageFollowUps(
 
   if (!hasSelfBelief) {
     addUnique(
-      'When the pain is at its worst, what does it make you think or feel about yourself?',
+      'When this is at its worst, what does it make you think or feel about yourself?',
     );
   } else if (behaviours.length === 0) {
-    addUnique('On a tough day, what do you find yourself doing to get through — rest, push on, withdraw, or something else?');
+    addUnique(
+      'On a tough day, what do you find yourself doing to get through — rest, push on, withdraw, or something else?',
+    );
   } else if (reinforcers.length === 0) {
-    addUnique('What tends to make a bad day worse — stress, sitting too long, sleep, or something else?');
+    addUnique(
+      'What tends to make a bad day worse — stress, sitting too long, sleep, or something else?',
+    );
   }
 
-  return questions.slice(0, 3);
+  return questions.slice(0, 5);
 }
 
 // ── Main extraction function ──────────────────────────────────

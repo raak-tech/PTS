@@ -105,7 +105,19 @@ export default function LoginScreen() {
   };
 
   return (
-    <Screen subtitle="Sign in with the mobile number registered for your program." showCrisis scroll={false}>
+    <Screen
+      subtitle="Sign in with the mobile number registered for your program."
+      showCrisis
+      scroll={false}
+      footer={
+        <Button
+          label="Continue"
+          onPress={onContinue}
+          loading={loading}
+          disabled={digits.length !== 10 || !consent}
+        />
+      }
+    >
       <Pressable onLongPress={() => USE_MOCK_AUTH && setDevOpen(true)}>
         <BrandMark size="lg" />
       </Pressable>
@@ -139,13 +151,6 @@ export default function LoginScreen() {
       </Pressable>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      <Button
-        label="Continue"
-        onPress={onContinue}
-        loading={loading}
-        disabled={digits.length !== 10 || !consent}
-      />
 
       <HitTarget onPress={() => router.push('/(auth)/safety')}>
         <Text style={styles.link}>Safety guidelines</Text>

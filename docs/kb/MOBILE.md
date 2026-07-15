@@ -23,8 +23,10 @@
 ## Keyboard UX
 
 - Shared `Screen` supports `footer` (sticky above keyboard) and `scrollToEndOnKeyboard`.
-- Android: `softwareKeyboardLayoutMode: 'resize'` in `app.config.ts`.
-- Use `footer` for primary CTAs on multiline forms (intake onebox, check-ins, messages composer). Do not put the only submit button below a tall multiline field without a footer/KAV.
+- Android: `softwareKeyboardLayoutMode: 'resize'` in `app.config.ts`, **and** `Screen` lifts `footer` by measured `keyboardHeight` (resize alone often still clips Gboard under edge-to-edge).
+- Keyboard pad on footer must be applied as a live inline style — not inside `useThemedStyles` (that hook only rebuilds on theme color changes).
+- Use `footer` for primary CTAs on intake segment / onebox / confirm / follow-up, login, OTP, check-ins, messages. Do not put the only submit button in the scroll body below a tall list or multiline field.
+- Segment select: sticky Continue only — **no auto-advance** on tap.
 
 ---
 
@@ -59,10 +61,15 @@ Intake extract LLM often writes counselor third person. Client confirm must rewr
 
 ### Counselor mobile scope (as of Jul 2026)
 
-Present: queue, pending intakes + generate plan, client list, messages, engagement, Week 1 plan review/approve, link to web for Weeks 2+.  
-**Not** on mobile: formulation review UI, full week editor, About-you / field-request deep clinical tooling.
+**Mode:** Bridge to web Caseload + Client Chart ([`COUNSELOR_WEB.md`](COUNSELOR_WEB.md), plan [`../plans/2026-07-16-counselor-mobile-bridge.md`](../plans/2026-07-16-counselor-mobile-bridge.md)).
 
-If product wants “basic only,” shrink `(provider)` to queue summary + messages + deep-link to web.
+**Present on phone:** Queue (Caseload-lite), pending intakes + Generate Week 1 (formulation → open web), Clients directory, Messages, engagement, Week 1 plan review/approve, Layer-1 Client story snippets, read-out **playback**, deep-links to Chart `?tab=` / formulation.
+
+**Not on phone (use web Chart):** Formulation review UI, full WeekEditor, Apply thin week drafts, Notes CRUD, About-you / field-request deep clinical tooling, holistic visibility toggles (approve releases draft as written).
+
+Helpers: `apps/mobile/src/lib/counselorWeb.ts` (`chartUrl`, `formulationUrl`, `caseloadUrl`).
+
+If product wants “basic only,” shrink `(provider)` further to queue summary + messages + deep-link to web.
 
 ---
 

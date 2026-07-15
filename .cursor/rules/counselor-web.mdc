@@ -1,0 +1,21 @@
+---
+description: Counselor web console IA — Caseload + Client Chart; logout and auth pitfalls
+globs:
+  - apps/web/src/app/provider/**/*
+  - apps/web/src/components/provider/**/*
+  - apps/web/src/app/logout/**/*
+---
+
+# Counselor web
+
+Before changing `/provider` UI, read `docs/kb/COUNSELOR_WEB.md` and `docs/plans/2026-07-15-counselor-chart-ia.md`.
+
+## Non-negotiables
+
+- **Caseload** (`/provider/clients`) is the only counselor home. Do not rebuild a second plans queue as a home.
+- **`/provider/plans`** stays a redirect (filter / highlight → Chart). Generate Week 1 + pending formulations live on Caseload.
+- **Client Chart** keeps Layer-1 **Client story** rail on every tab (`IntakeContextRail`).
+- **Logout:** never revoke session on GET `/logout` (prefetch). Sign-out via POST form only.
+- Counselor/admin auth: **email** `/login`, not phone OTP.
+- Engagement fetch failures → show unavailable; never infinite “Loading today’s progress…”.
+- Light theme: do not apply dark `button` styles to `.provider-tab` without an exclude.
