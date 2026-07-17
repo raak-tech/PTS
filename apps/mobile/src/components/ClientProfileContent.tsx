@@ -4,6 +4,7 @@ import { Text } from 'react-native';
 import { AppBuildInfo } from '@/components/AppBuildInfo';
 import { Button } from '@/components/Button';
 import { ShareWithCounselorCard } from '@/components/ShareWithCounselorCard';
+import { YourCounselorCard } from '@/components/YourCounselorCard';
 import { IS_PAIN_SCRIPT_COHORT } from '@/config';
 import { useAuth } from '@/context/AuthContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
@@ -23,6 +24,7 @@ export function ClientProfileContent({ layout = 'stack' }: Props) {
     ...(IS_PAIN_SCRIPT_COHORT
       ? [{ label: 'About you', href: '/(client)/profile/about-you' as const }]
       : []),
+    { label: 'Your counselor', href: '/(client)/profile/counselor' as const },
     { label: 'Safety guidelines', href: '/(client)/profile/safety' },
     { label: 'Privacy & data policy', href: '/(client)/profile/data' },
     { label: 'Flare-up support', href: '/(client)/profile/flare-up' },
@@ -31,6 +33,7 @@ export function ClientProfileContent({ layout = 'stack' }: Props) {
   return (
     <>
       {user?.phone ? <Text style={styles.phone}>{user.phone}</Text> : null}
+      <YourCounselorCard compact />
       <ShareWithCounselorCard />
       {items.map((item) => (
         <Button key={item.href} label={item.label} variant="secondary" onPress={() => router.push(item.href)} />

@@ -15,6 +15,8 @@ type ClientRow = {
   needsAction: boolean;
   intakeTeaser?: string | null;
   formulationPending?: boolean;
+  hasCompletedIntake?: boolean;
+  assigned?: boolean;
 };
 
 type EngagementRow = {
@@ -96,11 +98,13 @@ export function ProviderClientsListClient({
           [clientId]: {
             status: 'error',
             message:
-              data.reason === 'generation_failed'
-                ? 'Generation failed — confirm intake is complete, then retry.'
-                : data.reason === 'unauthorized'
-                  ? 'Session expired — sign in with email, then retry.'
-                  : (data.reason ?? 'Could not generate Week 1.'),
+              data.reason === 'intake_incomplete'
+                ? 'Client has not finished intake yet.'
+                : data.reason === 'generation_failed'
+                  ? 'Generation failed — confirm intake is complete, then retry.'
+                  : data.reason === 'unauthorized'
+                    ? 'Session expired — sign in with email, then retry.'
+                    : (data.reason ?? 'Could not generate Week 1.'),
           },
         }));
         return;
@@ -242,6 +246,9 @@ export function ProviderClientsListClient({
                         Formulation
                       </Link>
                     ) : null}
+                    {!client.assigned && client.hasCompletedIntake && client.planStatus === 'none' ? (
+                      <span className="provider-tag provider-tag--warn">Ready pool</span>
+                    ) : null}
                     {client.unreadCount > 0 ? (
                       <Link
                         href={`/provider/clients/${client.id}?tab=messages`}
@@ -323,7 +330,7 @@ export function ProviderClientsListClient({
                     <Link href={`/provider/formulations/${client.id}`} className="actionLink">
                       Review formulation →
                     </Link>
-                  ) : client.planStatus === 'none' ? (
+                  ) : client.hasCompletedIntake && client.planStatus === 'none' ? (
                     <button
                       type="button"
                       disabled={gen?.status === 'generating'}

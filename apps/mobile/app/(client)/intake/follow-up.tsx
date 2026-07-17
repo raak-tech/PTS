@@ -114,7 +114,7 @@ export default function FollowUpScreen() {
 
   if (questions.length === 0) {
     return (
-      <Screen title="Almost there" subtitle="We have enough to continue.">
+      <Screen title="Almost there" subtitle="We have enough to continue." showAccountExit>
         <Button
           label="Back to review"
           onPress={() =>
@@ -221,6 +221,7 @@ export default function FollowUpScreen() {
     <Screen
       title="A few quick questions"
       subtitle="One at a time — then we review once and you're done."
+      showAccountExit
       scrollToEndOnKeyboard
       footer={
         <View style={{ gap: spacing.sm }}>

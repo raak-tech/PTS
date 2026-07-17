@@ -95,7 +95,7 @@ export default function ProviderClientScreen() {
         if (w1.yogaTrial) lines.push(`Yoga: ${w1.yogaTrial.principle}`);
         if (w1.musicMoment?.playlist) lines.push(`Music: ${w1.musicMoment.playlist.title}`);
         if (w1.ayurvedaBlock) {
-          lines.push(`Ayurveda: ${w1.ayurvedaBlock.practices[0] ?? w1.ayurvedaBlock.rhythmNote}`);
+          lines.push(`Ayurveda: ${w1.ayurvedaBlock.practices?.[0] ?? w1.ayurvedaBlock.rhythmNote}`);
         }
         setHolisticPreview(lines);
       }

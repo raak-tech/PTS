@@ -37,14 +37,41 @@ Clinical gates unchanged: week-at-a-time, claim-on-first-action, formulation app
 
 ---
 
+## Admin notes
+
+- Open notes show on Caseload (count chip) and Client Chart → Notes.
+- **Mark addressed** requires a mandatory counselor response (`resolution_note`, min ~3 chars).
+- Addressed notes appear under Caseload **Recently addressed** and Chart Notes **Addressed**; click to view original note + response.
+- Admin dossier shows counselor response on resolved notes.
+
+---
+
 ## Caseload behaviour
 
+- **Hybrid ready-pool:** incomplete intake clients are **hidden** from counselor Caseload. After intake completes, unassigned clients appear as a **Ready pool** (claim via Generate Week 1). Assigned clients stay on their counselor only. Admins can allocate/reassign from the client dossier.
 - Sort: safety → unread → **formulation pending** → plan draft/review → generate needed → quiet.
-- `planStatus === 'none'`: **Generate Week 1** (client fetch `/api/provider/generate-plan`).  
+- `planStatus === 'none'` **and** completed intake: **Generate Week 1** (client fetch `/api/provider/generate-plan`).
+  - `intake_incomplete` → do not generate (client still finishing intake).
   - `formulation_not_approved` / `formulation_missing` → open `/provider/formulations/[id]`.  
   - `unauthorized` → session expired; re-login with email.
 - Pain Script pending formulations: `PendingFormulationsClient` on Caseload (moved off old plans page).
 - Engagement: `/api/provider/engagement` — on !ok or error set **unavailable**, never leave “Loading today’s progress…” forever.
+
+---
+
+## Counselor public profile (client-facing)
+
+Counselors edit at **`/provider/profile`**. Assigned clients see a read-only card (not a marketplace):
+
+| Field | Client sees? |
+|-------|----------------|
+| fullName, title, credentials, bio, yearsExperience | Yes |
+| specialisations, languages | Yes |
+| calendlyUrl | Yes — Book a session |
+| sessionJoinUrl | Yes — Join session (ephemeral; counselor clears after) |
+| Personal email / phone | **Never** |
+
+**API:** `GET /api/me/contacts` (client). **Admin assign:** `POST /api/admin/clients/[id]/assign`.
 
 ---
 
@@ -62,8 +89,12 @@ Do **not** style all `button` elements with dark fill without excluding `.provid
 | Shell + POST sign-out | `components/provider/ProviderShell.tsx` |
 | Caseload list + Generate | `components/provider/ProviderClientsListClient.tsx` |
 | Caseload data + formulations | `app/provider/clients/page.tsx` |
+| Ready-pool visibility | `lib/client-access.ts` |
+| Admin counselor assign | `app/api/admin/clients/[id]/assign/route.ts` |
 | Chart + rail + tabs | `app/provider/clients/[id]/ProviderClientWorkspaceClient.tsx` |
 | Layer-1 rail | `components/provider/IntakeContextRail.tsx` |
+| Counselor profile editor | `app/provider/profile/ProfileEditorClient.tsx` |
+| Client public counselor API | `app/api/me/contacts/route.ts` |
 | Plans redirect | `app/provider/plans/page.tsx` |
 | Logout | `app/logout/route.ts` |
 

@@ -1,7 +1,5 @@
-import { and, desc, eq } from 'drizzle-orm';
-
 import { getDb } from '@/db';
-import { planWeeks, plans, users } from '@/db/schema';
+import { intakeResponses, planWeeks, plans, users } from '@/db/schema';
 import { getUserFromRequest } from '@/lib/session';
 import { assertProviderCanAccessClient } from '@/lib/client-access';
 import { canAccessProviderConsole } from '@/lib/provider-console-access';
@@ -16,6 +14,7 @@ import { sendPushToUser } from '@/lib/expo-push';
 import { log, logError } from '@/lib/logger';
 import { displayEmail } from '@/lib/pii';
 import type { GeneratedPlan } from '@/lib/plan-generator';
+import { and, desc, eq } from 'drizzle-orm';
 
 export async function POST(request: Request) {
   const user = await getUserFromRequest(request);
@@ -57,6 +56,23 @@ export async function POST(request: Request) {
   // Week 1 is ready — a draft can exist without a valid Week 1 plan_weeks row
   // (empty/failed LLM output), which used to leave the counselor stuck: hidden
   // from pending intakes, blocked here, and Week 1 shaded/unapprovable.
+  const [intakeRow] = await db
+    .select({ completedAt: intakeResponses.completedAt })
+    .from(intakeResponses)
+    .where(eq(intakeResponses.userId, userId))
+    .limit(1);
+
+  if (!intakeRow?.completedAt) {
+    return Response.json(
+      {
+        ok: false,
+        reason: 'intake_incomplete',
+        detail: 'Client must finish intake before Week 1 can be generated.',
+      },
+      { status: 400 },
+    );
+  }
+
   const [existing] = await db
     .select({ id: plans.id, status: plans.status, generatedContent: plans.generatedContent })
     .from(plans)

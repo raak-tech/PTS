@@ -70,7 +70,7 @@ export default function IntakeIndex() {
   if (loading || showModal) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
-        <Screen title="Welcome back" subtitle="Checking your progress…" showCrisis>
+        <Screen title="Welcome back" subtitle="Checking your progress…" showCrisis showAccountExit>
           {loading ? (
             <ActivityIndicator size="large" color={colors.primary} />
           ) : null}

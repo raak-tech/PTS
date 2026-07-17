@@ -137,10 +137,10 @@ See `PROJECT_BRIEF.md` for full product context.
 - 🔴 **[SCOPE-D] Show all 6 weeks in mobile plan review** — `MOBILE_APP_UX.md` specifies Weeks 1–6 accordion on the mobile plan review screen; the actual build shows only Week 1. Add collapsed accordion for Weeks 2–6 (read-only on mobile; per-week approve scoped to Week 1 for initial review; Weeks 2–6 show "Edit on web" link). Acceptance criteria: counselor on mobile can see all 6 week themes and practices before approving. See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding D. *(Patient-safety relevant — counselors currently approving blind on 5 weeks.)*
 - 🔴 Build counselor registration flow: credentials, specialisations, languages, bio, photo
 - 🔴 Build credential verification workflow: admin reviews and approves applications
-- 🔴 Build counselor profile page: visible to clients on assignment or selection
+- ~~🔴 Build counselor profile page: visible to clients on assignment or selection~~ → **Partial (2026-07-16):** assigned-only `YourCounselorCard` + `/provider/profile` editor + Calendly + ephemeral join link. **No client selection/marketplace** per `DECISIONS.md`. Photo + full registration flow still backlog.
 - 🔴 Build counselor dashboard: assigned clients, flags, unread messages, pending plan reviews, upcoming sessions
 - 🔴 Build counselor availability calendar: set weekly recurring hours, block dates, override slots
-- 🔴 Build session booking: client views counselor's available slots and books a 1:1 session
+- 🔴 Build session booking: client views counselor's available slots and books a 1:1 session — **partial:** Calendly on counselor profile (`Book a session`); no in-app slot picker
 - 🔴 Build pre-session brief: counselor sees client's recent check-ins, progress, and flags before a session
 - 🔴 Build post-session note: counselor records outcome, plan adjustments, follow-up actions
 - 🟠 Build client assignment model: auto-assign based on availability and specialisation, or client selects

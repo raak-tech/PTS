@@ -8,7 +8,7 @@ export function NRSFaceScale({
   onChange,
   yestrdayValue,
 }: {
-  value: number;
+  value: number | null;
   onChange: (n: number) => void;
   yestrdayValue?: number;
 }) {

@@ -124,3 +124,39 @@ Use this to record decisions that affect architecture, product scope, safety/pri
 - **Why:** Align mobile with Chart IA without porting the full workplace; stop thin Apply and fake holistic toggles from bypassing clinical gates.
 - **Alternatives considered:** Basic-only shrink (queue+messages+web only — deferred); Chart-lite tab shell on phone (deferred — more build, less bridge clarity).
 - **Consequences / follow-ups:** Spec `docs/plans/2026-07-16-counselor-mobile-bridge.md`; update `docs/kb/MOBILE.md`.
+
+- **Date:** 2026-07-16
+- **Decision:** **No counselor marketplace.** Counselor–client matching stays claim / admin allocate / clinical fit — never client shopping or open directory browse. Assigned clients may see a **read-only counselor profile** (trust + Calendly booking only). Long-term scale path is **program + RAG / model improvement**, not more 1:1 human hours; human counselor time is treated as a scarce limiting factor (“I want to always interact with a human” must not become the growth bottleneck).
+- **Why:** Marketplace adds selection overhead and implies unlimited human capacity. Product bet is counseling-led gates where they matter (formulation, Week 1, safety, hard cases, booked sessions) while daily support and knowledge improve via retrieval/AI so more people can be helped without proportional counselor headcount.
+- **Alternatives considered:** Client-facing counselor directory / request-a-counselor (rejected as primary model — may only appear later as admin-assisted fit, not marketplace); grow purely by hiring counselors 1:1 with clients (rejected as scale path).
+- **Consequences / follow-ups:** Do not build counselor browse/match UI. Profile = post-assignment trust surface (`YourCounselorCard` / `profile/counselor`; `GET /api/me/contacts` public fields only). Prefer RAG over expanding live-session volume as the default growth lever. Live video stays external (Calendly + `sessionJoinUrl` ephemeral rooms), not in-app Meet/Zoom. Ship note: [`docs/plans/2026-07-16-intake-counselor-client-bridge-ship.md`](docs/plans/2026-07-16-intake-counselor-client-bridge-ship.md).
+
+- **Date:** 2026-07-16
+- **Decision:** **Hybrid ready-pool** for counselor Caseload: incomplete intake clients are **hidden**; after intake completes, unassigned clients enter a **ready pool** (claim via Generate Week 1); assigned clients stay on their counselor only. Admins may allocate/reassign (`POST /api/admin/clients/[id]/assign`).
+- **Why:** OTP-only and mid-draft accounts polluted Caseload; Generate Week 1 ran before intake was clinically usable. Hybrid keeps self-serve claim after intake while allowing admin load-balancing.
+- **Alternatives considered:** Show all new signups to any counselor (rejected); admin-only allocation with no ready pool (rejected — too much ops friction for pilot).
+- **Consequences / follow-ups:** `isClientVisibleToProvider` requires completed intake for unassigned visibility. `POST /api/provider/generate-plan` returns `intake_incomplete` without `completedAt`. Documented in `PROVIDER_ASSIGNMENT.md` + `COUNSELOR_WEB.md`.
+
+- **Date:** 2026-07-16
+- **Decision:** **Incomplete intake Account exit** on mobile: every intake step + waiting-plan expose **Sign out** (pause; server draft kept) and **Delete account** (hard wipe, double confirm). No Today/Program tabs until intake complete.
+- **Why:** Clients could not reach Profile sign-out while routed to intake; trapped on wrong phone or abandoned flows.
+- **Alternatives considered:** Unlock Profile tabs during intake (rejected — empty/broken destinations); single “Leave” control (rejected — conflates pause vs delete).
+- **Consequences / follow-ups:** `POST /api/support/delete` uses `delete-client-account.ts` full wipe. `AccountExitMenu` + `Screen.showAccountExit`.
+
+- **Date:** 2026-07-16
+- **Decision:** **Client notifications by journey stage:** intake-completion nudges only while `!intakeComplete`; program daily reminders only after intake complete **and** plan approved (`syncClientNotifications`).
+- **Why:** Program “check-in on Today” reminders fired during incomplete intake — wrong surface and copy.
+- **Alternatives considered:** Same reminder schedule for all signed-in users (rejected).
+- **Consequences / follow-ups:** `localNotifications.ts`; hook on login, refresh, completeIntake.
+
+- **Date:** 2026-07-16
+- **Decision:** **External live sessions only:** clients book via counselor **Calendly**; counselors paste optional **ephemeral join link** (`sessionJoinUrl`) for the next session. PTS never hosts video; no personal email/phone on client-facing counselor card.
+- **Why:** Confidentiality without building Meet/Zoom; keeps identity/clinical data in PTS, media in external tool.
+- **Alternatives considered:** In-app WebRTC (deferred); permanent personal Meet room on profile (rejected).
+- **Consequences / follow-ups:** Migration `0034`; `/provider/profile` editor; `Join session` on `YourCounselorCard`.
+
+- **Date:** 2026-07-16
+- **Decision:** **APK builds on explicit request only** — agents finish a coherent mobile batch, deploy web/API when needed, do not run Gradle/APK install unless the user asks.
+- **Why:** Iteration speed; avoid 10+ minute builds after every small change.
+- **Alternatives considered:** Auto-build after every mobile change (rejected for this pilot phase).
+- **Consequences / follow-ups:** `MOBILE.md`, `AGENTS.md`, `.cursor/rules/mobile-expo.mdc`, `.cursor/rules/pts-knowledge-base.mdc`.

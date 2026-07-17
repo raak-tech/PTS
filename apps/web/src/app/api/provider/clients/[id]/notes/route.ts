@@ -16,6 +16,7 @@ type NoteRow = {
   body: string;
   resolvedAt: Date | null;
   resolvedBy: string | null;
+  resolutionNote: string | null;
   createdAt: Date;
 };
 
@@ -47,6 +48,7 @@ export async function GET(request: Request, context: RouteContext) {
         body: n.body,
         createdAt: n.createdAt.toISOString(),
         resolvedAt: n.resolvedAt ? n.resolvedAt.toISOString() : null,
+        resolutionNote: n.resolutionNote ?? null,
       })),
     });
   } catch (err) {

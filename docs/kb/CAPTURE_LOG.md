@@ -4,6 +4,14 @@ Newest first. One line per capture or review.
 
 | Date | Actor | Action |
 |------|-------|--------|
+| 2026-07-17 | agent | APK v33 arm64 pain-pilot built after explicit request; includes Account exit, Your counselor, notification gating, production YouTube path |
+| 2026-07-16 | agent | Overnight ship doc: intake exit, ready-pool, notifications, Your counselor, decisions — `plans/2026-07-16-intake-counselor-client-bridge-ship.md` |
+| 2026-07-16 | agent | Counselor profile: yearsExperience + sessionJoinUrl (ephemeral Join CTA); migration 0034 |
+| 2026-07-16 | agent | Client Your counselor card: public profile from contacts API; Profile + waiting-plan; no marketplace |
+| 2026-07-16 | agent | DECISIONS: no counselor marketplace; human scarce / RAG scale; APK only on explicit request |
+| 2026-07-16 | agent | Hybrid ready-pool: hide incomplete intake from Caseload; Generate Week 1 gated; admin assign; intake-only local nudges |
+| 2026-07-16 | agent | Incomplete intake Account exit: Sign out + Delete account on intake/waiting-plan; hard wipe via `/api/support/delete` |
+| 2026-07-16 | agent | Admin notes: mandatory resolution text; Caseload/Chart addressed history with expandable original + response |
 | 2026-07-16 | agent | Counselor mobile Bridge: Chart deep-links, L1 story, formulation escape, demote Apply/holistic fakes; plan `2026-07-16-counselor-mobile-bridge.md` |
 | 2026-07-15 | agent | Overnight Chart IA ship complete: Caseload Generate+formulations; logout/engagement/OTP incidents; `COUNSELOR_WEB.md` + ship note + counselor-web rule |
 | 2026-07-15 | agent | Counselor Chart IA: four layers + Caseload/Chart; light console; POST logout; intake rail; plans→caseload filter |

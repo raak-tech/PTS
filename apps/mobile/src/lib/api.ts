@@ -254,6 +254,15 @@ export async function apiLogout(token: string) {
   });
 }
 
+export async function apiDeleteAccount(token: string) {
+  return parseJson<{ ok: boolean }>(
+    await fetchWithTimeout(`${API_URL}/api/support/delete`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
+}
+
 export async function apiSubmitIntake(token: string, data: IntakeFormData) {
   return parseJson<{ ok: boolean }>(
     await fetchWithTimeout(`${API_URL}/api/intake`, {
@@ -374,10 +383,24 @@ export async function apiGetProviderQueue(token: string) {
 export async function apiGetContacts(token: string) {
   return parseJson<{
     ok: boolean;
-    counselor?: { id: string; name: string; unreadCount: number; calendlyUrl?: string | null } | null;
+    counselor?: CounselorPublicProfile | null;
     clients?: { id: string; name: string; planStatus: string; unreadCount: number }[];
   }>(await fetchWithTimeout(`${API_URL}/api/me/contacts`, { headers: { Authorization: `Bearer ${token}` } }));
 }
+
+export type CounselorPublicProfile = {
+  id: string;
+  name: string;
+  title?: string | null;
+  credentials?: string | null;
+  bio?: string | null;
+  yearsExperience?: string | null;
+  specialisations?: string[];
+  languages?: string[];
+  calendlyUrl?: string | null;
+  sessionJoinUrl?: string | null;
+  unreadCount: number;
+};
 
 export async function apiGetMessages(token: string, withUserId: string) {
   return parseJson<{ ok: boolean; messages: MessageRow[] }>(

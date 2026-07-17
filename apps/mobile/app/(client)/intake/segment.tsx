@@ -59,6 +59,7 @@ export default function SegmentScreen() {
     <Screen
       title="I'm here for help with..."
       subtitle="Choose what fits best. You can skip this."
+      showAccountExit
       footer={
         <View style={{ gap: spacing.sm }}>
           {selected ? (

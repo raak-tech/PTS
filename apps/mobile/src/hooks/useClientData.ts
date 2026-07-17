@@ -1,25 +1,40 @@
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
-import { apiGetContacts, apiGetMusicSets, apiGetPlan, parseGeneratedPlan } from '@/lib/api';
+import {
+  apiGetContacts,
+  apiGetMusicSets,
+  apiGetPlan,
+  parseGeneratedPlan,
+  type CounselorPublicProfile,
+} from '@/lib/api';
 import { useProgramTime } from '@/hooks/useProgramTime';
 
 export function useCounselorContact() {
   const { token } = useAuth();
-  const [counselorId, setCounselorId] = useState<string | null>(null);
-  const [counselorName, setCounselorName] = useState<string | null>(null);
-  const [calendlyUrl, setCalendlyUrl] = useState<string | null>(null);
+  const [counselor, setCounselor] = useState<CounselorPublicProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!token) return;
-    void apiGetContacts(token).then((data) => {
-      setCounselorId(data.counselor?.id ?? null);
-      setCounselorName(data.counselor?.name ?? null);
-      setCalendlyUrl(data.counselor?.calendlyUrl ?? null);
-    });
+    if (!token) {
+      setCounselor(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    void apiGetContacts(token)
+      .then((data) => setCounselor(data.counselor ?? null))
+      .catch(() => setCounselor(null))
+      .finally(() => setLoading(false));
   }, [token]);
 
-  return { counselorId, counselorName, calendlyUrl };
+  return {
+    counselor,
+    counselorId: counselor?.id ?? null,
+    counselorName: counselor?.name ?? null,
+    calendlyUrl: counselor?.calendlyUrl ?? null,
+    loading,
+  };
 }
 
 export function useMusicCatalog() {

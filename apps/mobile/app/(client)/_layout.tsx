@@ -33,6 +33,7 @@ export default function ClientLayout() {
       <Stack.Screen name="messages/[id]" options={{ title: 'Conversation' }} />
       <Stack.Screen name="profile/index" options={{ title: 'Profile' }} />
       <Stack.Screen name="profile/about-you" options={{ title: 'About you' }} />
+      <Stack.Screen name="profile/counselor" options={{ title: 'Your counselor' }} />
       <Stack.Screen name="profile/safety" options={{ title: 'Safety' }} />
       <Stack.Screen name="profile/data" options={{ title: 'Your data' }} />
       <Stack.Screen name="profile/flare-up" options={{ title: 'Flare-up support' }} />

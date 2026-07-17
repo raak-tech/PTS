@@ -159,7 +159,7 @@ export default function LegacyIntakeScreen() {
       <View style={styles.progressTrack}>
         <View style={[styles.progressFill, { width: `${progress}%` }]} />
       </View>
-      <Screen title={current.title} subtitle={current.subtitle} showCrisis={false}>
+      <Screen title={current.title} subtitle={current.subtitle} showCrisis={false} showAccountExit>
         <Text style={styles.stepLabel}>
           Step {step + 1} of {INTAKE_STEPS.length}
         </Text>

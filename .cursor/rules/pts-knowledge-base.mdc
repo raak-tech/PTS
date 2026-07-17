@@ -32,3 +32,5 @@ Weekly / on request: skill **kb-review** + `docs/kb/REVIEW_CHECKLIST.md`.
 - Never show raw `null`/`[]` or counselor-phrased summaries on client intake confirm.
 - Never revoke counselor session on GET `/logout` (Next prefetch). Caseload is the only counselor home — see `COUNSELOR_WEB.md`.
 - Do not commit secrets; never put API keys in the KB.
+- Do **not** build/install APK unless the user explicitly asks (finish a set of mobile work first).
+- No counselor marketplace — assignment is claim/admin; scale via program + RAG, not 1:1 headcount (see `DECISIONS.md` 2026-07-16).

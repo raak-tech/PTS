@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AccountExitMenu } from '@/components/AccountExitMenu';
 import { AppHeader } from '@/components/AppHeader';
 import { CrisisBar } from '@/components/CrisisBar';
 import { useKeyboardHeight } from '@/hooks/useKeyboardHeight';
@@ -26,6 +27,8 @@ type Props = {
   /** Tab screens use a compact native header; stack/auth screens use in-content titles. */
   layout?: 'tab' | 'stack';
   headerRight?: ReactNode;
+  /** Quiet Account menu (Sign out / Delete) — intake + waiting-plan shells. */
+  showAccountExit?: boolean;
   /** Pinned above the keyboard — use for submit bars and message composers. */
   footer?: ReactNode;
   /** Scroll to bottom when the keyboard opens (helpful for long forms). */
@@ -40,6 +43,7 @@ export function Screen({
   showCrisis = true,
   layout = 'stack',
   headerRight,
+  showAccountExit = false,
   footer,
   scrollToEndOnKeyboard = false,
 }: Props) {
@@ -58,6 +62,13 @@ export function Screen({
     avoid: { flex: 1 },
     inner: { padding: spacing.lg, gap: spacing.md, flexGrow: 1 },
     innerFlex: { flex: 1 },
+    titleRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'flex-start' as const,
+      justifyContent: 'space-between' as const,
+      gap: spacing.sm,
+    },
+    titleBlock: { flex: 1 },
     title: { fontSize: 28, fontWeight: '800' as const, color: c.text, letterSpacing: -0.5 },
     subtitle: { fontSize: 16, color: c.muted, lineHeight: 24, marginTop: -spacing.xs },
     footer: {
@@ -73,6 +84,8 @@ export function Screen({
       shadowOffset: { width: 0, height: -2 },
     },
   }));
+
+  const resolvedHeaderRight = headerRight ?? (showAccountExit ? <AccountExitMenu /> : null);
 
   const scrollContentStyle = {
     paddingBottom: spacing.md + (footer ? spacing.sm : insets.bottom + keyboardHeight),
@@ -98,10 +111,13 @@ export function Screen({
 
   const headerBlock =
     layout === 'stack' ? (
-      <>
-        {title ? <Text style={styles.title}>{title}</Text> : null}
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-      </>
+      <View style={styles.titleRow}>
+        <View style={styles.titleBlock}>
+          {title ? <Text style={styles.title}>{title}</Text> : null}
+          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        </View>
+        {resolvedHeaderRight}
+      </View>
     ) : null;
 
   const usesFlexBody = !scroll || Boolean(footer);
@@ -153,7 +169,7 @@ export function Screen({
       >
         {showCrisis ? <CrisisBar /> : null}
         {layout === 'tab' && title ? (
-          <AppHeader title={title} subtitle={subtitle} right={headerRight} />
+          <AppHeader title={title} subtitle={subtitle} right={resolvedHeaderRight} />
         ) : null}
         {mainContent}
         {footer ? <View style={footerStyle}>{footer}</View> : null}

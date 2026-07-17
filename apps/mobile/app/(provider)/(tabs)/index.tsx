@@ -101,6 +101,10 @@ export default function ProviderHomeScreen() {
         );
         return;
       }
+      if (reason === 'intake_incomplete') {
+        Alert.alert('Intake incomplete', 'This client has not finished intake yet.');
+        return;
+      }
       Alert.alert('Could not generate Week 1', reason, [
         { text: 'OK', style: 'cancel' },
         {

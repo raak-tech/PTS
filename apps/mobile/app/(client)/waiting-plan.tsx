@@ -5,9 +5,10 @@ import { Text } from 'react-native';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
+import { YourCounselorCard } from '@/components/YourCounselorCard';
 import { useAuth } from '@/context/AuthContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
-import { apiGetContacts, apiGetPlan, parseGeneratedPlan } from '@/lib/api';
+import { apiGetPlan, parseGeneratedPlan } from '@/lib/api';
 import { IS_PAIN_SCRIPT_COHORT } from '@/config';
 
 type PlanStatus = 'loading' | 'none' | 'draft' | 'approved';
@@ -22,13 +23,7 @@ export default function WaitingPlanScreen() {
     active: { fontSize: 15, color: c.text, lineHeight: 24, fontWeight: '600' as const },
   }));
 
-  const [counselorId, setCounselorId] = useState<string | null>(null);
   const [formulationSummary, setFormulationSummary] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!token) return;
-    void apiGetContacts(token).then((data) => setCounselorId(data.counselor?.id ?? null));
-  }, [token]);
 
   useEffect(() => {
     if (!token) return;
@@ -68,7 +63,11 @@ export default function WaitingPlanScreen() {
         : '○ Plan ready — not started yet';
 
   return (
-    <Screen title="Your counselor is preparing your plan" subtitle="Submitted → Plan created → Approved → Ready">
+    <Screen
+      title="Your counselor is preparing your plan"
+      subtitle="Submitted → Plan created → Approved → Ready"
+      showAccountExit
+    >
       <Card title="Status">
         <Text style={styles.line}>✓ Assessment submitted</Text>
         <Text style={planStatus === 'none' ? styles.active : styles.line}>{reviewLine}</Text>
@@ -85,12 +84,7 @@ export default function WaitingPlanScreen() {
           <Text style={styles.line}>{formulationSummary}</Text>
         </Card>
       ) : null}
-      {counselorId ? (
-        <Button
-          label="Message counselor"
-          onPress={() => router.push(`/(client)/messages/${counselorId}`)}
-        />
-      ) : null}
+      <YourCounselorCard compact hideIfUnassigned={false} />
       <Button label="Review intake summary" variant="secondary" onPress={() => router.push('/(client)/intake')} />
       <Button
         label="Profile & settings"

@@ -250,6 +250,21 @@ Build 11 shipped client + API. **Run A + Run B (2026-07-02)** aligned counselor 
 - [x] **Runs D–H (build 14):** counselor claim-on-first-action, scoped queues, Message-counselor gating, inline plan editing, pain sparklines, admin SLA panel, monthly check-ins + graduation, intake cleanup cron, pending-intake waiting UX
 - [x] APK build 14 at `apps/mobile/dist/pts-mobile-release.apk` — installed on Pixel 7 2026-07-03
 
+## ✅ Done (2026-07-16 session — web prod; mobile in tree, APK on request)
+
+Ship note: [`docs/plans/2026-07-16-intake-counselor-client-bridge-ship.md`](plans/2026-07-16-intake-counselor-client-bridge-ship.md)
+
+- [x] **Incomplete intake Account exit** — Sign out + Delete on intake/waiting-plan; `delete-client-account.ts` hard wipe
+- [x] **Hybrid ready-pool** — hide incomplete intake from Caseload; Generate Week 1 gated on `completedAt`; admin allocate
+- [x] **Intake-only local nudges** — `syncClientNotifications`; no program reminders until plan approved
+- [x] **Your counselor card** — public profile on contacts API; Profile + waiting-plan + `profile/counselor`
+- [x] **Counselor profile** — yearsExperience, Calendly, ephemeral `sessionJoinUrl`; Join session CTA
+- [x] **No marketplace decision** — documented in `DECISIONS.md` 2026-07-16
+- [x] **APK policy** — build only when user explicitly asks
+- [x] Migrations `0033` (note resolution), `0034` (session join URL) — applied prod
+- [ ] **Git commit** — working tree uncommitted at handoff
+- [x] **APK v33 (2026-07-17)** — arm64 pain-pilot build includes Account exit, Your counselor, notification gating, and production YouTube resolver path
+
 ---
 
 ## Deferred — Intake quality, LLM cost, and payment gates

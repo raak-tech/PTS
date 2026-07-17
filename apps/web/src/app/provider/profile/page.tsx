@@ -30,7 +30,9 @@ export default async function ProviderProfilePage() {
     title: profile.title,
     credentials: profile.credentials ?? '',
     bio: profile.bio,
+    yearsExperience: profile.yearsExperience ?? '',
     calendlyUrl: profile.calendlyUrl ?? '',
+    sessionJoinUrl: profile.sessionJoinUrl ?? '',
     specialisations: safeParseList(profile.specialisations),
     languages: safeParseList(profile.languages),
   };
@@ -38,7 +40,10 @@ export default async function ProviderProfilePage() {
   return (
     <>
       <h1 className="provider-page-title">My profile</h1>
-      <p className="provider-page-subtitle">How clients see you in the app.</p>
+      <p className="provider-page-subtitle">
+        Assigned clients see this in the app (name, credentials, bio, specialties, Calendly, session join link).
+        Personal email and phone are never shown — contact stays in-app messages and session booking.
+      </p>
 
       <ProfileEditorClient initialData={initialData} />
     </>

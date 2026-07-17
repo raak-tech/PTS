@@ -104,8 +104,8 @@ export default function FlareUpScreen() {
         <NRSFaceScale value={painLevel} onChange={setPainLevel} />
       </View>
       <View style={{ marginTop: 16 }}>
+        <Text style={[styles.body, { marginBottom: 8 }]}>What set it off? (optional)</Text>
         <TextField
-          label="What set it off? (optional)"
           value={triggerText}
           onChangeText={setTriggerText}
           multiline

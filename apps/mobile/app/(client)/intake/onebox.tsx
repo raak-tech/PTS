@@ -153,6 +153,7 @@ export default function OneBoxScreen() {
           ? 'Your counselor wants to make sure they really understand.'
           : 'Write freely — do not worry about structure.'
       }
+      showAccountExit
       scrollToEndOnKeyboard
       footer={
         <View style={{ gap: spacing.sm }}>

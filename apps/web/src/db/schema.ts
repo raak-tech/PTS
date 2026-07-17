@@ -33,6 +33,8 @@ export const counselorProfiles = pgTable("counselor_profiles", {
   yearsExperience: text("years_experience"),
   bio: text("bio").notNull(),
   calendlyUrl: text("calendly_url"),
+  /** Optional ephemeral room link for the next live session (Whereby/Meet/etc.). */
+  sessionJoinUrl: text("session_join_url"),
   verifiedAt: timestamp("verified_at", { mode: "date", withTimezone: true }),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
@@ -180,6 +182,8 @@ export const counselorNotes = pgTable("counselor_client_notes", {
   isUrgent: boolean("is_urgent").notNull().default(false),
   resolvedAt: timestamp("resolved_at", { mode: "date", withTimezone: true }),
   resolvedBy: text("resolved_by"),
+  /** Required counselor response when marking addressed. */
+  resolutionNote: text("resolution_note"),
   createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).notNull(),
 });
 

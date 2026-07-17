@@ -43,9 +43,10 @@ export function SupportControls({ initialEnabled }: Props) {
         throw new Error('Unable to delete data.');
       }
       setEnabled(false);
-      setStatus('All stored support data deleted.');
+      setStatus('Account deleted. Sign in again if you want to start over.');
+      window.location.href = '/login';
     } catch {
-      setStatus('Unable to delete stored data right now.');
+      setStatus('Unable to delete account right now.');
     } finally {
       setBusy(false);
     }
@@ -82,7 +83,7 @@ export function SupportControls({ initialEnabled }: Props) {
           Revoke consent
         </button>
         <button type="button" onClick={() => void deleteAll()} disabled={busy}>
-          Delete all stored data
+          Delete my account
         </button>
       </div>
 

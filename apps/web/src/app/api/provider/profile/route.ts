@@ -9,12 +9,16 @@ import { logError } from '@/lib/logger';
 import { getUserFromCookieHeader } from '@/lib/session';
 import { canAccessProviderConsole } from '@/lib/provider-console-access';
 
+const optionalUrl = z.union([z.string().url(), z.literal('')]).optional();
+
 const schema = z.object({
   fullName: z.string().min(1),
   title: z.string().min(1),
   credentials: z.string().optional(),
   bio: z.string(),
-  calendlyUrl: z.union([z.string().url(), z.literal('')]).optional(),
+  yearsExperience: z.string().optional(),
+  calendlyUrl: optionalUrl,
+  sessionJoinUrl: optionalUrl,
   specialisations: z.array(z.string()).optional(),
   languages: z.array(z.string()).optional(),
 });
@@ -38,6 +42,10 @@ export async function PATCH(request: Request) {
 
     await ensureCounselorProfile(user.id, user.displayName);
 
+    const yearsExperience = parsed.data.yearsExperience?.trim() || null;
+    const calendlyUrl = parsed.data.calendlyUrl?.trim() || null;
+    const sessionJoinUrl = parsed.data.sessionJoinUrl?.trim() || null;
+
     await db
       .insert(counselorProfiles)
       .values({
@@ -46,7 +54,9 @@ export async function PATCH(request: Request) {
         title: parsed.data.title,
         credentials: parsed.data.credentials ?? null,
         bio: parsed.data.bio,
-        calendlyUrl: parsed.data.calendlyUrl?.trim() || null,
+        yearsExperience,
+        calendlyUrl,
+        sessionJoinUrl,
         specialisations: parsed.data.specialisations
           ? JSON.stringify(parsed.data.specialisations)
           : JSON.stringify([]),
@@ -60,7 +70,9 @@ export async function PATCH(request: Request) {
           title: parsed.data.title,
           credentials: parsed.data.credentials ?? null,
           bio: parsed.data.bio,
-          calendlyUrl: parsed.data.calendlyUrl?.trim() || null,
+          yearsExperience,
+          calendlyUrl,
+          sessionJoinUrl,
           specialisations: parsed.data.specialisations
             ? JSON.stringify(parsed.data.specialisations)
             : JSON.stringify([]),

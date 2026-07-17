@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 import { getDb } from '@/db';
 import { intakeResponses, plans, users } from '@/db/schema';
-import { getClientCounselorMap, isClientVisibleToProvider } from '@/lib/client-access';
+import { getClientCounselorMap, getCompletedIntakeClientIds, isClientVisibleToProvider } from '@/lib/client-access';
 import { logError } from '@/lib/logger';
 import { formatClientContact } from '@/lib/pii';
 import { getUserFromRequest } from '@/lib/session';
@@ -47,8 +47,9 @@ export async function GET(request: Request) {
       .orderBy(desc(intakeResponses.createdAt))) as PendingIntakeRow[];
 
     const assignmentMap = await getClientCounselorMap();
+    const completedIntakeIds = await getCompletedIntakeClientIds();
     const visibleIntakes = pendingIntakes.filter((intake) =>
-      isClientVisibleToProvider(intake.userId, user.id, assignmentMap),
+      isClientVisibleToProvider(intake.userId, user.id, assignmentMap, completedIntakeIds),
     );
 
     // Fetch user details for display

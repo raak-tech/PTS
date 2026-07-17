@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 import { getDb } from '@/db';
 import { intakeResponses, messages, planWeeks, plans, users } from '@/db/schema';
-import { getClientCounselorMap, isClientVisibleToProvider } from '@/lib/client-access';
+import { getClientCounselorMap, getCompletedIntakeClientIds, isClientVisibleToProvider } from '@/lib/client-access';
 import { logError } from '@/lib/logger';
 import { describePendingPlanWeeks } from '@/lib/provider-console-access';
 import { getUserFromRequest } from '@/lib/session';
@@ -49,9 +49,12 @@ export async function GET(request: Request) {
     }
 
     const db = getDb();
-    const assignmentMap = await getClientCounselorMap();
+    const [assignmentMap, completedIntakeIds] = await Promise.all([
+      getClientCounselorMap(),
+      getCompletedIntakeClientIds(),
+    ]);
     const isVisible = (clientId: string) =>
-      isClientVisibleToProvider(clientId, user.id, assignmentMap);
+      isClientVisibleToProvider(clientId, user.id, assignmentMap, completedIntakeIds);
 
     const draftPlans = (await db
       .select({

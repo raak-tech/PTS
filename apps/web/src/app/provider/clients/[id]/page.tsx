@@ -6,7 +6,7 @@ import { desc, eq } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { intakeResponses, intakeSessions, planWeeks, plans, supportArtifacts, userConsents, users } from '@/db/schema';
 import { isAdminUser } from '@/lib/admin';
-import { getClientCounselorMap, isClientVisibleToProvider } from '@/lib/client-access';
+import { getClientCounselorMap, getCompletedIntakeClientIds, isClientVisibleToProvider } from '@/lib/client-access';
 import type { GeneratedPlan, WeekPlan } from '@/lib/plan-generator';
 import { formatClientLabel } from '@/lib/provider-display';
 import { getUserFromCookieHeader } from '@/lib/session';
@@ -38,9 +38,14 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
   const initialWeek = Number.isFinite(parsedWeek) && parsedWeek >= 1 && parsedWeek <= 6 ? parsedWeek : 1;
 
   const user = await getUserFromCookieHeader((await headers()).get('cookie'));
-  const assignmentMap = user && !isAdminUser(user) ? await getClientCounselorMap() : {};
-  if (user && !isAdminUser(user) && !isClientVisibleToProvider(id, user.id, assignmentMap)) {
-    notFound();
+  if (user && !isAdminUser(user)) {
+    const [assignmentMap, completedIntakeIds] = await Promise.all([
+      getClientCounselorMap(),
+      getCompletedIntakeClientIds(),
+    ]);
+    if (!isClientVisibleToProvider(id, user.id, assignmentMap, completedIntakeIds)) {
+      notFound();
+    }
   }
 
   const db = getDb();

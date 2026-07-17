@@ -297,7 +297,7 @@ export default function ConfirmScreen() {
 
   if (!extractionUsable) {
     return (
-      <Screen title={screenTitle} subtitle="We need a clear description before we can continue.">
+      <Screen title={screenTitle} subtitle="We need a clear description before we can continue." showAccountExit>
         <View style={{ gap: spacing.md }}>
           <Text style={styles.rewrite}>{displaySummary}</Text>
           <Button label="Rewrite my answer" onPress={handleRewrite} />
@@ -315,6 +315,7 @@ export default function ConfirmScreen() {
           ? 'Tap any detail to edit, then start your program.'
           : 'Answer a few questions once — or edit the details below.'
       }
+      showAccountExit
       footer={
         <View style={{ gap: spacing.sm }}>
           {needsFollowUp ? (

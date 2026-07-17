@@ -86,6 +86,7 @@ type CounselorNote = {
   body: string;
   createdAt: string;
   resolvedAt: string | null;
+  resolutionNote?: string | null;
 };
 
 type MessagePreview = {
@@ -175,6 +176,9 @@ export function ProviderClientWorkspaceClient({
   const [approveError, setApproveError] = useState('');
   const [notes, setNotes] = useState<CounselorNote[]>([]);
   const [resolvingNoteId, setResolvingNoteId] = useState<string | null>(null);
+  const [resolutionDrafts, setResolutionDrafts] = useState<Record<string, string>>({});
+  const [resolveErrors, setResolveErrors] = useState<Record<string, string>>({});
+  const [expandedResolvedId, setExpandedResolvedId] = useState<string | null>(null);
   const [recentMessages, setRecentMessages] = useState<MessagePreview[]>([]);
   const [scheduleRequired, setScheduleRequired] = useState(false);
   const [scheduleCompletedAt, setScheduleCompletedAt] = useState<string | null>(null);
@@ -249,36 +253,77 @@ export function ProviderClientWorkspaceClient({
   }, [clientId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (typeof window === 'undefined' || window.location.hash !== '#admin-notes') return;
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash;
+    if (hash !== '#admin-notes' && hash !== '#addressed-notes') return;
     setTab('notes');
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('tab', 'notes');
-      window.history.replaceState(null, '', url.toString());
-    }
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', 'notes');
+    window.history.replaceState(null, '', url.toString());
     window.requestAnimationFrame(() => {
-      document.getElementById('admin-notes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   }, [notes.length]);
 
   const onResolveNote = async (noteId: string) => {
+    const resolutionNote = (resolutionDrafts[noteId] ?? '').trim();
+    if (resolutionNote.length < 3) {
+      setResolveErrors((prev) => ({
+        ...prev,
+        [noteId]: 'Add a short response (at least a few words) before marking addressed.',
+      }));
+      return;
+    }
     setResolvingNoteId(noteId);
+    setResolveErrors((prev) => {
+      const next = { ...prev };
+      delete next[noteId];
+      return next;
+    });
     try {
       const res = await fetch(`/api/provider/clients/${clientId}/notes/${noteId}/resolve`, {
         method: 'POST',
         credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resolutionNote }),
       });
-      if (res.ok) {
-        setNotes((prev) =>
-          prev.map((n) => (n.id === noteId ? { ...n, resolvedAt: new Date().toISOString() } : n)),
-        );
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        note?: CounselorNote;
+        detail?: string;
+        reason?: string;
+      };
+      if (!res.ok) {
+        setResolveErrors((prev) => ({
+          ...prev,
+          [noteId]: data.detail ?? 'Could not mark addressed. Try again.',
+        }));
+        return;
       }
+      setNotes((prev) =>
+        prev.map((n) =>
+          n.id === noteId
+            ? {
+                ...n,
+                resolvedAt: data.note?.resolvedAt ?? new Date().toISOString(),
+                resolutionNote: data.note?.resolutionNote ?? resolutionNote,
+              }
+            : n,
+        ),
+      );
+      setResolutionDrafts((prev) => {
+        const next = { ...prev };
+        delete next[noteId];
+        return next;
+      });
+      setExpandedResolvedId(noteId);
     } finally {
       setResolvingNoteId(null);
     }
   };
 
   const unresolvedNotes = notes.filter((n) => !n.resolvedAt);
+  const resolvedNotes = notes.filter((n) => n.resolvedAt);
 
   const onToggleSchedule = async () => {
     setTogglingSchedule(true);
@@ -514,28 +559,176 @@ export function ProviderClientWorkspaceClient({
 
       <div className="provider-tab-panel" data-active={tab === 'notes'} role="tabpanel">
         <section id="admin-notes" className="provider-panel">
-          <h2>Notes</h2>
+          <h2>Open admin notes</h2>
           {unresolvedNotes.length === 0 ? (
             <p style={{ margin: 0, color: 'var(--muted)', fontSize: 14 }}>No open admin notes.</p>
           ) : (
-            <div style={{ display: 'grid', gap: 8 }}>
+            <div style={{ display: 'grid', gap: 12 }}>
               {unresolvedNotes.map((note) => (
-                <div key={note.id} className="provider-queue-item">
-                  <div>
-                    <div style={{ fontSize: '0.875rem' }}>{note.body}</div>
-                    <div style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: 4 }}>
-                      Flagged {new Date(note.createdAt).toLocaleDateString()}
-                    </div>
+                <div
+                  key={note.id}
+                  style={{
+                    padding: 14,
+                    borderRadius: 12,
+                    border: '1px solid var(--border)',
+                    background: 'var(--surface-2)',
+                  }}
+                >
+                  <div style={{ fontSize: '0.9375rem', lineHeight: 1.5 }}>{note.body}</div>
+                  <div style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: 6 }}>
+                    Flagged {new Date(note.createdAt).toLocaleDateString()}
                   </div>
+                  <label
+                    htmlFor={`resolve-${note.id}`}
+                    style={{ display: 'block', marginTop: 12, fontSize: 13, fontWeight: 600 }}
+                  >
+                    Your response <span style={{ color: 'var(--danger)' }}>*</span>
+                  </label>
+                  <textarea
+                    id={`resolve-${note.id}`}
+                    value={resolutionDrafts[note.id] ?? ''}
+                    onChange={(e) =>
+                      setResolutionDrafts((prev) => ({ ...prev, [note.id]: e.target.value }))
+                    }
+                    rows={3}
+                    placeholder="Describe what you did or how you addressed this…"
+                    style={{
+                      width: '100%',
+                      marginTop: 6,
+                      padding: '10px 12px',
+                      borderRadius: 10,
+                      border: '1px solid var(--border)',
+                      font: 'inherit',
+                      fontSize: 14,
+                      boxSizing: 'border-box',
+                      background: 'var(--surface)',
+                      color: 'var(--foreground)',
+                    }}
+                  />
+                  {resolveErrors[note.id] ? (
+                    <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--danger)' }}>
+                      {resolveErrors[note.id]}
+                    </p>
+                  ) : null}
                   <button
                     type="button"
                     disabled={resolvingNoteId === note.id}
                     onClick={() => void onResolveNote(note.id)}
+                    style={{ marginTop: 10 }}
                   >
-                    {resolvingNoteId === note.id ? 'Marking…' : 'Mark addressed'}
+                    {resolvingNoteId === note.id ? 'Saving…' : 'Mark addressed'}
                   </button>
                 </div>
               ))}
+            </div>
+          )}
+        </section>
+
+        <section className="provider-panel" id="addressed-notes">
+          <h2>Addressed ({resolvedNotes.length})</h2>
+          {resolvedNotes.length === 0 ? (
+            <p style={{ margin: 0, color: 'var(--muted)', fontSize: 14 }}>
+              Addressed notes will appear here with your recorded response.
+            </p>
+          ) : (
+            <div style={{ display: 'grid', gap: 8 }}>
+              {resolvedNotes.map((note) => {
+                const open = expandedResolvedId === note.id;
+                return (
+                  <div
+                    key={note.id}
+                    style={{
+                      border: '1px solid var(--border-light)',
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      background: 'var(--surface)',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setExpandedResolvedId(open ? null : note.id)}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        background: 'transparent',
+                        color: 'var(--foreground)',
+                        border: 'none',
+                        padding: '12px 14px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                        alignItems: 'flex-start',
+                      }}
+                    >
+                      <span>
+                        <span className="provider-tag provider-tag--ok" style={{ marginRight: 8 }}>
+                          Addressed
+                        </span>
+                        <span style={{ fontSize: 14 }}>
+                          {note.body.length > 90 ? `${note.body.slice(0, 87)}…` : note.body}
+                        </span>
+                        <span
+                          style={{
+                            display: 'block',
+                            fontSize: 12,
+                            color: 'var(--muted)',
+                            marginTop: 6,
+                          }}
+                        >
+                          {note.resolvedAt
+                            ? `Completed ${new Date(note.resolvedAt).toLocaleString()}`
+                            : 'Completed'}
+                        </span>
+                      </span>
+                      <span style={{ fontSize: 12, color: 'var(--muted)', flexShrink: 0 }}>
+                        {open ? 'Hide' : 'View'}
+                      </span>
+                    </button>
+                    {open ? (
+                      <div
+                        style={{
+                          padding: '0 14px 14px',
+                          borderTop: '1px solid var(--border-light)',
+                          display: 'grid',
+                          gap: 10,
+                        }}
+                      >
+                        <div>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              fontWeight: 700,
+                              color: 'var(--muted)',
+                              marginBottom: 4,
+                            }}
+                          >
+                            Admin note
+                          </div>
+                          <div style={{ fontSize: 14, lineHeight: 1.5 }}>{note.body}</div>
+                        </div>
+                        <div>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              fontWeight: 700,
+                              color: 'var(--muted)',
+                              marginBottom: 4,
+                            }}
+                          >
+                            Your response
+                          </div>
+                          <div style={{ fontSize: 14, lineHeight: 1.5 }}>
+                            {note.resolutionNote?.trim() || (
+                              <em style={{ color: 'var(--muted)' }}>No response text recorded.</em>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           )}
         </section>
@@ -980,14 +1173,19 @@ export function ProviderClientWorkspaceClient({
 
           // Week 1 not generated yet.
           if (activeWeek === 1 && status === 'not_started') {
+            const canGenerate = Boolean(intake?.completedAt);
             return (
               <section className="provider-panel">
                 <p style={{ margin: '0 0 10px', fontSize: 14 }}>
-                  No Week 1 draft yet for this client. Generate it from their intake to start the program.
+                  {canGenerate
+                    ? 'No Week 1 draft yet for this client. Generate it from their intake to start the program.'
+                    : 'This client has not finished intake yet. Week 1 can be generated after they submit.'}
                 </p>
-                <button type="button" onClick={() => void onGenerateWeek1()} disabled={generatingWeek1}>
-                  {generatingWeek1 ? 'Generating Week 1 draft…' : 'Generate Week 1 draft'}
-                </button>
+                {canGenerate ? (
+                  <button type="button" onClick={() => void onGenerateWeek1()} disabled={generatingWeek1}>
+                    {generatingWeek1 ? 'Generating Week 1 draft…' : 'Generate Week 1 draft'}
+                  </button>
+                ) : null}
                 {approveError ? (
                   <p style={{ marginTop: 8, fontSize: 13, color: 'var(--danger)' }}>{approveError}</p>
                 ) : null}

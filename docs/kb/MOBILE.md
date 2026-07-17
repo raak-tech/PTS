@@ -40,6 +40,8 @@
 | Verify no crash | Launch via adb monkey; confirm `pidof com.pts.mobile.painscript`; logcat for `duplicate screen` / `FATAL EXCEPTION` |
 | versionCode | Bump in `app.config.ts` for each sideload that must replace Play/install |
 
+**Do not build or install APK unless the user explicitly asks.** Finish a coherent set of mobile changes first; then build on request. Deploying web/API is separate and may still happen when the API must be live for testing.
+
 Release builds ignore developer `.env` LAN URLs (`EXPO_NO_DOTENV=1` in gradle script) — API comes from env/script defaults or `eas.json`.
 
 ---
@@ -58,6 +60,16 @@ Layouts gate incorrectly-role access with redirect to login (`ClientLayout` / `P
 ### Client copy invariant
 
 Intake extract LLM often writes counselor third person. Client confirm must rewrite via `toClientFacingText` / never show confidence % or “the client…”. See [`INTAKE.md`](INTAKE.md).
+
+### Incomplete intake — no premature tabs
+
+While `!intakeComplete`, routing stays on `/(client)/intake` (then waiting-plan until plan approved). Do **not** put incomplete intake on the Today/Program tab bar. Account exit is on the intake/waiting-plan shell (`Screen` `showAccountExit` → Sign out / Delete account), not buried behind Profile tabs.
+
+Local notifications: `syncClientNotifications` — intake nudges only until complete; program daily reminders only after plan approved.
+
+### Your counselor (assigned only)
+
+`GET /api/me/contacts` returns the assigned counselor’s **public** profile (name, title, credentials, bio, years, specialisations, languages, Calendly, optional `sessionJoinUrl`) — never personal email/phone. Mobile: `YourCounselorCard` on Profile / waiting-plan + `profile/counselor` detail. Counselor edits at `/provider/profile`. Live video stays external: Book via Calendly; **Join session** when counselor pastes an ephemeral room link. Not a marketplace — see `DECISIONS.md` 2026-07-16.
 
 ### Counselor mobile scope (as of Jul 2026)
 

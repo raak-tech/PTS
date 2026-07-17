@@ -5,10 +5,15 @@ import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 
 import { getDb } from '@/db';
 import { counselorNotes, formulations, intakeResponses, messages, plans, users } from '@/db/schema';
-import { getClientCounselorMap, isClientVisibleToProvider } from '@/lib/client-access';
+import {
+  getClientCounselorMap,
+  getCompletedIntakeClientIds,
+  isClientVisibleToProvider,
+} from '@/lib/client-access';
 import { formatClientLabel } from '@/lib/provider-display';
 import { getUserFromCookieHeader } from '@/lib/session';
 import { ProviderClientsListClient } from '@/components/provider/ProviderClientsListClient';
+import { AddressedNotesPanel } from '@/components/provider/AddressedNotesPanel';
 import {
   PendingFormulationsClient,
   type PendingFormulationRow,
@@ -40,7 +45,10 @@ export default async function ProviderClientsPage({
   const filter = sp.filter === 'plans' ? 'plans' : null;
 
   const db = getDb();
-  const assignmentMap = await getClientCounselorMap();
+  const [assignmentMap, completedIntakeIds] = await Promise.all([
+    getClientCounselorMap(),
+    getCompletedIntakeClientIds(),
+  ]);
 
   const clients: {
     id: string;
@@ -60,7 +68,10 @@ export default async function ProviderClientsPage({
     .where(eq(users.role, 'client'))
     .orderBy(desc(users.createdAt));
 
-  const visibleClients = clients.filter((c) => isClientVisibleToProvider(c.id, user.id, assignmentMap));
+  // Hybrid ready-pool: incomplete intake never appears; completed + unassigned = pickup.
+  const visibleClients = clients.filter((c) =>
+    isClientVisibleToProvider(c.id, user.id, assignmentMap, completedIntakeIds),
+  );
 
   const clientIds = visibleClients.map((c) => c.id);
 
@@ -137,7 +148,7 @@ export default async function ProviderClientsPage({
     .filter(
       (r) =>
         r.pilotCohort === 'pain_script' &&
-        isClientVisibleToProvider(r.userId, user.id, assignmentMap),
+        isClientVisibleToProvider(r.userId, user.id, assignmentMap, completedIntakeIds),
     )
     .map((r) => ({
       userId: r.userId,
@@ -155,6 +166,8 @@ export default async function ProviderClientsPage({
 
   const rows = visibleClients.map((client) => {
     const intake = intakeByClient[client.id];
+    const hasCompletedIntake = Boolean(intake);
+    const assigned = Boolean(assignmentMap[client.id]);
     const hasRedFlag = Boolean(intake?.hasRedFlags) || intake?.isSafe === false;
     const unreadCount = unreadByClient[client.id] ?? 0;
     const noteCount = noteCountByClient[client.id] ?? 0;
@@ -165,7 +178,7 @@ export default async function ProviderClientsPage({
       unreadCount > 0 ||
       noteCount > 0 ||
       formulationPending ||
-      planStatus === 'none' ||
+      (hasCompletedIntake && planStatus === 'none') ||
       planStatus === 'pending_review' ||
       planStatus === 'draft';
     return {
@@ -179,6 +192,8 @@ export default async function ProviderClientsPage({
       noteCount,
       needsAction,
       formulationPending,
+      hasCompletedIntake,
+      assigned,
       intakeTeaser: intakeTeaser(intake?.painDescription, intake?.recoveryGoal),
     };
   });
@@ -204,6 +219,7 @@ export default async function ProviderClientsPage({
   return (
     <>
       <PendingFormulationsClient rows={pendingFormulations} />
+      <AddressedNotesPanel />
       <ProviderClientsListClient
         clients={rows}
         actionCount={actionCount}
