@@ -6,7 +6,7 @@ import { desc, eq } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { intakeResponses, intakeSessions, planWeeks, plans, supportArtifacts, userConsents, users } from '@/db/schema';
 import { isAdminUser } from '@/lib/admin';
-import { getClientCounselorMap, isClientVisibleToProvider } from '@/lib/client-access';
+import { getClientCounselorMap, getCompletedIntakeClientIds, isClientVisibleToProvider } from '@/lib/client-access';
 import type { GeneratedPlan, WeekPlan } from '@/lib/plan-generator';
 import { formatClientLabel } from '@/lib/provider-display';
 import { getUserFromCookieHeader } from '@/lib/session';
@@ -24,9 +24,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: client ? `Client | Counselor` : 'Client not found' };
 }
 
-function parseTab(tab?: string): 'overview' | 'plan' | 'readouts' | 'messages' {
-  if (tab === 'plan' || tab === 'readouts' || tab === 'messages') return tab;
-  return 'overview';
+function parseTab(tab?: string): 'activity' | 'plan' | 'messages' | 'notes' {
+  if (tab === 'plan' || tab === 'messages' || tab === 'notes') return tab;
+  if (tab === 'activity' || tab === 'overview' || tab === 'readouts') return 'activity';
+  return 'plan';
 }
 
 export default async function ProviderClientDetailPage({ params, searchParams }: Props) {
@@ -37,9 +38,14 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
   const initialWeek = Number.isFinite(parsedWeek) && parsedWeek >= 1 && parsedWeek <= 6 ? parsedWeek : 1;
 
   const user = await getUserFromCookieHeader((await headers()).get('cookie'));
-  const assignmentMap = user && !isAdminUser(user) ? await getClientCounselorMap() : {};
-  if (user && !isAdminUser(user) && !isClientVisibleToProvider(id, user.id, assignmentMap)) {
-    notFound();
+  if (user && !isAdminUser(user)) {
+    const [assignmentMap, completedIntakeIds] = await Promise.all([
+      getClientCounselorMap(),
+      getCompletedIntakeClientIds(),
+    ]);
+    if (!isClientVisibleToProvider(id, user.id, assignmentMap, completedIntakeIds)) {
+      notFound();
+    }
   }
 
   const db = getDb();
@@ -137,6 +143,8 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
       painSourceOther: intakeResponses.painSourceOther,
       painDescription: intakeResponses.painDescription,
       recoveryGoal: intakeResponses.recoveryGoal,
+      biggestChange: intakeResponses.biggestChange,
+      onsetType: intakeResponses.onsetType,
       hasRedFlags: intakeResponses.hasRedFlags,
       isSafe: intakeResponses.isSafe,
       completedAt: intakeResponses.completedAt,
@@ -145,19 +153,33 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
     .where(eq(intakeResponses.userId, id))
     .limit(1);
 
-  // Fetch the latest intake session (one-box flow) for confidence data
-  const [latestSession] = await db
-    .select({
-      confidenceScores: intakeSessions.confidenceScores,
-      rawText: intakeSessions.rawText,
-      rounds: intakeSessions.rounds,
-      overallConfidence: intakeSessions.overallConfidence,
-      summary: intakeSessions.summary,
-    })
-    .from(intakeSessions)
-    .where(eq(intakeSessions.userId, id))
-    .orderBy(desc(intakeSessions.createdAt))
-    .limit(1);
+  // Fetch the latest intake session (one-box flow) for confidence data — optional.
+  let latestSession:
+    | {
+        confidenceScores: string;
+        rawText: string;
+        rounds: number;
+        overallConfidence: string | null;
+        summary: string | null;
+      }
+    | undefined;
+  try {
+    const [row] = await db
+      .select({
+        confidenceScores: intakeSessions.confidenceScores,
+        rawText: intakeSessions.rawText,
+        rounds: intakeSessions.rounds,
+        overallConfidence: intakeSessions.overallConfidence,
+        summary: intakeSessions.summary,
+      })
+      .from(intakeSessions)
+      .where(eq(intakeSessions.userId, id))
+      .orderBy(desc(intakeSessions.createdAt))
+      .limit(1);
+    latestSession = row;
+  } catch {
+    latestSession = undefined;
+  }
 
   const hasCrisisNotes =
     Boolean(latestPlan?.counselorNotes && /crisis/i.test(latestPlan.counselorNotes)) ||
@@ -181,6 +203,8 @@ export default async function ProviderClientDetailPage({ params, searchParams }:
               painSource: intake.painSourceOther ?? intake.painSource,
               painDescription: intake.painDescription,
               recoveryGoal: intake.recoveryGoal,
+              biggestChange: intake.biggestChange ?? '',
+              onsetType: intake.onsetType ?? '',
               hasRedFlags: intake.hasRedFlags,
               isSafe: intake.isSafe,
               completedAt: intake.completedAt ? intake.completedAt.toISOString() : null,

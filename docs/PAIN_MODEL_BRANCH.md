@@ -1,120 +1,112 @@
-# Pain Script model — parked branch (`PainModelLearned`)
+# Pain Script A/B Pilot — `PainModelLearned` branch
 
-**Status:** Parked — **not integrated into `master`**  
-**Branch:** `PainModelLearned`  
-**Commit:** `137fd03` (WIP, awaiting product approval)  
-**Created:** 2026-07-11  
-**Confidential:** RAak proprietary Pain Script System — not for client distribution or model training
-
----
-
-## What this is
-
-Exploratory integration of the **RAak Pain Script System** (Transactional Analysis formulation for chronic pain) into PTS:
-
-1. Optional **pain-script / BASIC I.D. signals** extracted from one-box intake free text
-2. **Confidential framework block** injected into Week 1 and Weeks 2–6 LLM plan prompts
-3. Counselor-only **`protectedFormulation`** in generated plans (maintenance hypothesis, BASIC I.D. snapshot, Week 1 leverage)
-4. **Protected formulation panel** in counselor plan review UI
-5. **Client API stripping** so counselor-only fields never reach clients
-
-Local confidential reference files (from MacBook) live in `confidential-review/` — **never commit**.
+**Status:** Active development on branch `PainModelLearned` — **not merged to `master`**  
+**Scope:** MacBook spec Phases A–D + §1A/§7/§7A M1/§7B holistic & music + cohort A/B APK support  
+**Tracker:** [`docs/PAIN_SCRIPT_IMPLEMENTATION_CHECKLIST.md`](./PAIN_SCRIPT_IMPLEMENTATION_CHECKLIST.md) — work through items in order; do not drop.  
+**Clinical prompts:** Ramya-approved `PTS_PainScript_Prompts_DRAFT.md` (MacBook)
 
 ---
 
-## How to resume this work
+## Cohort model
+
+| Cohort | APK | Package | User flag |
+|--------|-----|---------|-----------|
+| **A — Control** | `pts-mobile-release.apk` | `com.pts.mobile` | `users.pilot_cohort = legacy` |
+| **B — Pain Script** | `pts-mobile-pain-pilot.apk` | `com.pts.mobile.painscript` | `users.pilot_cohort = pain_script` |
+
+Assign cohort B via:
+- Admin user create: `pilotCohort: "pain_script"`
+- APK B first login: `POST /api/me/cohort` (build flag `EXPO_PUBLIC_PILOT_COHORT=pain_script`)
+
+---
+
+## Feature flags (preview / pilot deploy)
 
 ```bash
-cd /home/satananth/work/PTS
-git fetch origin                    # if branch was pushed
-git checkout PainModelLearned       # switch to parked work
-git log -1 --oneline                # should show 137fd03 or later on this branch
+PAIN_SCRIPT_ENABLED=true          # server — enables pain path
+NEXT_PUBLIC_PILOT_COHORT=         # optional web build hint
+EXPO_PUBLIC_PILOT_COHORT=pain_script   # APK B only
 ```
 
-To compare against current production code:
+**Legacy users unaffected** when flag off or `pilot_cohort=legacy`.
+
+---
+
+## Pain Script client flow (cohort B)
+
+1. Intake confirm → `POST /api/intake/generate-plan` → **Stage 1 formulation** (async)
+2. Counselor → **Formulation review** (`/provider/formulations/[userId]`) → Approve
+3. Counselor → **Generate Week 1** (gated on approved formulation)
+4. Client sees `formulationSummary` on waiting-plan / plan intro (plain language)
+
+Control cohort (A): unchanged intake → counselor Generate Week 1 (no formulation gate).
+
+---
+
+## Preview deploy (2026-07-13)
+
+**Preview URL:** `https://pts-kkiijcgf6-sat-ananths-projects.vercel.app`  
+**Flags:** `PAIN_SCRIPT_ENABLED=true` (Preview), `DATABASE_URL` shared with Production  
+**SSO:** Disabled on preview for APK/device testing  
+**APK B:** `apps/mobile/dist/pts-mobile-pain-pilot.apk` (versionCode 17, API = preview URL above)
+
+---
+
+## Build APK B
 
 ```bash
-git checkout master
-git diff master..PainModelLearned --stat
-git diff master..PainModelLearned -- apps/web/src/lib/plan-generator.ts
-```
-
-To integrate later (only after approval):
-
-```bash
-git checkout master
-git merge PainModelLearned          # or cherry-pick specific commits
-# run tsc + next build, counselor QA on protectedFormulation, then deploy
-```
-
-To abandon:
-
-```bash
-git branch -D PainModelLearned      # local only
+cd apps/mobile
+# Point at pain-model preview API when ready:
+# export EXPO_PUBLIC_API_URL=https://your-preview.vercel.app
+./scripts/build-apk-pain-pilot.sh
+# Output: dist/pts-mobile-pain-pilot.apk
 ```
 
 ---
 
-## Files changed on `PainModelLearned` (12 files)
+## DB migration
+
+```bash
+cd apps/web && node scripts/migrate.mjs
+# Applies 0026_pain_script_engine.sql + 0027_music_tracks.sql + 0028_flare_events.sql + 0029_formulation_rescore_json.sql
+```
+
+---
+
+## Manual performance review (pilot)
+
+Compare cohorts manually on:
+- Intake completion, time to approved Week 1
+- Week 1 engagement (check-ins, practices, read-outs)
+- Qualitative: “felt understood”, “plan fits me”
+
+No automated analytics in this branch — per product decision.
+
+---
+
+## Open decisions (§16 defaults applied)
+
+1. **Formulation gate** — separate gate for pilot (no auto-approve)
+2. **Client target labels** — friendly labels in mobile `painScriptTags.ts`
+3. **Prompts** — Ramya-approved MacBook draft
+4. **Rescore** — Stage 3 draft + counselor review UI shipped (checklist F1)
+5. **Intake** — 1 opener + ≤3 follow-ups (partial; `onsetType` extract+persist in progress)
+6. **Profile** — `clientProfile` seed from intake + About You / field requests (checklist F3)
+7. **Flare** — classifier + mobile flare-up flow shipped (checklist F2; separate from crisis)
+
+---
+
+## Key paths
 
 | Area | Path |
 |------|------|
-| Confidential framework | `apps/web/src/lib/confidential/pain-script-framework.ts` |
-| Load intake signals | `apps/web/src/lib/confidential/load-pain-script-signals.ts` |
-| Week 1 LLM | `apps/web/src/lib/plan-generator.ts` |
-| Weeks 2–6 LLM | `apps/web/src/lib/week-plan-generator.ts` |
-| Intake extraction | `apps/web/src/lib/intake-extractor.ts` |
-| Plan regen / save | `apps/web/src/lib/regenerate-plan-for-user.ts`, `generate-and-save-plan.ts` |
-| Week regen API | `apps/web/src/app/api/provider/clients/[id]/regenerate-week/route.ts` |
-| Counselor UI | `apps/web/src/app/provider/plans/PlanReviewClient.tsx` |
-| Client API strip | `apps/web/src/lib/plan-client-view.ts`, `apps/web/src/app/api/plans/route.ts` |
-| Git safety | `.gitignore` (`confidential-review/`) |
+| Tags / types | `apps/web/src/lib/pain-script/` |
+| Stage 1 LLM | `formulation-generator.ts` |
+| Stage 2 LLM | `plan-from-formulation.ts` |
+| Orchestration | `on-intake-confirmed.ts` |
+| Counselor UI | `apps/web/src/app/provider/formulations/` |
+| APK B build | `apps/mobile/scripts/build-apk-pain-pilot.sh` |
 
----
-
-## Gap analysis: onboarding vs Pain Script model
-
-**Current onboarding** (one-box + extractor) is **situation/goal-oriented**: pain source, description, duration, activities, goal, demographics, treatment, social support, safety.
-
-**Pain Script model** is **formulation-oriented** — three maintenance-cycle components:
-
-| Component | Examples | Current intake |
-|-----------|----------|----------------|
-| Script beliefs/feelings | Self/others/life beliefs; needs; anger, fear, grief | Not structured |
-| Script displays | Guarding, pacing, avoidance; fantasies; sensations | Partial (description, activities) |
-| Reinforcing experiences | Flares, invalidation, memory loops | Not captured |
-| BASIC I.D. lens | B/A/S/I/C/I/D domains | ~2/7 domains |
-
-**Material impact:** High for counselor formulation and Week 1 practice targeting; low–medium for client-facing intake UX (signals can be inferred from free text without a TA questionnaire).
-
-**Parked branch approach:** Optional `painScriptSignals` in extraction JSON (stored in `intake_sessions`, not required for intake completion) + LLM formulation in counselor-only plan fields.
-
----
-
-## Expected plan output changes (when integrated)
-
-| Field | Before | After (with model) |
-|-------|--------|---------------------|
-| `clientSummary` / `watchPoints` | Goal + situation focused | Maintenance-cycle + invalidation/catastrophizing aware |
-| `protectedFormulation` | N/A | Counselor-only hypothesis + BASIC I.D. + Week 1 leverage |
-| `dailyPractices` | Generic pacing/breath | 1–2 targeted leverage points in the cycle |
-| Client `overview` | Unchanged tone | Still warm, non-clinical — no framework labels |
-
----
-
-## Integration checklist (when approved)
-
-- [ ] Product sign-off on counselor-only `protectedFormulation` UX
-- [ ] Regenerate test plan — compare old vs new counselor fields
-- [ ] Verify client API never exposes protected fields (mobile + web)
-- [ ] Optional: add 1–2 conversational intake follow-ups when signals empty
-- [ ] Optional: mirror protected formulation in provider client workspace
-- [ ] Merge `PainModelLearned` → `master`, deploy Vercel, smoke-test counselor queue
-- [ ] Push branch to `origin` if not already: `git push -u origin PainModelLearned`
-
----
-
-## Rule for ongoing dev
-
-**All new work stays on `master`** until explicit approval to merge `PainModelLearned`.  
-This branch is reference-only — do not deploy from it to production without review.
+MacBook source docs:  
+`/Users/satheeshananthasubramanian/Documents/Raak Consulting/PTS/PTS_PainScript_Implementation_Spec.md`  
+`/Users/satheeshananthasubramanian/Documents/Raak Consulting/PTS/PTS_PainScript_Prompts_DRAFT.md`

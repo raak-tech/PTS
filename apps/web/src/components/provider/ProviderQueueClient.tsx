@@ -55,14 +55,23 @@ type AdminNote = {
   createdAt: string;
 };
 
+type ResolvedAdminNote = AdminNote & {
+  resolvedAt: string | null;
+  resolutionNote: string | null;
+};
+
 export function ProviderQueueClient() {
   const [loading, setLoading] = useState(true);
   const [queue, setQueue] = useState<QueueData | null>(null);
   const [intakes, setIntakes] = useState<PendingIntake[]>([]);
   const [engagement, setEngagement] = useState<EngagementClient[]>([]);
   const [adminNotes, setAdminNotes] = useState<AdminNote[]>([]);
+  const [resolvedAdminNotes, setResolvedAdminNotes] = useState<ResolvedAdminNote[]>([]);
+  const [expandedResolvedId, setExpandedResolvedId] = useState<string | null>(null);
   const [generating, setGenerating] = useState<string | null>(null);
   const [resolvingNote, setResolvingNote] = useState<string | null>(null);
+  const [resolutionDrafts, setResolutionDrafts] = useState<Record<string, string>>({});
+  const [resolveErrors, setResolveErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -73,7 +82,7 @@ export function ProviderQueueClient() {
         fetch('/api/provider/queue', { credentials: 'include' }),
         fetch('/api/provider/pending-intakes', { credentials: 'include' }),
         fetch('/api/provider/engagement', { credentials: 'include' }),
-        fetch('/api/provider/client-notes', { credentials: 'include' }),
+        fetch('/api/provider/client-notes?includeResolved=1', { credentials: 'include' }),
       ]);
       const [queueData, intakesData, engagementData, notesData] = await Promise.all([
         queueRes.json(),
@@ -84,7 +93,10 @@ export function ProviderQueueClient() {
       if (queueRes.ok) setQueue(queueData as QueueData);
       if (intakesRes.ok) setIntakes((intakesData.pendingIntakes as PendingIntake[]) ?? []);
       if (engagementRes.ok) setEngagement((engagementData.clients as EngagementClient[]) ?? []);
-      if (notesRes.ok) setAdminNotes((notesData.notes as AdminNote[]) ?? []);
+      if (notesRes.ok) {
+        setAdminNotes((notesData.notes as AdminNote[]) ?? []);
+        setResolvedAdminNotes((notesData.resolvedNotes as ResolvedAdminNote[]) ?? []);
+      }
       if (!queueRes.ok) setError('Could not load queue');
     } catch {
       setError('Network error loading queue');
@@ -99,15 +111,54 @@ export function ProviderQueueClient() {
   }, [load]);
 
   const onResolveNote = async (note: AdminNote) => {
+    const resolutionNote = (resolutionDrafts[note.id] ?? '').trim();
+    if (resolutionNote.length < 3) {
+      setResolveErrors((prev) => ({
+        ...prev,
+        [note.id]: 'Add a short response before marking addressed.',
+      }));
+      return;
+    }
     setResolvingNote(note.id);
+    setResolveErrors((prev) => {
+      const next = { ...prev };
+      delete next[note.id];
+      return next;
+    });
     try {
       const res = await fetch(`/api/provider/clients/${note.clientId}/notes/${note.id}/resolve`, {
         method: 'POST',
         credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resolutionNote }),
       });
-      if (res.ok) {
-        setAdminNotes((prev) => prev.filter((n) => n.id !== note.id));
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        note?: { resolvedAt?: string; resolutionNote?: string };
+        detail?: string;
+      };
+      if (!res.ok) {
+        setResolveErrors((prev) => ({
+          ...prev,
+          [note.id]: data.detail ?? 'Could not mark addressed.',
+        }));
+        return;
       }
+      setAdminNotes((prev) => prev.filter((n) => n.id !== note.id));
+      setResolvedAdminNotes((prev) => [
+        {
+          ...note,
+          resolvedAt: data.note?.resolvedAt ?? new Date().toISOString(),
+          resolutionNote: data.note?.resolutionNote ?? resolutionNote,
+        },
+        ...prev,
+      ]);
+      setResolutionDrafts((prev) => {
+        const next = { ...prev };
+        delete next[note.id];
+        return next;
+      });
+      setExpandedResolvedId(note.id);
     } finally {
       setResolvingNote(null);
     }
@@ -182,7 +233,7 @@ export function ProviderQueueClient() {
               <li key={p.id}>
                 <span className="provider-tag provider-tag--danger">Crisis note</span>{' '}
                 {p.clientName} —{' '}
-                <Link href="/provider/plans">Review plan</Link>
+                <Link href="/provider/clients?filter=plans">Review plan</Link>
               </li>
             ))}
             {urgentIntakes.map((i) => (
@@ -213,7 +264,7 @@ export function ProviderQueueClient() {
         <section className="provider-panel provider-panel--attention">
           <h2>Admin notes ({adminNotes.length})</h2>
           {adminNotes.map((note) => (
-            <div key={note.id} className="provider-queue-item">
+            <div key={note.id} className="provider-queue-item" style={{ alignItems: 'stretch', flexDirection: 'column' }}>
               <div>
                 <div style={{ fontWeight: 700 }}>{note.clientName}</div>
                 <div style={{ fontSize: '0.875rem', color: 'var(--foreground-secondary)', marginTop: 4 }}>
@@ -223,15 +274,88 @@ export function ProviderQueueClient() {
                   Flagged {new Date(note.createdAt).toLocaleDateString()}
                 </div>
               </div>
-              <button
-                type="button"
-                disabled={resolvingNote === note.id}
-                onClick={() => void onResolveNote(note)}
-              >
-                {resolvingNote === note.id ? 'Marking…' : 'Mark addressed'}
-              </button>
+              <label htmlFor={`q-resolve-${note.id}`} style={{ fontSize: 13, fontWeight: 600, marginTop: 10 }}>
+                Your response *
+              </label>
+              <textarea
+                id={`q-resolve-${note.id}`}
+                value={resolutionDrafts[note.id] ?? ''}
+                onChange={(e) =>
+                  setResolutionDrafts((prev) => ({ ...prev, [note.id]: e.target.value }))
+                }
+                rows={2}
+                placeholder="Describe how you addressed this…"
+                style={{
+                  width: '100%',
+                  marginTop: 6,
+                  padding: '8px 10px',
+                  borderRadius: 8,
+                  border: '1px solid var(--border)',
+                  font: 'inherit',
+                  boxSizing: 'border-box',
+                }}
+              />
+              {resolveErrors[note.id] ? (
+                <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--danger)' }}>{resolveErrors[note.id]}</p>
+              ) : null}
+              <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                <button type="button" disabled={resolvingNote === note.id} onClick={() => void onResolveNote(note)}>
+                  {resolvingNote === note.id ? 'Saving…' : 'Mark addressed'}
+                </button>
+                <Link href={`/provider/clients/${note.clientId}?tab=notes#admin-notes`} className="actionLink secondary">
+                  Open chart →
+                </Link>
+              </div>
             </div>
           ))}
+        </section>
+      ) : null}
+
+      {resolvedAdminNotes.length > 0 ? (
+        <section className="provider-panel">
+          <h2>Recently addressed ({resolvedAdminNotes.length})</h2>
+          {resolvedAdminNotes.slice(0, 10).map((note) => {
+            const open = expandedResolvedId === note.id;
+            return (
+              <div key={note.id} style={{ marginBottom: 8, borderBottom: '1px solid var(--border-light)', paddingBottom: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setExpandedResolvedId(open ? null : note.id)}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--foreground)',
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
+                >
+                  <span className="provider-tag provider-tag--ok" style={{ marginRight: 8 }}>
+                    Addressed
+                  </span>
+                  <strong>{note.clientName}</strong>
+                  <span style={{ color: 'var(--muted)', fontSize: 13 }}>
+                    {' '}
+                    · {note.resolvedAt ? new Date(note.resolvedAt).toLocaleDateString() : ''}
+                  </span>
+                </button>
+                {open ? (
+                  <div style={{ marginTop: 8, fontSize: 14, display: 'grid', gap: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>Admin note</div>
+                      {note.body}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>Your response</div>
+                      {note.resolutionNote?.trim() || <em style={{ color: 'var(--muted)' }}>No response recorded.</em>}
+                    </div>
+                    <Link href={`/provider/clients/${note.clientId}?tab=notes#addressed-notes`}>Open in chart →</Link>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
         </section>
       ) : null}
 
@@ -280,7 +404,7 @@ export function ProviderQueueClient() {
                 ) : null}
               </div>
               <Link href={`/provider/plans?highlight=${plan.id}`} className="actionLink secondary">
-                Review →
+                Open chart →
               </Link>
             </div>
           ))}

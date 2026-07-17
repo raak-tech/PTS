@@ -56,6 +56,7 @@ type CounselorNote = {
   body: string;
   resolvedAt: string | null;
   resolvedBy: string | null;
+  resolutionNote?: string | null;
   createdAt: string;
 };
 
@@ -67,6 +68,10 @@ export function AdminClientDossierClient({ clientId }: Props) {
   const [noteDraft, setNoteDraft] = useState('');
   const [submittingNote, setSubmittingNote] = useState(false);
   const [noteError, setNoteError] = useState('');
+  const [counselors, setCounselors] = useState<{ id: string; label: string; email: string }[]>([]);
+  const [assignId, setAssignId] = useState('');
+  const [assignBusy, setAssignBusy] = useState(false);
+  const [assignMsg, setAssignMsg] = useState('');
 
   useEffect(() => {
     void fetch(`/api/admin/clients/${clientId}`, { credentials: 'include' })
@@ -77,8 +82,17 @@ export function AdminClientDossierClient({ clientId }: Props) {
         }
         const data = (await res.json()) as { dossier: AdminClientDossier };
         setDossier(data.dossier);
+        setAssignId(data.dossier.counselor?.id ?? '');
       })
       .catch(() => setError('Could not load client dossier.'));
+
+    void fetch(`/api/admin/clients/${clientId}/assign`, { credentials: 'include' })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = (await res.json()) as { counselors?: { id: string; label: string; email: string }[] };
+        setCounselors(data.counselors ?? []);
+      })
+      .catch(() => undefined);
   }, [clientId]);
 
   const loadNotes = () => {
@@ -229,7 +243,14 @@ export function AdminClientDossierClient({ clientId }: Props) {
             <div style={{ display: 'grid', gap: 8 }}>
               {resolvedNotes.map((n) => (
                 <div key={n.id} style={{ padding: 10, borderRadius: 8, background: '#f5f5f5', fontSize: 13, color: '#666' }}>
+                  <div style={{ fontWeight: 600, color: '#333', marginBottom: 4 }}>Admin note</div>
                   {n.body}
+                  {n.resolutionNote?.trim() ? (
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ fontWeight: 600, color: '#333', marginBottom: 4 }}>Counselor response</div>
+                      <div style={{ color: '#444' }}>{n.resolutionNote}</div>
+                    </div>
+                  ) : null}
                   <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
                     Flagged {formatWhen(n.createdAt)} · resolved {formatWhen(n.resolvedAt)}
                   </div>
@@ -268,6 +289,73 @@ export function AdminClientDossierClient({ clientId }: Props) {
           <p style={{ margin: 0, color: '#666', fontSize: 14 }}>No counselor assigned yet.</p>
         </Section>
       )}
+
+      <Section title="Allocate counselor">
+        <p style={{ margin: '0 0 12px', fontSize: 14, color: '#666' }}>
+          Incomplete intakes stay off counselor Caseload. After intake, clients enter the ready pool unless you
+          assign one here.
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+          <select
+            value={assignId}
+            onChange={(e) => setAssignId(e.target.value)}
+            style={{ minWidth: 220, padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd' }}
+          >
+            <option value="">Unassigned (ready pool)</option>
+            {counselors.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={assignBusy}
+            onClick={() => {
+              void (async () => {
+                setAssignBusy(true);
+                setAssignMsg('');
+                try {
+                  const res = await fetch(`/api/admin/clients/${clientId}/assign`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ counselorId: assignId || null }),
+                  });
+                  if (!res.ok) {
+                    setAssignMsg('Could not update assignment.');
+                    return;
+                  }
+                  setAssignMsg(assignId ? 'Counselor assigned.' : 'Returned to ready pool.');
+                  const dossierRes = await fetch(`/api/admin/clients/${clientId}`, { credentials: 'include' });
+                  if (dossierRes.ok) {
+                    const data = (await dossierRes.json()) as { dossier: AdminClientDossier };
+                    setDossier(data.dossier);
+                    setAssignId(data.dossier.counselor?.id ?? '');
+                  }
+                } catch {
+                  setAssignMsg('Could not update assignment.');
+                } finally {
+                  setAssignBusy(false);
+                }
+              })();
+            }}
+            style={{
+              padding: '8px 14px',
+              borderRadius: 8,
+              border: 'none',
+              background: '#111',
+              color: '#fff',
+              fontWeight: 600,
+              cursor: assignBusy ? 'default' : 'pointer',
+              opacity: assignBusy ? 0.7 : 1,
+            }}
+          >
+            {assignBusy ? 'Saving…' : 'Save allocation'}
+          </button>
+        </div>
+        {assignMsg ? <p style={{ margin: '10px 0 0', fontSize: 13, fontWeight: 600 }}>{assignMsg}</p> : null}
+      </Section>
 
       {intake ? (
         <Section title="Intake submission">

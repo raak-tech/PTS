@@ -1,20 +1,24 @@
 import { headers } from 'next/headers';
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { getDb } from '@/db';
 import { counselorProfiles } from '@/db/schema';
+import { recordAudit } from '@/lib/audit';
+import { ensureCounselorProfile } from '@/lib/counselor-profile';
+import { logError } from '@/lib/logger';
 import { getUserFromCookieHeader } from '@/lib/session';
 import { canAccessProviderConsole } from '@/lib/provider-console-access';
-import { recordAudit } from '@/lib/audit';
-import { logError } from '@/lib/logger';
+
+const optionalUrl = z.union([z.string().url(), z.literal('')]).optional();
 
 const schema = z.object({
   fullName: z.string().min(1),
   title: z.string().min(1),
   credentials: z.string().optional(),
-  bio: z.string().min(1),
-  calendlyUrl: z.union([z.string().url(), z.literal('')]).optional(),
+  bio: z.string(),
+  yearsExperience: z.string().optional(),
+  calendlyUrl: optionalUrl,
+  sessionJoinUrl: optionalUrl,
   specialisations: z.array(z.string()).optional(),
   languages: z.array(z.string()).optional(),
 });
@@ -34,19 +38,47 @@ export async function PATCH(request: Request) {
     }
 
     const db = getDb();
+    const now = new Date();
+
+    await ensureCounselorProfile(user.id, user.displayName);
+
+    const yearsExperience = parsed.data.yearsExperience?.trim() || null;
+    const calendlyUrl = parsed.data.calendlyUrl?.trim() || null;
+    const sessionJoinUrl = parsed.data.sessionJoinUrl?.trim() || null;
 
     await db
-      .update(counselorProfiles)
-      .set({
+      .insert(counselorProfiles)
+      .values({
+        userId: user.id,
         fullName: parsed.data.fullName,
         title: parsed.data.title,
         credentials: parsed.data.credentials ?? null,
         bio: parsed.data.bio,
-        calendlyUrl: parsed.data.calendlyUrl?.trim() || null,
-        specialisations: parsed.data.specialisations ? JSON.stringify(parsed.data.specialisations) : JSON.stringify([]),
+        yearsExperience,
+        calendlyUrl,
+        sessionJoinUrl,
+        specialisations: parsed.data.specialisations
+          ? JSON.stringify(parsed.data.specialisations)
+          : JSON.stringify([]),
         languages: parsed.data.languages ? JSON.stringify(parsed.data.languages) : JSON.stringify([]),
+        createdAt: now,
       })
-      .where(eq(counselorProfiles.userId, user.id));
+      .onConflictDoUpdate({
+        target: counselorProfiles.userId,
+        set: {
+          fullName: parsed.data.fullName,
+          title: parsed.data.title,
+          credentials: parsed.data.credentials ?? null,
+          bio: parsed.data.bio,
+          yearsExperience,
+          calendlyUrl,
+          sessionJoinUrl,
+          specialisations: parsed.data.specialisations
+            ? JSON.stringify(parsed.data.specialisations)
+            : JSON.stringify([]),
+          languages: parsed.data.languages ? JSON.stringify(parsed.data.languages) : JSON.stringify([]),
+        },
+      });
 
     void recordAudit({
       actorUserId: user.id,

@@ -5,7 +5,10 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getDb } from '@/db';
-import { intakeResponses, plans } from '@/db/schema';
+import { intakeResponses, intakeSessions, plans } from '@/db/schema';
+import { getUserPilotCohort } from '@/lib/pain-script/cohort';
+import { usesPainScriptPath } from '@/lib/pain-script/flags';
+import { runFormulationGenerationForUser } from '@/lib/pain-script/on-intake-confirmed';
 import { logError } from '@/lib/logger';
 import { getUserFromRequest } from '@/lib/session';
 
@@ -32,6 +35,7 @@ const schema = z.object({
   structurePreference: z.string().optional(),
   engagementTime: z.string().optional(),
   ayurvedaPreferences: z.string().optional(),
+  onsetType: z.enum(['sudden', 'gradual', 'mixed']).optional(),
   hasRedFlags: z.boolean(),
   isSafe: z.boolean(),
   consentGiven: z.boolean(),
@@ -65,6 +69,7 @@ export async function POST(request: Request) {
       structurePreference: parsed.data.structurePreference ?? null,
       engagementTime: parsed.data.engagementTime ?? null,
       ayurvedaPreferences: parsed.data.ayurvedaPreferences ?? null,
+      onsetType: parsed.data.onsetType ?? null,
     };
 
     await db
@@ -95,6 +100,38 @@ export async function POST(request: Request) {
 
     if (existingPlan) {
       return NextResponse.json({ ok: true, planGenTriggered: false });
+    }
+
+    const cohort = await getUserPilotCohort(user.id);
+    if (usesPainScriptPath(cohort)) {
+      const intakeId = randomUUID();
+      const [saved] = await db
+        .select({ id: intakeResponses.id })
+        .from(intakeResponses)
+        .where(eq(intakeResponses.userId, user.id))
+        .limit(1);
+
+      await db.insert(intakeSessions).values({
+        id: randomUUID(),
+        userId: user.id,
+        intakeResponseId: saved?.id ?? intakeId,
+        segmentType: 'pain',
+        rawText: parsed.data.painDescription,
+        extractionJson: JSON.stringify({ legacyMobileIntake: true }),
+        confidenceScores: '{}',
+        rounds: 1,
+        overallConfidence: '0.8',
+        summary: parsed.data.painDescription.slice(0, 200),
+        status: 'confirmed',
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      void runFormulationGenerationForUser(user.id).catch((err) => {
+        logError('intake_mobile_formulation_failed', err, { userId: user.id });
+      });
+
+      return NextResponse.json({ ok: true, planGenTriggered: false, painScript: true });
     }
 
     // Plan generation is now counselor-initiated only, not automatic

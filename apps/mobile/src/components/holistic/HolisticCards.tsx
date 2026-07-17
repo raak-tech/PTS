@@ -5,6 +5,13 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { spotifyOpenUrl, spotifySearchUrl, type GeneratedPlan } from '@/lib/api';
+import {
+  ayurvedaDisplayLines,
+  weekHolisticYoga,
+  type AyurvedaBlock,
+  type MusicMoment,
+  type YogicPractice,
+} from '@/lib/holisticDisplay';
 import { useMusicCatalog } from '@/hooks/useClientData';
 
 type Week = NonNullable<GeneratedPlan['weeks'][number]>;
@@ -17,7 +24,7 @@ export function AyurvedaCard({
   readOnly,
   embedded,
 }: {
-  block: NonNullable<Week['ayurvedaBlock']>;
+  block: AyurvedaBlock;
   completed: boolean;
   onComplete: () => void;
   loading?: boolean;
@@ -25,58 +32,44 @@ export function AyurvedaCard({
   embedded?: boolean;
 }) {
   const styles = useThemedStyles((c) => ({
-    title: { fontSize: 15, fontWeight: '700' as const, color: c.text, marginTop: 8 },
     body: { fontSize: 14, color: c.muted, lineHeight: 21 },
     done: { fontSize: 14, color: c.success, fontWeight: '600' as const, marginTop: 8 },
     disclaimer: { fontSize: 12, color: c.faint, marginTop: 8, fontStyle: 'italic' as const },
   }));
 
-  return embedded ? (
-    <View>
-      <Text style={styles.body}>{block.rhythmNote}</Text>
-      {block.practices.map((p) => (
-        <Text key={p} style={styles.body}>
-          • {p}
+  const lines = ayurvedaDisplayLines(block);
+
+  const inner = (
+    <>
+      {lines.map((line) => (
+        <Text key={line} style={styles.body}>
+          {line.startsWith('Favour:') || line.startsWith('Limit:') ? line : `• ${line}`}
         </Text>
       ))}
       <Text style={styles.disclaimer}>
-        {block.disclaimer ?? 'Supportive wellness only — not medical treatment. Stop if pain increases.'}
+        {block.disclaimer ??
+          'General wellbeing only — not medical or Ayurvedic treatment. Check with your doctor or dietitian.'}
       </Text>
       {readOnly ? null : completed ? (
         <Text style={styles.done}>✓ Practiced today</Text>
       ) : (
         <Button label="Mark practiced today" variant="secondary" onPress={onComplete} loading={loading} />
       )}
-    </View>
-  ) : (
-    <Card title="Ayurveda-informed wellness">
-      <Text style={styles.body}>{block.rhythmNote}</Text>
-      {block.practices.map((p) => (
-        <Text key={p} style={styles.body}>
-          • {p}
-        </Text>
-      ))}
-      <Text style={styles.disclaimer}>
-        {block.disclaimer ?? 'Supportive wellness only — not medical treatment. Stop if pain increases.'}
-      </Text>
-      {readOnly ? null : completed ? (
-        <Text style={styles.done}>✓ Practiced today</Text>
-      ) : (
-        <Button label="Mark practiced today" variant="secondary" onPress={onComplete} loading={loading} />
-      )}
-    </Card>
+    </>
   );
+
+  return embedded ? <View>{inner}</View> : <Card title="Ayurveda-informed wellness">{inner}</Card>;
 }
 
-export function YogaTrialCard({
-  trial,
+export function YogicPracticeCard({
+  practice,
   completed,
   onComplete,
   loading,
   readOnly,
   embedded,
 }: {
-  trial: NonNullable<Week['yogaTrial']>;
+  practice: YogicPractice;
   completed: boolean;
   onComplete: () => void;
   loading?: boolean;
@@ -84,31 +77,32 @@ export function YogaTrialCard({
   embedded?: boolean;
 }) {
   const styles = useThemedStyles((c) => ({
-    principle: { fontSize: 16, fontWeight: '700' as const, color: c.text },
-    body: { fontSize: 14, color: c.muted, lineHeight: 21, marginTop: 6 },
-    movement: { fontSize: 15, fontWeight: '600' as const, color: c.text, marginTop: 12 },
+    section: { fontSize: 15, fontWeight: '700' as const, color: c.text, marginTop: 10 },
+    body: { fontSize: 14, color: c.muted, lineHeight: 21, marginTop: 4 },
     disclaimer: { fontSize: 12, color: c.faint, marginTop: 8, fontStyle: 'italic' as const },
     done: { fontSize: 14, color: c.success, fontWeight: '600' as const, marginTop: 8 },
   }));
 
   const body = (
     <>
-      <Text style={styles.principle}>{trial.principle}</Text>
-      <Text style={styles.body}>{trial.applicability}</Text>
-      <Text style={styles.movement}>
-        Small movement: {trial.microMovement.title} ({trial.microMovement.duration})
-      </Text>
-      <Text style={styles.body}>{trial.microMovement.description}</Text>
-      <Text style={styles.disclaimer}>{trial.disclaimer}</Text>
+      <Text style={styles.section}>{practice.breathingTechnique.title}</Text>
+      <Text style={styles.body}>{practice.breathingTechnique.description}</Text>
+      <Text style={[styles.body, { fontStyle: 'italic' }]}>{practice.breathingTechnique.duration}</Text>
+      <Text style={styles.section}>{practice.meditation.title}</Text>
+      <Text style={styles.body}>{practice.meditation.description}</Text>
+      <Text style={[styles.body, { fontStyle: 'italic' }]}>{practice.meditation.duration}</Text>
+      <Text style={styles.section}>Reflection</Text>
+      <Text style={styles.body}>{practice.philosophicalFraming}</Text>
+      <Text style={styles.disclaimer}>{practice.disclaimer}</Text>
       {readOnly ? null : completed ? (
-        <Text style={styles.done}>✓ Trial done today</Text>
+        <Text style={styles.done}>✓ Practiced today</Text>
       ) : (
-        <Button label="Mark trial done today" onPress={onComplete} loading={loading} />
+        <Button label="Mark practiced today" onPress={onComplete} loading={loading} />
       )}
     </>
   );
 
-  return embedded ? <View>{body}</View> : <Card title="Yoga principle trial">{body}</Card>;
+  return embedded ? <View>{body}</View> : <Card title="Breath, meditation & reflection">{body}</Card>;
 }
 
 export function MusicMomentCard({
@@ -120,7 +114,7 @@ export function MusicMomentCard({
   curatedSpotifyUrl,
   embedded,
 }: {
-  moment: NonNullable<Week['musicMoment']>;
+  moment: MusicMoment;
   completed: boolean;
   onComplete: () => void;
   loading?: boolean;
@@ -148,42 +142,51 @@ export function MusicMomentCard({
   }));
 
   const playlist = moment.playlist;
-  const searchQuery = playlist?.spotifySearchQuery ?? playlist?.title ?? moment.purpose;
-  const openUrl = curatedSpotifyUrl ? spotifyOpenUrl(curatedSpotifyUrl) : spotifySearchUrl(searchQuery);
+  const resolved = moment.resolvedTracks ?? [];
+  const searchQuery =
+    moment.searchTerms?.join(' ') ??
+    playlist?.spotifySearchQuery ??
+    playlist?.title ??
+    moment.purpose;
+  const openUrl = curatedSpotifyUrl
+    ? spotifyOpenUrl(curatedSpotifyUrl)
+    : resolved[0]?.url
+      ? resolved[0].url
+      : spotifySearchUrl(searchQuery);
+
+  const openLabel = resolved[0]?.url
+    ? 'Open music'
+    : curatedSpotifyUrl
+      ? 'Open curated playlist'
+      : 'Open similar music on Spotify';
 
   const inner = (
     <>
       <Text style={styles.purpose}>{moment.purpose}</Text>
       <Text style={styles.body}>{moment.suggestion}</Text>
-      {playlist ? (
+      {resolved.length > 0 ? (
+        <View style={{ marginTop: 10 }}>
+          {resolved.map((t) => (
+            <View key={t.url}>
+              <Text style={styles.track}>{t.title}</Text>
+              {t.artist ? <Text style={styles.note}>{t.artist}</Text> : null}
+            </View>
+          ))}
+        </View>
+      ) : playlist?.tracks?.length ? (
         <View style={{ marginTop: 10 }}>
           <Text style={[styles.track, { fontWeight: '700' }]}>{playlist.title}</Text>
-          <Text style={styles.body}>{playlist.description}</Text>
           {playlist.tracks.map((t) => (
             <View key={`${t.title}-${t.artist}`}>
               <Text style={styles.track}>
                 {t.title} — {t.artist}
               </Text>
-              <Text style={styles.note}>{t.note}</Text>
             </View>
           ))}
         </View>
       ) : null}
       <View style={{ marginTop: 12, gap: 8 }}>
-        {!readOnly ? (
-          <Button
-            label={curatedSpotifyUrl ? 'Open curated playlist' : 'Open similar music on Spotify'}
-            variant="secondary"
-            onPress={() => void Linking.openURL(openUrl)}
-          />
-        ) : null}
-        {readOnly ? (
-          <Button
-            label={curatedSpotifyUrl ? 'Open curated playlist' : 'Preview playlist search on Spotify'}
-            variant="secondary"
-            onPress={() => void Linking.openURL(openUrl)}
-          />
-        ) : null}
+        <Button label={openLabel} variant="secondary" onPress={() => void Linking.openURL(openUrl)} />
         {readOnly ? null : completed ? (
           <Text style={styles.done}>✓ Listened today</Text>
         ) : (
@@ -210,6 +213,7 @@ export function HolisticWeekSection({
   readOnly?: boolean;
 }) {
   const musicCatalog = useMusicCatalog();
+  const yogic = week ? weekHolisticYoga(week) : null;
 
   const purposeToTag = (purpose: string): string => {
     const p = purpose.toLowerCase();
@@ -233,9 +237,9 @@ export function HolisticWeekSection({
           readOnly={readOnly}
         />
       ) : null}
-      {week.yogaTrial ? (
-        <YogaTrialCard
-          trial={week.yogaTrial}
+      {yogic ? (
+        <YogicPracticeCard
+          practice={yogic}
           completed={readOnly ? false : completed.yoga}
           onComplete={() => onComplete('yoga')}
           loading={saving === 'yoga'}
@@ -249,7 +253,11 @@ export function HolisticWeekSection({
           onComplete={() => onComplete('music')}
           loading={saving === 'music'}
           readOnly={readOnly}
-          curatedSpotifyUrl={musicCatalog[purposeToTag(week.musicMoment.purpose)]?.spotifyUri}
+          curatedSpotifyUrl={
+            week.musicMoment.resolvedTracks?.[0]?.url
+              ? null
+              : musicCatalog[purposeToTag(week.musicMoment.purpose)]?.spotifyUri
+          }
         />
       ) : null}
     </>

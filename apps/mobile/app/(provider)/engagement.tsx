@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
@@ -9,23 +10,30 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { apiGetProviderEngagement } from '@/lib/api';
+import { chartUrl } from '@/lib/counselorWeb';
 
 export default function ProviderEngagementScreen() {
   const router = useRouter();
   const { token } = useAuth();
   const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
+  const [unavailable, setUnavailable] = useState(false);
   const [data, setData] = useState<Awaited<ReturnType<typeof apiGetProviderEngagement>> | null>(null);
   const styles = useThemedStyles((c) => ({
     row: { fontSize: 14, color: c.text, lineHeight: 22 },
     attention: { color: c.danger, fontWeight: '700' as const },
     stat: { fontSize: 13, color: c.muted, marginTop: 4 },
+    webLink: { fontSize: 13, color: '#f97316', fontWeight: '600' as const, marginTop: 6 },
   }));
 
   useEffect(() => {
     if (!token) return;
     void apiGetProviderEngagement(token)
-      .then(setData)
+      .then((d) => {
+        setData(d);
+        setUnavailable(false);
+      })
+      .catch(() => setUnavailable(true))
       .finally(() => setLoading(false));
   }, [token]);
 
@@ -34,6 +42,17 @@ export default function ProviderEngagementScreen() {
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
         <ActivityIndicator color={colors.accent} />
       </View>
+    );
+  }
+
+  if (unavailable) {
+    return (
+      <Screen showCrisis={false}>
+        <Card title="Engagement unavailable">
+          <Text style={styles.row}>Could not load today&apos;s progress. Open Caseload/Chart on web if needed.</Text>
+        </Card>
+        <Button label="Back to queue" variant="secondary" onPress={() => router.back()} />
+      </Screen>
     );
   }
 
@@ -52,7 +71,14 @@ export default function ProviderEngagementScreen() {
               <Text style={[styles.row, styles.attention]}>{c.name}</Text>
               <Text style={styles.stat}>
                 Read-out: {c.reinforcementRecordedToday ? 'done' : 'pending'} · Calendar{' '}
-                {c.calendarBlocksDone}/{c.calendarBlocksTotal} · Holistic {c.holisticDone ?? 0}/{c.holisticTotal ?? 4}
+                {c.calendarBlocksDone}/{c.calendarBlocksTotal} · Holistic {c.holisticDone ?? 0}/
+                {c.holisticTotal ?? 4}
+              </Text>
+              <Text
+                style={styles.webLink}
+                onPress={() => void Linking.openURL(chartUrl(c.clientId, { tab: 'activity' }))}
+              >
+                Open Activity on web →
               </Text>
             </Card>
           ))
@@ -69,6 +95,12 @@ export default function ProviderEngagementScreen() {
             <Text style={styles.stat}>
               Calendar {c.calendarBlocksDone}/{c.calendarBlocksTotal} · Holistic {c.holisticDone ?? 0}/
               {c.holisticTotal ?? 4}
+            </Text>
+            <Text
+              style={styles.webLink}
+              onPress={() => void Linking.openURL(chartUrl(c.clientId, { tab: 'activity' }))}
+            >
+              Open Chart on web →
             </Text>
           </Card>
         ))}

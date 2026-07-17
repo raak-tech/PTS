@@ -9,6 +9,7 @@ export type MobileSessionUser = {
   role: string;
   displayName: string | null;
   phone: string | null;
+  pilotCohort: 'legacy' | 'pain_script';
   intakeComplete: boolean;
   planApproved: boolean;
   programAnchorDate?: string | null;
@@ -75,6 +76,7 @@ export async function buildMobileSessionUser(userId: string): Promise<MobileSess
     role: user.role,
     displayName: user.displayName,
     phone: user.phone,
+    pilotCohort: user.pilotCohort === 'pain_script' ? 'pain_script' : 'legacy',
     intakeComplete: Boolean(intake?.completedAt),
     planApproved,
     programAnchorDate,

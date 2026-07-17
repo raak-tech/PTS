@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { eq } from 'drizzle-orm';
 
+import { loadPainScriptSignalsForUser } from '@/lib/confidential/load-pain-script-signals';
 import { getDb } from '@/db';
 import { intakeResponses, plans } from '@/db/schema';
 import { log, logError } from '@/lib/logger';
@@ -58,11 +59,13 @@ export async function generateAndSavePlanForUser(
   }
 
   try {
+    const painScriptSignals = await loadPainScriptSignalsForUser(userId);
     const generated = await generatePlan(
       {
         ...saved,
         hasDependents:
           saved.hasDependents == null ? null : saved.hasDependents ? 'yes' : 'no',
+        painScriptSignals,
       },
       { userId },
     );

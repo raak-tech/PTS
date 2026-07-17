@@ -19,7 +19,8 @@ See `PROJECT_BRIEF.md` for full product context.
 - 🔴 Confirm regulatory posture for India launch and target global markets (data residency, clinical disclaimers, consent requirements)
 - 🔴 Define therapist/counselor credentialing criteria — what qualifications are required to join the platform
 - 🔴 Define platform liability boundaries in writing — what it is and is not responsible for
-- 🔴 Agree LLM provider and data handling policy for user content sent to LLM (consent language, data minimisation, retention)
+- 🟠 Agree LLM provider and data handling policy for user content sent to LLM (consent language, data minimisation, retention)
+- 🟠 **Intake quality & LLM cost controls** — pre-LLM nonsense/off-topic gates, rate limits, tighten round-3 submit, counselor low-quality flag; payment after Week 1 approval (see `PILOT_TODO.md` § Deferred — Intake quality)
 - 🔴 Define pilot success metrics: activation, engagement, retention, counselor utilisation, user-reported outcome
 - 🔴 **[SCOPE-B] Complete Track 0 decision sprint** — all 8 decisions in `TRACK0_DECISIONS.md` (#17–#24) are open and blocking pilot-critical build items. Run the 1-week alignment session described in that doc. Record all outcomes in `DECISIONS.md`. Acceptance criteria: `DECISIONS.md` has entries for all 8 decisions; no Track 0 item remains unresolved before pilot recruitment begins. *Must precede: credentialing build, consent copy, regulatory infra decisions, LLM data policy, pilot metrics dashboard.* See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding B.
 - 🔴 **[SCOPE-C] Define and implement auth surface boundaries for pilot** — web uses email/password; mobile uses OTP. A mobile-authenticated client cannot log into the web app. Decide: (a) pilot is mobile-only — no web client access, or (b) add OTP login to web app, or (c) allow phone-verified users to set a password after OTP. Implement the decision. Acceptance criteria: a client who registers via mobile OTP can access their plan on whichever surfaces are supported; no dead-end auth states. See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding C.
@@ -136,10 +137,10 @@ See `PROJECT_BRIEF.md` for full product context.
 - 🔴 **[SCOPE-D] Show all 6 weeks in mobile plan review** — `MOBILE_APP_UX.md` specifies Weeks 1–6 accordion on the mobile plan review screen; the actual build shows only Week 1. Add collapsed accordion for Weeks 2–6 (read-only on mobile; per-week approve scoped to Week 1 for initial review; Weeks 2–6 show "Edit on web" link). Acceptance criteria: counselor on mobile can see all 6 week themes and practices before approving. See `SCOPE_AND_OPPORTUNITY_REPORT.md` Finding D. *(Patient-safety relevant — counselors currently approving blind on 5 weeks.)*
 - 🔴 Build counselor registration flow: credentials, specialisations, languages, bio, photo
 - 🔴 Build credential verification workflow: admin reviews and approves applications
-- 🔴 Build counselor profile page: visible to clients on assignment or selection
+- ~~🔴 Build counselor profile page: visible to clients on assignment or selection~~ → **Partial (2026-07-16):** assigned-only `YourCounselorCard` + `/provider/profile` editor + Calendly + ephemeral join link. **No client selection/marketplace** per `DECISIONS.md`. Photo + full registration flow still backlog.
 - 🔴 Build counselor dashboard: assigned clients, flags, unread messages, pending plan reviews, upcoming sessions
 - 🔴 Build counselor availability calendar: set weekly recurring hours, block dates, override slots
-- 🔴 Build session booking: client views counselor's available slots and books a 1:1 session
+- 🔴 Build session booking: client views counselor's available slots and books a 1:1 session — **partial:** Calendly on counselor profile (`Book a session`); no in-app slot picker
 - 🔴 Build pre-session brief: counselor sees client's recent check-ins, progress, and flags before a session
 - 🔴 Build post-session note: counselor records outcome, plan adjustments, follow-up actions
 - 🟠 Build client assignment model: auto-assign based on availability and specialisation, or client selects

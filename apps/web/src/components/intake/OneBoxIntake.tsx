@@ -19,6 +19,8 @@ export type ExtractResponse = {
   lowConfidenceRequired: string[];
   followUpQuestions: string[];
   summary: string;
+  clientSummary?: string;
+  extractionUsable?: boolean;
   overallConfidence: number;
   mapped: IntakeInsertShape;
   error?: string;
@@ -33,6 +35,8 @@ export type ExtractionComplete = {
   missingRequired: string[];
   lowConfidenceRequired: string[];
   summary: string;
+  clientSummary: string;
+  extractionUsable: boolean;
   overallConfidence: number;
   rounds: number;
   freeText: string;
@@ -144,9 +148,10 @@ export function OneBoxIntake({ segmentType, onExtractionComplete }: Props) {
             return;
           }
           throw new Error(
-            (body as { detail?: string }).detail ??
-              (body as { error?: string }).error ??
-              "Something went wrong extracting your intake. Please try again.",
+            typeof (body as { detail?: unknown }).detail === "string"
+              ? (body as { detail: string }).detail
+              : (body as { error?: string }).error ??
+                  "Something went wrong extracting your intake. Please try again.",
           );
         }
 
@@ -156,8 +161,15 @@ export function OneBoxIntake({ segmentType, onExtractionComplete }: Props) {
           throw new Error(data.detail ?? "Extraction failed. Please try again.");
         }
 
-        // If follow-up needed and rounds remain, show follow-up questions
-        if (!data.requiredFieldsMet && r < 3 && data.followUpQuestions.length > 0) {
+        if (data.extractionUsable === false) {
+          throw new Error(
+            data.clientSummary ??
+              "We could not understand that. Please describe your situation in plain sentences.",
+          );
+        }
+
+        // Required gaps OR Spec Phase E coverage asks (onset / thin cells) while rounds remain
+        if (r < 3 && data.followUpQuestions.length > 0 && (!data.requiredFieldsMet || r === 1)) {
           setPriorExtraction(JSON.stringify(data.extracted));
           setFollowUpQuestions(data.followUpQuestions);
           setFollowUpAnswers(new Array(data.followUpQuestions.length).fill(""));
@@ -174,6 +186,10 @@ export function OneBoxIntake({ segmentType, onExtractionComplete }: Props) {
           missingRequired: data.missingRequired,
           lowConfidenceRequired: data.lowConfidenceRequired,
           summary: data.summary,
+          clientSummary:
+            data.clientSummary ??
+            data.summary.replace(/\b[Tt]he client(?:'s)?\b/g, "You").replace(/\bYou is\b/g, "You are"),
+          extractionUsable: data.extractionUsable ?? true,
           overallConfidence: data.overallConfidence,
           rounds: r,
           freeText,

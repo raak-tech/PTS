@@ -33,8 +33,12 @@ export type ExtractedIntake = {
   structurePreference: ExtractionField;
   engagementTime: ExtractionField;
   ayurvedaPreferences: ExtractionField;
+  /** sudden | gradual | mixed — drives Stage 2 modality set for pain-script path */
+  onsetType: ExtractionField;
   hasRedFlags: ExtractionField;
   isSafe: ExtractionField;
+  /** Optional pain-script / BASIC I.D. signals — counselor formulation only. Value is JSON object or null. */
+  painScriptSignals: ExtractionField;
 };
 
 export type ExtractionResult = {
@@ -127,11 +131,11 @@ Extract the following fields from the client's words. For each field:
 Fields to extract:
 1. painSource — one of: "workplace", "accident", "sports", "general", "other" (string)
 2. painSourceOther — if painSource is "other", what the client specified (string or null)
-3. painDescription — what the client is experiencing, in their own framing. 1-3 sentences (string)
+3. painDescription — what the person is experiencing, paraphrasing their words in second person ("You feel…") or their own "I" words. NEVER write "the client" or "they". 1-3 sentences (string)
 4. painDuration — one of: "under1m", "1to3m", "3to6m", "6to12m", "over1y" (string or null)
 5. activitiesAffected — which daily activities are impacted, as a JSON array of strings. E.g., ["sitting at desk", "playing with kids"]. Empty array if not mentioned.
-6. biggestChange — the single biggest change the client has experienced. 1-2 sentences (string)
-7. recoveryGoal — what the client wants to achieve. 1-2 sentences, in their words (string)
+6. biggestChange — how life feels DIFFERENT since this started (impact so far: what they lost, stopped, or struggle with now). NOT the goal. 1-2 sentences (string)
+7. recoveryGoal — what they want going forward / what “better” looks like. Separate from biggestChange. 1-2 sentences (string)
 8. recoveryTimeline — when the client expects to see results (string or null)
 9. ageRange — one of: "under18", "18to24", "25to34", "35to44", "45to54", "55to64", "over65" (string or null)
 10. gender — "male", "female", "nonbinary", "other" (string or null)
@@ -145,20 +149,33 @@ Fields to extract:
 18. structurePreference — preference for program structure, one of: "highly_structured", "moderate", "flexible" (string or null)
 19. engagementTime — best time of day for engagement, one of: "morning", "afternoon", "evening", "night" (string or null)
 20. ayurvedaPreferences — if the client mentions or implies preferences for Ayurvedic, holistic, or alternative approaches, extract as JSON: {"energyPattern": "...", "dinacharyaOpenness": "...", "breathStillnessOpenness": "...", "yogaOpenness": "...", "movementPreference": "..."}. Omit if not relevant to this segment.
-21. hasRedFlags — true if the client mentions self-harm, suicidal ideation, severe trauma, abuse, violence, or anything requiring immediate clinical attention. false otherwise. BE CONSERVATIVE — flag if you're unsure.
-22. isSafe — false if the client's current environment is unsafe (abuse, violence, neglect). true otherwise. Default to true if no safety concern is mentioned.
+21. onsetType — how the pain/problem started: "sudden" (injury/event overnight), "gradual" (built over weeks/months), or "mixed". null if unclear.
+22. hasRedFlags — true if the client mentions self-harm, suicidal ideation, severe trauma, abuse, violence, or anything requiring immediate clinical attention. false otherwise. BE CONSERVATIVE — flag if you're unsure.
+23. isSafe — false if the client's current environment is unsafe (abuse, violence, neglect). true otherwise. Default to true if no safety concern is mentioned.
+
+24. painScriptSignals — OPTIONAL formulation signals (do not require for intake completion). If the client's words imply any of the following, extract as a JSON object in "value" (not a string). Otherwise null with confidence 0.0:
+   {
+     "scriptBeliefs": { "self": "...", "others": "...", "life": "...", "underlyingNeeds": ["..."], "dominantEmotions": ["..."] },
+     "scriptDisplays": { "behaviours": ["guarding", "pacing", ...], "sensations": ["..."], "fantasies": ["..."] },
+     "reinforcingExperiences": ["invalidation", "flare after stress", ...],
+     "basicId": { "behaviour": "...", "affect": "...", "sensation": "...", "imagery": "...", "cognition": "...", "interpersonal": "...", "drug": "..." }
+   }
+   Only include sub-fields the client actually implied. Do NOT label this framework to the client in follow-up questions.
 
 CRITICAL RULES:
 - If a field is NOT mentioned or cannot be inferred, set value to null and confidence to 0.0 (for booleans, use false with 0.0 confidence)
 - For hasRedFlags: if you see ANY hint of self-harm, suicidal thoughts, abuse, severe depression, or danger, set true with high confidence. Err on the side of safety.
 - For hasDependents: convert "yes" mentions to the string "yes", "no" to "no", null if not mentioned
 - For painDuration: map "a few weeks" → "under1m", "couple months" → "1to3m", "about half a year" → "6to12m", etc.
+- For onsetType: map "overnight after the fall" → sudden; "crept up over months" → gradual; both event + slow buildup → mixed.
 - Confidence reflects how EXPLICIT the client was — not how sure you are about your guess. If the client said "I think maybe about 3 months", confidence on duration should be ~0.5. If they said "8 months ago", confidence should be ~0.95.
 
 ADDITIONAL OUTPUTS (beyond the field extractions):
-- If required fields are missing or low confidence, generate 1-2 conversational follow-up questions. These should sound like a person asking, not a form. E.g., instead of "Enter pain duration" write "How long has this been going on? Even roughly helps."
-- Maximum 2 questions. If all required fields are solid, return empty array.
-- Write a 1-2 sentence natural-language summary of the client's situation.
+- If required fields are missing or low confidence, generate conversational follow-up questions. These should sound like a person asking, not a form. E.g., instead of "Enter pain duration" write "How long has this been going on? Even roughly helps."
+- Also ask about thin coverage cells when useful for counseling: sudden vs gradual onset; what the pain means about them / others; what tends to make a bad day worse; how they cope day to day.
+- Maximum 5 questions total. Priority: required-field gaps first, then onsetType if missing, then coverage (meaning / coping / reinforcers).
+- If all required fields are solid and onset is known, return empty array (or at most one light coverage question before round 2).
+- Write a 1-2 sentence natural-language summary in second person ("You are…"). NEVER start with "The client".
 
 Return ONLY valid JSON (no markdown, no explanation) with this structure:
 {
@@ -208,8 +225,10 @@ function parseExtractionResponse(raw: string): {
     'structurePreference',
     'engagementTime',
     'ayurvedaPreferences',
+    'onsetType',
     'hasRedFlags',
     'isSafe',
+    'painScriptSignals',
   ];
 
   for (const field of expectedFields) {
@@ -234,10 +253,31 @@ function parseExtractionResponse(raw: string): {
         : 0.0,
   };
 
+  if (!data.extracted.painScriptSignals) {
+    data.extracted.painScriptSignals = { value: null, confidence: 0.0 };
+  } else if (data.extracted.painScriptSignals.value) {
+    const raw = data.extracted.painScriptSignals.value;
+    if (typeof raw === 'object') {
+      data.extracted.painScriptSignals.value = JSON.stringify(raw);
+    }
+  }
+
+  const onsetRaw = data.extracted.onsetType?.value;
+  if (typeof onsetRaw === 'string') {
+    const normalized = onsetRaw.trim().toLowerCase();
+    data.extracted.onsetType = {
+      value: ['sudden', 'gradual', 'mixed'].includes(normalized) ? normalized : null,
+      confidence:
+        typeof data.extracted.onsetType?.confidence === 'number'
+          ? data.extracted.onsetType.confidence
+          : 0,
+    };
+  }
+
   return {
     extracted: data.extracted as ExtractedIntake,
     followUpQuestions: Array.isArray(data.followUpQuestions)
-      ? data.followUpQuestions.slice(0, 2)
+      ? data.followUpQuestions.slice(0, 5)
       : [],
     summary: typeof data.summary === 'string' ? data.summary : '',
   };
@@ -245,7 +285,7 @@ function parseExtractionResponse(raw: string): {
 
 // ── Compute gate status ───────────────────────────────────────
 
-function computeGateStatus(
+export function computeGateStatus(
   extracted: ExtractedIntake,
   round: number,
 ): {
@@ -271,11 +311,18 @@ function computeGateStatus(
   const overallConfidence =
     confidences.reduce((a, b) => a + b, 0) / confidences.length;
 
-  // After round 2 (3 counting initial), surrender to counselor
-  const requiredFieldsMet =
-    round >= 3
-      ? true // force through — counselor will see flags
-      : missingRequired.length === 0 && lowConfidenceRequired.length === 0;
+  // After round 3, allow soft only if the core story fields exist — not a blind force-through.
+  const CORE_AT_ESCAPE = ['painDescription', 'biggestChange', 'recoveryGoal'] as const;
+  let requiredFieldsMet =
+    missingRequired.length === 0 && lowConfidenceRequired.length === 0;
+
+  if (round >= 3 && !requiredFieldsMet) {
+    const coreMissing = CORE_AT_ESCAPE.filter((field) => {
+      const entry = extracted[field];
+      return entry.value === null || entry.value === undefined || entry.value === '';
+    });
+    requiredFieldsMet = coreMissing.length === 0;
+  }
 
   return {
     requiredFieldsMet,
@@ -283,6 +330,98 @@ function computeGateStatus(
     lowConfidenceRequired,
     overallConfidence: Math.round(overallConfidence * 100) / 100,
   };
+}
+
+function fieldThin(field: { value: unknown; confidence: number } | undefined): boolean {
+  if (!field) return true;
+  const v = field.value;
+  if (v === null || v === undefined || v === '') return true;
+  if (Array.isArray(v) && v.length === 0) return true;
+  if (typeof v === 'string' && v.trim().length < 8) return true;
+  return field.confidence > 0 && field.confidence < 0.7;
+}
+
+/** Spec Phase E — curated + coverage asks for one structured second pass (≤5). */
+function enrichCoverageFollowUps(
+  extracted: ExtractedIntake,
+  llmQuestions: string[],
+  segmentType: string,
+  round: number,
+): string[] {
+  const questions = [...llmQuestions];
+  const addUnique = (q: string) => {
+    if (questions.length >= 5) return;
+    const key = q.toLowerCase();
+    if (questions.some((x) => x.toLowerCase() === key)) return;
+    questions.push(q);
+  };
+
+  if (round >= 3) return questions.slice(0, 5);
+
+  if (fieldThin(extracted.painDuration)) {
+    addUnique(
+      'How long has this been going on — even a rough sense like a few weeks or several months would help.',
+    );
+  }
+  if (fieldThin(extracted.activitiesAffected)) {
+    addUnique(
+      'Which parts of your day does this get in the way of — work, family time, sleep, movement, or something else?',
+    );
+  }
+  if (fieldThin(extracted.biggestChange)) {
+    addUnique(
+      'Since this started, what feels most different in your life — not your goal, but how day-to-day feels now?',
+    );
+  }
+  if (fieldThin(extracted.recoveryGoal)) {
+    addUnique('What would “better” look like for you — what are you hoping to get back to?');
+  }
+  if (fieldThin(extracted.onsetType)) {
+    addUnique(
+      'Did this start suddenly after something specific, or did it build gradually over time?',
+    );
+  }
+
+  const coverageSegments = new Set(['pain', 'injury_recovery', 'sleep', 'anxiety', 'other']);
+  if (!coverageSegments.has(segmentType)) {
+    return questions.slice(0, 5);
+  }
+
+  let signals: Record<string, unknown> | null = null;
+  const rawSignals = extracted.painScriptSignals?.value;
+  if (typeof rawSignals === 'string' && rawSignals.trim()) {
+    try {
+      signals = JSON.parse(rawSignals) as Record<string, unknown>;
+    } catch {
+      signals = null;
+    }
+  }
+
+  const beliefs = (signals?.scriptBeliefs ?? null) as Record<string, unknown> | null;
+  const hasSelfBelief = Boolean(
+    beliefs && typeof beliefs.self === 'string' && beliefs.self.trim(),
+  );
+  const displays = (signals?.scriptDisplays ?? null) as Record<string, unknown> | null;
+  const behaviours = Array.isArray(displays?.behaviours) ? displays.behaviours : [];
+  const reinforcers = Array.isArray(signals?.reinforcingExperiences)
+    ? signals.reinforcingExperiences
+    : [];
+
+  if (!hasSelfBelief) {
+    addUnique(
+      'When this is at its worst, what does it make you think or feel about yourself?',
+    );
+  } else if (behaviours.length === 0) {
+    addUnique(
+      'On a tough day, what do you find yourself doing to get through — rest, push on, withdraw, or something else?',
+    );
+  } else if (reinforcers.length === 0) {
+    addUnique(
+      'What tends to make a bad day worse — stress, sitting too long, sleep, or something else?',
+    );
+  }
+
+  return questions.slice(0, 5);
 }
 
 // ── Main extraction function ──────────────────────────────────
@@ -358,6 +497,14 @@ export async function extractIntake(
       latencyMs,
       errorText: `HTTP ${response.status}: ${err.slice(0, 500)}`,
     });
+    if (response.status === 401) {
+      throw new Error('LLM API auth failed — OpenRouter key missing or invalid on the server');
+    }
+    if (response.status === 404 && err.includes('guardrail')) {
+      throw new Error(
+        'LLM model policy blocked this request — allow models at openrouter.ai/settings/privacy',
+      );
+    }
     throw new Error(`LLM API error ${response.status}`);
   }
 
@@ -397,7 +544,12 @@ export async function extractIntake(
       requiredFieldsMet: gate.requiredFieldsMet,
       missingRequired: gate.missingRequired,
       lowConfidenceRequired: gate.lowConfidenceRequired,
-      followUpQuestions: parsed.followUpQuestions,
+      followUpQuestions: enrichCoverageFollowUps(
+        parsed.extracted,
+        parsed.followUpQuestions,
+        input.segmentType,
+        input.round,
+      ),
       summary: parsed.summary,
       overallConfidence: gate.overallConfidence,
     };

@@ -8,6 +8,9 @@ import { getDb } from '@/db';
 import { intakeSessions, plans } from '@/db/schema';
 import { getUserFromRequest } from '@/lib/session';
 import { logError } from '@/lib/logger';
+import { getUserPilotCohort } from '@/lib/pain-script/cohort';
+import { usesPainScriptPath } from '@/lib/pain-script/flags';
+import { runFormulationGenerationForUser } from '@/lib/pain-script/on-intake-confirmed';
 
 export const maxDuration = 60;
 
@@ -79,7 +82,49 @@ export async function POST(request: Request) {
       });
     }
 
-    // Create a pending_review plan — no LLM generation yet.
+    const cohort = await getUserPilotCohort(user.id);
+
+    if (usesPainScriptPath(cohort)) {
+      // Pain Script path: Stage 1 formulation async (client wait unchanged).
+      void runFormulationGenerationForUser(user.id).catch((err) => {
+        logError('intake_formulation_background_failed', err, { userId: user.id });
+      });
+
+      const planId = randomUUID();
+      const now = new Date();
+
+      await db.insert(plans).values({
+        id: planId,
+        userId: user.id,
+        intakeResponseId: session.intakeResponseId ?? '',
+        generatedContent: JSON.stringify({
+          weeks: [],
+          overview: '',
+          clientSummary: '',
+          keyThemes: [],
+          watchPoints: [],
+          formulationSummary: '',
+        }),
+        status: 'pending_review',
+        counselorNotes: null,
+        createdAt: now,
+      });
+
+      await db
+        .update(intakeSessions)
+        .set({ status: 'confirmed', updatedAt: now })
+        .where(eq(intakeSessions.id, intakeSessionId));
+
+      return NextResponse.json({
+        ok: true,
+        planSessionId: planId,
+        status: 'pending_review',
+        painScript: true,
+        awaitingFormulation: true,
+      });
+    }
+
+    // Legacy path
     // The counselor must review the intake data bar and approve before Week 1 is generated.
     const planId = randomUUID();
     const now = new Date();

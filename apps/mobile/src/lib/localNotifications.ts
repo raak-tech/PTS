@@ -16,6 +16,11 @@ const REMINDER_IDS = {
   evening: 'pts-evening',
 } as const;
 
+const INTAKE_NUDGE_IDS = ['pts-intake-nudge-0', 'pts-intake-nudge-1', 'pts-intake-nudge-2'] as const;
+
+/** Hours after schedule: ~1 day, 3 days, 7 days. */
+const INTAKE_NUDGE_DELAYS_HOURS = [24, 72, 168] as const;
+
 export type ReminderId = (typeof REMINDER_IDS)[keyof typeof REMINDER_IDS];
 
 export { REMINDER_IDS };
@@ -28,13 +33,7 @@ export async function ensureNotificationPermission(): Promise<boolean> {
   return requested.granted ?? false;
 }
 
-export async function scheduleDailyReminders() {
-  if (Platform.OS === 'web') return;
-  const ok = await ensureNotificationPermission();
-  if (!ok) return;
-
-  await Notifications.cancelAllScheduledNotificationsAsync();
-
+async function scheduleProgramReminders() {
   const triggers: { id: string; hour: number; minute: number; title: string; body: string }[] = [
     {
       id: REMINDER_IDS.morning,
@@ -70,6 +69,55 @@ export async function scheduleDailyReminders() {
       },
     });
   }
+}
+
+async function scheduleIntakeNudges() {
+  for (let i = 0; i < INTAKE_NUDGE_DELAYS_HOURS.length; i++) {
+    const hours = INTAKE_NUDGE_DELAYS_HOURS[i];
+    const when = new Date(Date.now() + hours * 60 * 60 * 1000);
+    await Notifications.scheduleNotificationAsync({
+      identifier: INTAKE_NUDGE_IDS[i],
+      content: {
+        title: 'Continue your story',
+        body: 'A few minutes now helps your counselor prepare the right plan for you.',
+        data: { screen: 'intake' },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: when,
+      },
+    });
+  }
+}
+
+/**
+ * Sync local notifications to client journey stage.
+ * - Incomplete intake → gentle completion nudges only (no Today/program reminders)
+ * - Intake done, waiting on plan → no scheduled local reminders
+ * - Plan approved → daily program reminders
+ */
+export async function syncClientNotifications(stage: {
+  intakeComplete: boolean;
+  planApproved: boolean;
+}) {
+  if (Platform.OS === 'web') return;
+  const ok = await ensureNotificationPermission();
+  if (!ok) return;
+
+  await Notifications.cancelAllScheduledNotificationsAsync();
+
+  if (!stage.intakeComplete) {
+    await scheduleIntakeNudges();
+    return;
+  }
+  if (stage.planApproved) {
+    await scheduleProgramReminders();
+  }
+}
+
+/** @deprecated Prefer syncClientNotifications — kept for call-site compatibility. */
+export async function scheduleDailyReminders() {
+  await syncClientNotifications({ intakeComplete: true, planApproved: true });
 }
 
 export async function cancelDailyReminders() {

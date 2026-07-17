@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
@@ -8,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { apiGetProviderQueue } from '@/lib/api';
+import { chartUrl } from '@/lib/counselorWeb';
 
 export default function ProviderClientsScreen() {
   const router = useRouter();
@@ -20,6 +22,7 @@ export default function ProviderClientsScreen() {
   const styles = useThemedStyles((c) => ({
     meta: { fontSize: 13, color: c.muted, marginTop: 4 },
     flag: { color: c.danger, fontWeight: '700' as const },
+    webLink: { fontSize: 13, color: '#f97316', fontWeight: '600' as const, marginTop: 6 },
   }));
 
   useEffect(() => {
@@ -38,20 +41,32 @@ export default function ProviderClientsScreen() {
   }
 
   return (
-    <Screen layout="tab" title="Clients" subtitle="All registered clients">
-      {clients.map((client) => (
-        <Card
-          key={client.id}
-          title={client.name}
-          onPress={() => router.push(`/(provider)/clients/${client.id}`)}
-        >
-          <Text style={styles.meta}>
-            Plan: {client.planStatus}
-            {client.unreadCount > 0 ? ` · ${client.unreadCount} unread` : ''}
-          </Text>
-          {client.hasRedFlag ? <Text style={styles.flag}>Red flag on intake</Text> : null}
+    <Screen layout="tab" title="Clients" subtitle="Directory · open Queue for work items">
+      {clients.length === 0 ? (
+        <Card>
+          <Text style={styles.meta}>No clients yet.</Text>
         </Card>
-      ))}
+      ) : (
+        clients.map((client) => (
+          <Card
+            key={client.id}
+            title={client.name}
+            onPress={() => router.push(`/(provider)/clients/${client.id}`)}
+          >
+            <Text style={styles.meta}>
+              Plan: {client.planStatus}
+              {client.unreadCount > 0 ? ` · ${client.unreadCount} unread` : ''}
+            </Text>
+            {client.hasRedFlag ? <Text style={styles.flag}>Red flag on intake</Text> : null}
+            <Text
+              style={styles.webLink}
+              onPress={() => void Linking.openURL(chartUrl(client.id, { tab: 'plan' }))}
+            >
+              Open Chart on web →
+            </Text>
+          </Card>
+        ))
+      )}
     </Screen>
   );
 }

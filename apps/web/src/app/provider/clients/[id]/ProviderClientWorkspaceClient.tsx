@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 
 import { CounselorReadOutEditor } from '@/components/CounselorReadOutEditor';
 import { PainSparkline } from '@/components/PainSparkline';
+import { IntakeContextRail } from '@/components/provider/IntakeContextRail';
 import { IntakeDataBar } from '@/components/provider/IntakeDataBar';
 import { ProgramPatternsPanel } from '@/components/provider/ProgramPatternsPanel';
 import { WeekActivityPanel } from '@/components/provider/WeekActivityPanel';
@@ -73,6 +74,8 @@ type IntakeSummary = {
   painSource: string;
   painDescription: string;
   recoveryGoal: string;
+  biggestChange?: string;
+  onsetType?: string;
   hasRedFlags: boolean;
   isSafe: boolean;
   completedAt: string | null;
@@ -83,6 +86,7 @@ type CounselorNote = {
   body: string;
   createdAt: string;
   resolvedAt: string | null;
+  resolutionNote?: string | null;
 };
 
 type MessagePreview = {
@@ -119,15 +123,22 @@ type Props = {
   intake?: IntakeSummary | null;
   planStatus?: string | null;
   intakeDataBar?: IntakeDataBarData | null;
-  initialTab?: 'overview' | 'plan' | 'readouts' | 'messages';
+  initialTab?: 'activity' | 'plan' | 'messages' | 'notes' | 'overview' | 'readouts';
   initialWeek?: number;
 };
 
-const TABS = [
-  { id: 'overview' as const, label: 'Overview' },
-  { id: 'plan' as const, label: 'Plan' },
-  { id: 'readouts' as const, label: 'Read-outs' },
-  { id: 'messages' as const, label: 'Messages' },
+type ChartTab = 'activity' | 'plan' | 'messages' | 'notes';
+
+function normalizeTab(tab: Props['initialTab']): ChartTab {
+  if (tab === 'plan' || tab === 'messages' || tab === 'notes') return tab;
+  return 'activity';
+}
+
+const TABS: { id: ChartTab; label: string }[] = [
+  { id: 'plan', label: 'Plan' },
+  { id: 'activity', label: 'Activity' },
+  { id: 'messages', label: 'Messages' },
+  { id: 'notes', label: 'Notes' },
 ];
 
 export function ProviderClientWorkspaceClient({
@@ -143,10 +154,10 @@ export function ProviderClientWorkspaceClient({
   intake = null,
   planStatus = null,
   intakeDataBar = null,
-  initialTab = 'overview',
+  initialTab = 'plan',
   initialWeek = 1,
 }: Props) {
-  const [tab, setTab] = useState(initialTab);
+  const [tab, setTab] = useState<ChartTab>(() => normalizeTab(initialTab));
   const [activeWeek, setActiveWeek] = useState<number>(initialWeek);
   const [weekContents, setWeekContents] = useState<Record<number, WeekPlan>>(initialWeekContents);
   const [crisisAcknowledged, setCrisisAcknowledged] = useState(false);
@@ -165,6 +176,9 @@ export function ProviderClientWorkspaceClient({
   const [approveError, setApproveError] = useState('');
   const [notes, setNotes] = useState<CounselorNote[]>([]);
   const [resolvingNoteId, setResolvingNoteId] = useState<string | null>(null);
+  const [resolutionDrafts, setResolutionDrafts] = useState<Record<string, string>>({});
+  const [resolveErrors, setResolveErrors] = useState<Record<string, string>>({});
+  const [expandedResolvedId, setExpandedResolvedId] = useState<string | null>(null);
   const [recentMessages, setRecentMessages] = useState<MessagePreview[]>([]);
   const [scheduleRequired, setScheduleRequired] = useState(false);
   const [scheduleCompletedAt, setScheduleCompletedAt] = useState<string | null>(null);
@@ -176,6 +190,16 @@ export function ProviderClientWorkspaceClient({
   const approvedCount = Object.values(weekStatuses).filter((s) => s === 'approved').length;
   const nextWeekNumber = approvedCount + 1;
   const clientShares = overview.artifacts.filter((a) => a.kind === 'counselor-share');
+
+  const selectChartTab = (next: ChartTab) => {
+    setTab(next);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', next);
+      if (next !== 'plan') url.searchParams.delete('week');
+      window.history.replaceState(null, '', url.toString());
+    }
+  };
 
   const weekDisplayStatus = (weekNum: number): WeekDisplayStatus =>
     weekStatuses[weekNum] ?? 'not_started';
@@ -228,24 +252,78 @@ export function ProviderClientWorkspaceClient({
     });
   }, [clientId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash;
+    if (hash !== '#admin-notes' && hash !== '#addressed-notes') return;
+    setTab('notes');
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', 'notes');
+    window.history.replaceState(null, '', url.toString());
+    window.requestAnimationFrame(() => {
+      document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [notes.length]);
+
   const onResolveNote = async (noteId: string) => {
+    const resolutionNote = (resolutionDrafts[noteId] ?? '').trim();
+    if (resolutionNote.length < 3) {
+      setResolveErrors((prev) => ({
+        ...prev,
+        [noteId]: 'Add a short response (at least a few words) before marking addressed.',
+      }));
+      return;
+    }
     setResolvingNoteId(noteId);
+    setResolveErrors((prev) => {
+      const next = { ...prev };
+      delete next[noteId];
+      return next;
+    });
     try {
       const res = await fetch(`/api/provider/clients/${clientId}/notes/${noteId}/resolve`, {
         method: 'POST',
         credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resolutionNote }),
       });
-      if (res.ok) {
-        setNotes((prev) =>
-          prev.map((n) => (n.id === noteId ? { ...n, resolvedAt: new Date().toISOString() } : n)),
-        );
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        note?: CounselorNote;
+        detail?: string;
+        reason?: string;
+      };
+      if (!res.ok) {
+        setResolveErrors((prev) => ({
+          ...prev,
+          [noteId]: data.detail ?? 'Could not mark addressed. Try again.',
+        }));
+        return;
       }
+      setNotes((prev) =>
+        prev.map((n) =>
+          n.id === noteId
+            ? {
+                ...n,
+                resolvedAt: data.note?.resolvedAt ?? new Date().toISOString(),
+                resolutionNote: data.note?.resolutionNote ?? resolutionNote,
+              }
+            : n,
+        ),
+      );
+      setResolutionDrafts((prev) => {
+        const next = { ...prev };
+        delete next[noteId];
+        return next;
+      });
+      setExpandedResolvedId(noteId);
     } finally {
       setResolvingNoteId(null);
     }
   };
 
   const unresolvedNotes = notes.filter((n) => !n.resolvedAt);
+  const resolvedNotes = notes.filter((n) => n.resolvedAt);
 
   const onToggleSchedule = async () => {
     setTogglingSchedule(true);
@@ -368,12 +446,18 @@ export function ProviderClientWorkspaceClient({
       clearTimeout(timer);
       const data = await res.json();
       if (!res.ok || !data.ok) {
+        if (data.reason === 'formulation_not_approved' || data.reason === 'formulation_missing') {
+          window.location.assign(`/provider/formulations/${clientId}`);
+          return;
+        }
         const reason =
           data.reason === 'plan_exists'
             ? 'Week 1 is already generated — reload to see it.'
             : data.reason === 'generation_failed'
               ? 'Generation failed. Confirm the client completed intake, then retry.'
-              : data.reason ?? 'Could not generate Week 1.';
+              : data.reason === 'unauthorized'
+                ? 'Session expired — sign in with email, then retry.'
+                : data.reason ?? 'Could not generate Week 1.';
         setApproveError(reason);
         return;
       }
@@ -429,18 +513,36 @@ export function ProviderClientWorkspaceClient({
 
   return (
     <>
+      <p style={{ margin: '0 0 8px' }}>
+        <Link href="/provider/clients" style={{ fontSize: 14, fontWeight: 600 }}>
+          ← Caseload
+        </Link>
+      </p>
       <h1 className="provider-page-title" style={{ marginTop: 8 }}>
         {clientLabel}
       </h1>
       {summary ? (
-        <p className="provider-page-subtitle" style={{ marginBottom: 20 }}>
+        <p className="provider-page-subtitle" style={{ marginBottom: 16 }}>
           {summary}
         </p>
       ) : (
-        <p className="provider-page-subtitle">Client workspace</p>
+        <p className="provider-page-subtitle" style={{ marginBottom: 16 }}>
+          Client chart
+        </p>
       )}
 
-      <div className="provider-tabs" role="tablist" aria-label="Client sections">
+      <IntakeContextRail
+        painSource={intake?.painSource}
+        painDescription={intake?.painDescription}
+        recoveryGoal={intake?.recoveryGoal}
+        biggestChange={intake?.biggestChange}
+        onsetType={intake?.onsetType}
+        hasRedFlags={intake?.hasRedFlags}
+        isSafe={intake?.isSafe}
+        completedAt={intake?.completedAt}
+      />
+
+      <div className="provider-tabs" role="tablist" aria-label="Client chart modes">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -448,71 +550,196 @@ export function ProviderClientWorkspaceClient({
             role="tab"
             className="provider-tab"
             aria-selected={tab === t.id}
-            onClick={() => setTab(t.id)}
+            onClick={() => selectChartTab(t.id)}
           >
             {t.label}
           </button>
         ))}
       </div>
 
-      <div className="provider-tab-panel" data-active={tab === 'overview'} role="tabpanel">
-        {unresolvedNotes.length > 0 ? (
-          <section className="provider-panel provider-panel--attention">
-            <h2>Admin notes ({unresolvedNotes.length})</h2>
-            <div style={{ display: 'grid', gap: 8 }}>
+      <div className="provider-tab-panel" data-active={tab === 'notes'} role="tabpanel">
+        <section id="admin-notes" className="provider-panel">
+          <h2>Open admin notes</h2>
+          {unresolvedNotes.length === 0 ? (
+            <p style={{ margin: 0, color: 'var(--muted)', fontSize: 14 }}>No open admin notes.</p>
+          ) : (
+            <div style={{ display: 'grid', gap: 12 }}>
               {unresolvedNotes.map((note) => (
-                <div key={note.id} className="provider-queue-item">
-                  <div>
-                    <div style={{ fontSize: '0.875rem' }}>{note.body}</div>
-                    <div style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: 4 }}>
-                      Flagged {new Date(note.createdAt).toLocaleDateString()}
-                    </div>
+                <div
+                  key={note.id}
+                  style={{
+                    padding: 14,
+                    borderRadius: 12,
+                    border: '1px solid var(--border)',
+                    background: 'var(--surface-2)',
+                  }}
+                >
+                  <div style={{ fontSize: '0.9375rem', lineHeight: 1.5 }}>{note.body}</div>
+                  <div style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: 6 }}>
+                    Flagged {new Date(note.createdAt).toLocaleDateString()}
                   </div>
+                  <label
+                    htmlFor={`resolve-${note.id}`}
+                    style={{ display: 'block', marginTop: 12, fontSize: 13, fontWeight: 600 }}
+                  >
+                    Your response <span style={{ color: 'var(--danger)' }}>*</span>
+                  </label>
+                  <textarea
+                    id={`resolve-${note.id}`}
+                    value={resolutionDrafts[note.id] ?? ''}
+                    onChange={(e) =>
+                      setResolutionDrafts((prev) => ({ ...prev, [note.id]: e.target.value }))
+                    }
+                    rows={3}
+                    placeholder="Describe what you did or how you addressed this…"
+                    style={{
+                      width: '100%',
+                      marginTop: 6,
+                      padding: '10px 12px',
+                      borderRadius: 10,
+                      border: '1px solid var(--border)',
+                      font: 'inherit',
+                      fontSize: 14,
+                      boxSizing: 'border-box',
+                      background: 'var(--surface)',
+                      color: 'var(--foreground)',
+                    }}
+                  />
+                  {resolveErrors[note.id] ? (
+                    <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--danger)' }}>
+                      {resolveErrors[note.id]}
+                    </p>
+                  ) : null}
                   <button
                     type="button"
                     disabled={resolvingNoteId === note.id}
                     onClick={() => void onResolveNote(note.id)}
+                    style={{ marginTop: 10 }}
                   >
-                    {resolvingNoteId === note.id ? 'Marking…' : 'Mark addressed'}
+                    {resolvingNoteId === note.id ? 'Saving…' : 'Mark addressed'}
                   </button>
                 </div>
               ))}
             </div>
-          </section>
-        ) : null}
+          )}
+        </section>
 
-        {intake ? (
-          <section className="provider-panel">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-              <h2 style={{ margin: 0 }}>Intake</h2>
-              {intake.hasRedFlags || !intake.isSafe ? (
-                <span className="provider-tag provider-tag--danger">Red flags</span>
-              ) : null}
+        <section className="provider-panel" id="addressed-notes">
+          <h2>Addressed ({resolvedNotes.length})</h2>
+          {resolvedNotes.length === 0 ? (
+            <p style={{ margin: 0, color: 'var(--muted)', fontSize: 14 }}>
+              Addressed notes will appear here with your recorded response.
+            </p>
+          ) : (
+            <div style={{ display: 'grid', gap: 8 }}>
+              {resolvedNotes.map((note) => {
+                const open = expandedResolvedId === note.id;
+                return (
+                  <div
+                    key={note.id}
+                    style={{
+                      border: '1px solid var(--border-light)',
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      background: 'var(--surface)',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setExpandedResolvedId(open ? null : note.id)}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        background: 'transparent',
+                        color: 'var(--foreground)',
+                        border: 'none',
+                        padding: '12px 14px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                        alignItems: 'flex-start',
+                      }}
+                    >
+                      <span>
+                        <span className="provider-tag provider-tag--ok" style={{ marginRight: 8 }}>
+                          Addressed
+                        </span>
+                        <span style={{ fontSize: 14 }}>
+                          {note.body.length > 90 ? `${note.body.slice(0, 87)}…` : note.body}
+                        </span>
+                        <span
+                          style={{
+                            display: 'block',
+                            fontSize: 12,
+                            color: 'var(--muted)',
+                            marginTop: 6,
+                          }}
+                        >
+                          {note.resolvedAt
+                            ? `Completed ${new Date(note.resolvedAt).toLocaleString()}`
+                            : 'Completed'}
+                        </span>
+                      </span>
+                      <span style={{ fontSize: 12, color: 'var(--muted)', flexShrink: 0 }}>
+                        {open ? 'Hide' : 'View'}
+                      </span>
+                    </button>
+                    {open ? (
+                      <div
+                        style={{
+                          padding: '0 14px 14px',
+                          borderTop: '1px solid var(--border-light)',
+                          display: 'grid',
+                          gap: 10,
+                        }}
+                      >
+                        <div>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              fontWeight: 700,
+                              color: 'var(--muted)',
+                              marginBottom: 4,
+                            }}
+                          >
+                            Admin note
+                          </div>
+                          <div style={{ fontSize: 14, lineHeight: 1.5 }}>{note.body}</div>
+                        </div>
+                        <div>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              fontWeight: 700,
+                              color: 'var(--muted)',
+                              marginBottom: 4,
+                            }}
+                          >
+                            Your response
+                          </div>
+                          <div style={{ fontSize: 14, lineHeight: 1.5 }}>
+                            {note.resolutionNote?.trim() || (
+                              <em style={{ color: 'var(--muted)' }}>No response text recorded.</em>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
-            <ul style={{ margin: '12px 0 0', paddingLeft: 18, lineHeight: 1.7 }}>
-              <li>
-                <strong>Pain source:</strong> {intake.painSource}
-              </li>
-              <li>
-                <strong>Description:</strong> {intake.painDescription}
-              </li>
-              <li>
-                <strong>Recovery goal:</strong> {intake.recoveryGoal}
-              </li>
-              {intake.completedAt ? (
-                <li>
-                  <strong>Submitted:</strong> {new Date(intake.completedAt).toLocaleDateString()}
-                </li>
-              ) : null}
-            </ul>
-          </section>
-        ) : null}
+          )}
+        </section>
+      </div>
 
+      <div className="provider-tab-panel" data-active={tab === 'activity'} role="tabpanel">
         <section className="provider-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ margin: 0 }}>Plan status</h2>
-            <button type="button" onClick={() => setTab('plan')} style={{ fontSize: 13 }}>
-              Open Plan tab →
+            <button type="button" onClick={() => selectChartTab('plan')} style={{ fontSize: 13 }}>
+              Open Plan →
             </button>
           </div>
           <p style={{ marginTop: 12, marginBottom: 0, fontSize: 14 }}>
@@ -526,7 +753,7 @@ export function ProviderClientWorkspaceClient({
           <section className="provider-panel">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ margin: 0 }}>Recent messages</h2>
-              <button type="button" onClick={() => setTab('messages')} style={{ fontSize: 13 }}>
+              <button type="button" onClick={() => selectChartTab('messages')} style={{ fontSize: 13 }}>
                 Open thread →
               </button>
             </div>
@@ -946,14 +1173,19 @@ export function ProviderClientWorkspaceClient({
 
           // Week 1 not generated yet.
           if (activeWeek === 1 && status === 'not_started') {
+            const canGenerate = Boolean(intake?.completedAt);
             return (
               <section className="provider-panel">
                 <p style={{ margin: '0 0 10px', fontSize: 14 }}>
-                  No Week 1 draft yet for this client. Generate it from their intake to start the program.
+                  {canGenerate
+                    ? 'No Week 1 draft yet for this client. Generate it from their intake to start the program.'
+                    : 'This client has not finished intake yet. Week 1 can be generated after they submit.'}
                 </p>
-                <button type="button" onClick={() => void onGenerateWeek1()} disabled={generatingWeek1}>
-                  {generatingWeek1 ? 'Generating Week 1 draft…' : 'Generate Week 1 draft'}
-                </button>
+                {canGenerate ? (
+                  <button type="button" onClick={() => void onGenerateWeek1()} disabled={generatingWeek1}>
+                    {generatingWeek1 ? 'Generating Week 1 draft…' : 'Generate Week 1 draft'}
+                  </button>
+                ) : null}
                 {approveError ? (
                   <p style={{ marginTop: 8, fontSize: 13, color: 'var(--danger)' }}>{approveError}</p>
                 ) : null}
@@ -1028,7 +1260,7 @@ export function ProviderClientWorkspaceClient({
         })()}
       </div>
 
-      <div className="provider-tab-panel" data-active={tab === 'readouts'} role="tabpanel">
+      <div className="provider-tab-panel" data-active={tab === 'activity'} role="tabpanel">
         <section className="provider-panel">
           <h2>Daily read-outs</h2>
           <CounselorReadOutEditor

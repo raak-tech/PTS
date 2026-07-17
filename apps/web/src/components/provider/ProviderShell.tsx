@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import '@/app/provider/provider-console.css';
 
 const NAV = [
-  { href: '/provider/clients', label: 'Clients', match: (p: string) => p.startsWith('/provider/clients') || p === '/provider' },
+  { href: '/provider/clients', label: 'Caseload', match: (p: string) => p.startsWith('/provider/clients') || p === '/provider' },
   { href: '/provider/profile', label: 'Profile', match: (p: string) => p.startsWith('/provider/profile') },
 ] as const;
 
@@ -49,9 +49,11 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
             </Link>
           );
         })}
-        <Link href="/logout" className="provider-nav-link" style={{ marginTop: 'auto', opacity: 0.85 }}>
-          Sign out
-        </Link>
+        <form action="/logout" method="post" style={{ marginTop: 'auto' }}>
+          <button type="submit" className="provider-nav-link" style={{ width: '100%', opacity: 0.85, cursor: 'pointer', border: 'none', background: 'transparent', textAlign: 'left', font: 'inherit' }}>
+            Sign out
+          </button>
+        </form>
       </aside>
       <div className="provider-main">{children}</div>
     </div>

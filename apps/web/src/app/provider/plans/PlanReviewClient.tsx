@@ -127,8 +127,8 @@ export function PlanReviewClient({
         {/* Header */}
         <div style={{ padding: '18px 20px', background: 'var(--surface-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <p style={{ margin: 0, fontWeight: 700, color: '#111' }}>{clientEmail}</p>
-            <p style={{ margin: '2px 0 0', fontSize: 13, color: '#666' }}>
+            <p style={{ margin: 0, fontWeight: 700, color: 'var(--foreground)' }}>{clientEmail}</p>
+            <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--muted)' }}>
               {pendingWeeksLabel ?? `Week 1 draft`} · Generated {createdAt} · {approvedCount}/{PROGRAM_WEEKS} weeks approved
             </p>
           </div>
@@ -153,11 +153,11 @@ export function PlanReviewClient({
         )}
 
         {expanded && (
-          <div style={{ padding: '20px 24px' }}>
+          <div style={{ padding: '20px 24px', background: '#fffcf7', color: '#1a1a1a' }}>
 
             {/* Client context */}
             {intake && (
-              <div style={{ background: '#fff8e1', border: '1px solid #ffe082', borderRadius: 10, padding: '12px 16px', marginBottom: 20 }}>
+              <div style={{ background: '#fff8e1', border: '1px solid #ffe082', borderRadius: 10, padding: '12px 16px', marginBottom: 20, color: '#1a1a1a' }}>
                 <p style={{ margin: '0 0 6px', fontWeight: 600, fontSize: 13 }}>Client context</p>
                 <p style={{ margin: '0 0 4px', fontSize: 13 }}><strong>Cause:</strong> {intake.painSource}</p>
                 <p style={{ margin: '0 0 4px', fontSize: 13 }}><strong>Situation:</strong> {intake.painDescription}</p>
@@ -165,27 +165,63 @@ export function PlanReviewClient({
               </div>
             )}
 
+            {/* Pain-script client intro (cohort B) */}
+            {plan.formulationSummary ? (
+              <div style={{ marginBottom: 20, padding: '14px 16px', background: '#e8f5e9', borderRadius: 10, border: '1px solid #c8e6c9', color: '#1a1a1a' }}>
+                <p style={{ margin: '0 0 6px', fontWeight: 600, fontSize: 13 }}>What we&apos;re working on together (client-facing)</p>
+                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: '#333' }}>{plan.formulationSummary}</p>
+              </div>
+            ) : null}
+
             {/* LLM counselor summary */}
             <div style={{ marginBottom: 20 }}>
-              <p style={{ margin: '0 0 6px', fontWeight: 600 }}>Counselor summary</p>
+              <p style={{ margin: '0 0 6px', fontWeight: 600, color: '#1a1a1a' }}>Counselor summary</p>
               <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: '#333' }}>{plan.clientSummary}</p>
             </div>
 
             {/* Key themes + watch points */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-              <div style={{ background: '#f5f5f5', borderRadius: 10, padding: '12px 16px' }}>
-                <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 13 }}>Key themes</p>
-                <ul style={{ margin: 0, paddingLeft: 16 }}>
+              <div style={{ background: '#f5f5f5', borderRadius: 10, padding: '12px 16px', color: '#1a1a1a' }}>
+                <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 13, color: '#1a1a1a' }}>Key themes</p>
+                <ul style={{ margin: 0, paddingLeft: 16, color: '#333' }}>
                   {plan.keyThemes.map(t => <li key={t} style={{ fontSize: 13, marginBottom: 4 }}>{t}</li>)}
                 </ul>
               </div>
-              <div style={{ background: '#fff3e0', borderRadius: 10, padding: '12px 16px' }}>
-                <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 13 }}>Watch points</p>
-                <ul style={{ margin: 0, paddingLeft: 16 }}>
+              <div style={{ background: '#fff3e0', borderRadius: 10, padding: '12px 16px', color: '#1a1a1a' }}>
+                <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 13, color: '#1a1a1a' }}>Watch points</p>
+                <ul style={{ margin: 0, paddingLeft: 16, color: '#333' }}>
                   {plan.watchPoints.map(w => <li key={w} style={{ fontSize: 13, marginBottom: 4 }}>{w}</li>)}
                 </ul>
               </div>
             </div>
+
+            {/* Protected formulation — counselor only */}
+            {plan.protectedFormulation && (
+              <div style={{ marginBottom: 20, padding: '14px 16px', background: '#fce4ec', border: '2px solid #f48fb1', borderRadius: 10 }}>
+                <p style={{ margin: '0 0 4px', fontWeight: 700, fontSize: 13, color: '#880e4f' }}>
+                  Protected formulation — confidential IP
+                </p>
+                <p style={{ margin: '0 0 12px', fontSize: 12, color: '#ad1457', lineHeight: 1.5 }}>
+                  {plan.protectedFormulation.confidentiality}
+                </p>
+                <p style={{ margin: '0 0 8px', fontSize: 13, lineHeight: 1.6 }}>
+                  <strong>Maintenance hypothesis:</strong> {plan.protectedFormulation.scriptMaintenanceHypothesis}
+                </p>
+                <p style={{ margin: '0 0 8px', fontSize: 13, lineHeight: 1.6 }}>
+                  <strong>Week 1 leverage:</strong> {plan.protectedFormulation.week1TherapeuticLeverage}
+                </p>
+                <p style={{ margin: '0 0 6px', fontWeight: 600, fontSize: 13 }}>BASIC I.D. snapshot</p>
+                <ul style={{ margin: 0, paddingLeft: 16, fontSize: 13, lineHeight: 1.5 }}>
+                  {Object.entries(plan.protectedFormulation.basicIdSnapshot)
+                    .filter(([, v]) => v)
+                    .map(([key, value]) => (
+                      <li key={key} style={{ marginBottom: 4 }}>
+                        <strong>{key}:</strong> {value}
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
 
             {/* Client overview */}
             <div style={{ marginBottom: 20 }}>
@@ -194,13 +230,13 @@ export function PlanReviewClient({
             </div>
 
             {/* Holistic visibility toggles */}
-            <div style={{ marginBottom: 20, padding: '14px 16px', background: '#f8f9fa', borderRadius: 10, border: '1px solid #e8e8e8' }}>
-              <p style={{ margin: '0 0 10px', fontWeight: 600, fontSize: 14 }}>Holistic blocks</p>
+            <div style={{ marginBottom: 20, padding: '14px 16px', background: '#f8f9fa', borderRadius: 10, border: '1px solid #e8e8e8', color: '#1a1a1a' }}>
+              <p style={{ margin: '0 0 10px', fontWeight: 600, fontSize: 14, color: '#1a1a1a' }}>Holistic blocks</p>
               <p style={{ margin: '0 0 12px', fontSize: 13, color: '#555' }}>Uncheck to remove a block from all weeks before the client sees them.</p>
               {(['ayurveda', 'yoga', 'music'] as const).map(key => (
-                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 14, cursor: 'pointer' }}>
+                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 14, cursor: 'pointer', color: '#1a1a1a' }}>
                   <input type="checkbox" checked={holisticVisibility[key]} onChange={() => toggleHolistic(key)} />
-                  {key === 'ayurveda' ? 'Include Ayurveda-informed wellness' : key === 'yoga' ? 'Include yoga principle trial' : 'Include music playlists'}
+                  {key === 'ayurveda' ? 'Include Ayurveda diet & rhythm' : key === 'yoga' ? 'Include breath, meditation & reflection' : 'Include music moment'}
                 </label>
               ))}
             </div>

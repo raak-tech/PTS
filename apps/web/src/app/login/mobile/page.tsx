@@ -27,6 +27,10 @@ function errorCopy(error?: string) {
   }
 }
 
+function prefersEmailLogin(next: string) {
+  return next.startsWith('/provider') || next.startsWith('/admin');
+}
+
 export default async function MobileLoginPage({
   searchParams,
 }: {
@@ -37,6 +41,7 @@ export default async function MobileLoginPage({
   const phone = params?.phone ?? '';
   const next = params?.next ?? '/intake';
   const sent = params?.sent === '1';
+  const emailPreferred = prefersEmailLogin(next);
 
   return (
     <div style={{ minHeight: '100vh', background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
@@ -47,6 +52,16 @@ export default async function MobileLoginPage({
             Use the mobile number your administrator registered. We will send a one-time code.
           </p>
         </div>
+
+        {emailPreferred ? (
+          <p role="status" style={{ background: '#fff8e1', border: '2px solid #ffe082', color: '#5d4037', padding: '12px 16px', borderRadius: 10, marginBottom: 20, fontSize: 14, lineHeight: 1.5 }}>
+            Counselor or admin?{' '}
+            <Link href={`/login?next=${encodeURIComponent(next)}`} style={{ color: '#0a4f8a', fontWeight: 700 }}>
+              Sign in with email
+            </Link>{' '}
+            instead of phone OTP.
+          </p>
+        ) : null}
 
         {sent ? (
           <p role="status" style={{ background: '#e8f5e9', border: '2px solid #2e7d32', color: '#1b5e20', padding: '10px 16px', borderRadius: 10, marginBottom: 20, fontSize: 14 }}>
@@ -60,74 +75,82 @@ export default async function MobileLoginPage({
           </p>
         ) : null}
 
-        <form action="/api/auth/otp/send-web" method="post" style={{ display: 'grid', gap: 16, background: 'white', padding: '28px 24px', borderRadius: 16, border: '2px solid #ddd', marginBottom: 16 }}>
-          <input type="hidden" name="next" value={next} />
-          <div style={{ display: 'grid', gap: 6 }}>
-            <label htmlFor="phone" style={{ fontWeight: 600, fontSize: 14, color: '#111' }}>Mobile number</label>
-            <input
-              id="phone"
-              name="phone"
-              type="tel"
-              inputMode="numeric"
-              autoComplete="tel"
-              required
-              defaultValue={phone}
-              placeholder="10-digit number"
-              style={{
-                width: '100%', padding: '12px 14px', borderRadius: 10, border: '2px solid #333',
-                fontSize: 16, fontFamily: 'inherit', boxSizing: 'border-box',
-                color: '#111', backgroundColor: '#fff',
-              }}
-            />
-          </div>
-          <button type="submit" style={{ padding: '13px', borderRadius: 999, border: 'none', background: '#111', color: 'white', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
-            Send OTP
-          </button>
-        </form>
-
-        <form action="/api/auth/otp/verify-web" method="post" style={{ display: 'grid', gap: 16, background: 'white', padding: '28px 24px', borderRadius: 16, border: '2px solid #ddd' }}>
-          <input type="hidden" name="next" value={next} />
-          <div style={{ display: 'grid', gap: 6 }}>
-            <label htmlFor="verify-phone" style={{ fontWeight: 600, fontSize: 14, color: '#111' }}>Mobile number</label>
-            <input
-              id="verify-phone"
-              name="phone"
-              type="tel"
-              inputMode="numeric"
-              autoComplete="tel"
-              required
-              defaultValue={phone}
-              placeholder="10-digit number"
-              style={{
-                width: '100%', padding: '12px 14px', borderRadius: 10, border: '2px solid #333',
-                fontSize: 16, fontFamily: 'inherit', boxSizing: 'border-box',
-                color: '#111', backgroundColor: '#fff',
-              }}
-            />
-          </div>
-          <div style={{ display: 'grid', gap: 6 }}>
-            <label htmlFor="code" style={{ fontWeight: 600, fontSize: 14, color: '#111' }}>OTP code</label>
-            <input
-              id="code"
-              name="code"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              required
-              placeholder="6-digit code"
-              maxLength={8}
-              style={{
-                width: '100%', padding: '12px 14px', borderRadius: 10, border: '2px solid #333',
-                fontSize: 16, fontFamily: 'inherit', boxSizing: 'border-box',
-                color: '#111', backgroundColor: '#fff',
-                letterSpacing: '0.2em',
-              }}
-            />
-          </div>
-          <button type="submit" style={{ padding: '13px', borderRadius: 999, border: 'none', background: '#111', color: 'white', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
-            Verify & continue →
-          </button>
-        </form>
+        {!sent ? (
+          <form action="/api/auth/otp/send-web" method="post" style={{ display: 'grid', gap: 16, background: 'white', padding: '28px 24px', borderRadius: 16, border: '2px solid #ddd' }}>
+            <input type="hidden" name="next" value={next} />
+            <div style={{ display: 'grid', gap: 6 }}>
+              <label htmlFor="phone" style={{ fontWeight: 600, fontSize: 14, color: '#111' }}>Mobile number</label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel"
+                required
+                defaultValue={phone}
+                placeholder="10-digit number"
+                style={{
+                  width: '100%', padding: '12px 14px', borderRadius: 10, border: '2px solid #333',
+                  fontSize: 16, fontFamily: 'inherit', boxSizing: 'border-box',
+                  color: '#111', backgroundColor: '#fff',
+                }}
+              />
+            </div>
+            <button type="submit" style={{ padding: '13px', borderRadius: 999, border: 'none', background: '#111', color: 'white', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
+              Send OTP
+            </button>
+          </form>
+        ) : (
+          <form action="/api/auth/otp/verify-web" method="post" style={{ display: 'grid', gap: 16, background: 'white', padding: '28px 24px', borderRadius: 16, border: '2px solid #ddd' }}>
+            <input type="hidden" name="next" value={next} />
+            <div style={{ display: 'grid', gap: 6 }}>
+              <label htmlFor="verify-phone" style={{ fontWeight: 600, fontSize: 14, color: '#111' }}>Mobile number</label>
+              <input
+                id="verify-phone"
+                name="phone"
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel"
+                required
+                defaultValue={phone}
+                readOnly={Boolean(phone)}
+                placeholder="10-digit number"
+                style={{
+                  width: '100%', padding: '12px 14px', borderRadius: 10, border: '2px solid #333',
+                  fontSize: 16, fontFamily: 'inherit', boxSizing: 'border-box',
+                  color: '#111', backgroundColor: phone ? '#f5f5f5' : '#fff',
+                }}
+              />
+            </div>
+            <div style={{ display: 'grid', gap: 6 }}>
+              <label htmlFor="code" style={{ fontWeight: 600, fontSize: 14, color: '#111' }}>OTP code</label>
+              <input
+                id="code"
+                name="code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                required
+                placeholder="6-digit code"
+                maxLength={8}
+                style={{
+                  width: '100%', padding: '12px 14px', borderRadius: 10, border: '2px solid #333',
+                  fontSize: 16, fontFamily: 'inherit', boxSizing: 'border-box',
+                  color: '#111', backgroundColor: '#fff',
+                  letterSpacing: '0.2em',
+                }}
+              />
+            </div>
+            <button type="submit" style={{ padding: '13px', borderRadius: 999, border: 'none', background: '#111', color: 'white', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
+              Verify & continue →
+            </button>
+            <p style={{ margin: 0, textAlign: 'center', fontSize: 14 }}>
+              <Link href={`/login/mobile?next=${encodeURIComponent(next)}`} style={{ color: '#0a4f8a', fontWeight: 600 }}>
+                Change number / resend
+              </Link>
+            </p>
+          </form>
+        )}
 
         <p style={{ textAlign: 'center', marginTop: 20, fontSize: 14, color: t.textMuted }}>
           Admin or counselor? <Link href={`/login?next=${encodeURIComponent(next)}`} style={{ color: '#0066cc', fontWeight: 600, textDecoration: 'underline' }}>Sign in with email</Link>

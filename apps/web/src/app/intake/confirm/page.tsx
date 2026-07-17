@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { webTheme as t } from "@/lib/web-theme";
 import { fieldLabel } from "@/lib/intake-mappers";
 import type { ExtractionResult } from "@/lib/intake-extractor";
 import type { IntakeInsertShape } from "@/lib/intake-mappers";
+import { formatIntakeFieldValue, toClientSummary } from "@/lib/intake-quality";
+import { webTheme as t } from "@/lib/web-theme";
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -17,6 +18,8 @@ type ConfirmData = {
   missingRequired: string[];
   lowConfidenceRequired: string[];
   summary: string;
+  clientSummary?: string;
+  extractionUsable?: boolean;
   overallConfidence: number;
   rounds: number;
   segmentType: string | null;
@@ -51,18 +54,7 @@ function formatFieldValue(
     return value ? "Yes" : "No";
   }
 
-  // activitiesAffected might be a JSON array string
-  if (fieldName === "activitiesAffected") {
-    try {
-      const arr = JSON.parse(value);
-      if (Array.isArray(arr) && arr.length > 0) return arr.join(", ");
-      return String(value);
-    } catch {
-      return String(value);
-    }
-  }
-
-  return String(value);
+  return formatIntakeFieldValue(value, fieldName);
 }
 
 // ── Confidence badge ───────────────────────────────────────────
@@ -312,6 +304,64 @@ export default function IntakeConfirmPage() {
 
   if (!data) return null; // Will redirect via useEffect
 
+  const extractionUsable = data.extractionUsable !== false;
+  const displaySummary =
+    data.clientSummary?.trim() ||
+    toClientSummary(data.summary ?? "", data.segmentType);
+
+  if (!extractionUsable) {
+    return (
+      <div
+        style={{ minHeight: "100vh", background: t.page, color: t.text, paddingBottom: 80 }}
+      >
+        <div
+          style={{
+            maxWidth: 640,
+            margin: "0 auto",
+            padding: "clamp(24px, 6vw, 36px) max(16px, 5vw)",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "clamp(18px, 5vw, 24px)",
+              fontWeight: 700,
+              margin: "0 0 16px",
+              lineHeight: 1.3,
+              color: t.text,
+            }}
+          >
+            Please try again
+          </h2>
+          <p
+            style={{
+              fontSize: "clamp(15px, 2.5vw, 17px)",
+              color: t.textSecondary,
+              lineHeight: 1.6,
+              margin: "0 0 24px",
+            }}
+          >
+            {displaySummary}
+          </p>
+          <a
+            href="/intake"
+            style={{
+              display: "inline-block",
+              padding: "14px 36px",
+              borderRadius: 999,
+              background: t.text,
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: "clamp(14px, 2.5vw, 16px)",
+              textDecoration: "none",
+            }}
+          >
+            Rewrite my answer
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   // ── Build field rows ─────────────────────────────────────────
 
   const fieldRows = Object.entries(data.extracted).map(([key, field]) => {
@@ -419,7 +469,7 @@ export default function IntakeConfirmPage() {
         </h2>
 
         {/* Summary text */}
-        {data.summary && (
+        {displaySummary && (
           <p
             style={{
               fontSize: "clamp(15px, 2.5vw, 17px)",
@@ -433,7 +483,7 @@ export default function IntakeConfirmPage() {
               fontStyle: "italic",
             }}
           >
-            {data.summary}
+            {displaySummary}
           </p>
         )}
 

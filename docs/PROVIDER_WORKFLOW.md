@@ -1,10 +1,10 @@
 # Counselor Workflow — Pain to Strength
 
-**Version:** 1.3 (supersedes v1.2)  
-**Last updated:** 2026-07-04  
-**Status:** Agreed — see `DECISIONS.md` entries dated 2026-06-30 (SCOPE-G), 2026-07-02 (Week-1-first), and 2026-07-03 (counselor claim)
+**Version:** 1.4 (supersedes v1.3)  
+**Last updated:** 2026-07-15  
+**Status:** Agreed — see `DECISIONS.md` entries dated 2026-06-30 (SCOPE-G), 2026-07-02 (Week-1-first), 2026-07-03 (counselor claim), and **2026-07-15 (Caseload + Client Chart IA)**
 
-> **v1.3 change:** The client workspace **Plan tab** is now the primary authoring surface. It has a **sub-tab per week (Week 1–6)**. Each week sub-tab shows the inline editor for that week, a **Week activity panel** (client engagement for that week), and a **Cross-week patterns** panel (trends across all approved weeks). Editing and approval happen per week, inline, for **every** round of generation — the counselor is never forced to approve an unreviewed week. The plan review queue (`/provider/plans`) is now an entry point that links into the workspace Plan tab.
+> **v1.4 change:** Counselor web primary surfaces are **Caseload** (`/provider/clients`) and **Client Chart** (`/provider/clients/[id]`). The old plan review page is a redirect into Caseload (`?filter=plans`) or Chart (`?highlight=`). Chart always shows **Client story** (Layer 1) plus modes Plan / Activity / Messages / Notes. Week-1-first editing/approval on the Plan tab is unchanged. Details: `docs/plans/2026-07-15-counselor-chart-ia.md`, `docs/kb/COUNSELOR_WEB.md`.
 
 ---
 
@@ -22,12 +22,15 @@ The program is a 6-week arc, but content is released week by week. This is what 
 
 | Surface | Purpose |
 |---------|---------|
-| **Mobile app** (Expo) | Action queue — review pending plans, reply to messages, check daily engagement. Fast, in-between-sessions work. |
-| **Web workspace** (`/provider`) | Deep work — inline plan editing, audio read-out recording, AI week regeneration, full engagement data. |
+| **Mobile app** (Expo) | Bridge — Queue, messages, Week 1 approve, L1 snippets, read-out playback; deep-link to Chart. Not the workplace. |
+| **Web Caseload** (`/provider/clients`) | Only web home — urgency queue, Generate Week 1, formulation review entry, engagement chips. |
+| **Web Client Chart** (`/provider/clients/[id]`) | Deep work — Client story rail + Plan / Activity / Messages / Notes (inline plan edit, audio read-outs, week regen). |
 
 Counselors use both. Mobile for quick actions; web for clinical authoring.
 
 **Counselor–client assignment:** The first counselor to generate Week 1, edit a week, or approve a week **claims** the client (`client_counselor` table). Queues show unclaimed clients plus the counselor's own clients only. See `PROVIDER_ASSIGNMENT.md`.
+
+**Auth:** Counselor web uses **email/password**. Do not rely on phone OTP for `/provider`. Sign-out is POST-only (GET `/logout` must not clear the session — prefetch hazard).
 
 ---
 
@@ -39,14 +42,14 @@ Triggered when a client completes intake and the AI generates a **Week 1 draft**
 Push notification (mobile) or work queue item (web): *"New plan ready for review — [Client name]"*
 
 ### Step 2: Review client context
-Before reading the plan, the counselor reviews:
-- Intake summary (pain source, situation, goal)
-- AI-generated client summary (`clientSummary` field)
+Open **Client Chart** — the **Client story** rail is always visible. Before editing the plan, the counselor reviews:
+- Intake summary (pain source, situation, goal) on the rail
+- AI-generated client summary (`clientSummary` field) on Plan
 - Key themes and watch points
 - Red-flag status — if flagged, read the safety notes first
 
 ### Step 3: Edit Week 1 inline
-Open the client workspace → **Plan tab → Week 1 sub-tab**. Every field in Week 1 is editable inline:
+On Caseload, generate Week 1 if needed (Pain Script: approve formulation first). Then **Client Chart → Plan → Week 1**. Every field in Week 1 is editable inline:
 - Week theme and focus text
 - Each daily practice (title, description, duration)
 - Weekly reflection prompt

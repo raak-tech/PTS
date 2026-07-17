@@ -65,7 +65,19 @@ export default function MonthlyCheckInScreen() {
   };
 
   return (
-    <Screen title="Your monthly check-in" subtitle="How are you doing?">
+    <Screen
+      title="Your monthly check-in"
+      subtitle="How are you doing?"
+      scrollToEndOnKeyboard
+      footer={
+        <Button
+          label={loading ? 'Submitting…' : 'Submit monthly check-in'}
+          onPress={() => void onSubmit()}
+          loading={loading}
+          disabled={!intention.trim()}
+        />
+      }
+    >
       <Text style={styles.body}>
         Check in with your counselor about your progress and any adjustments needed to your maintenance plan.
       </Text>
@@ -105,13 +117,6 @@ export default function MonthlyCheckInScreen() {
       />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      <Button
-        label={loading ? 'Submitting…' : 'Submit monthly check-in'}
-        onPress={() => void onSubmit()}
-        loading={loading}
-        disabled={!intention.trim()}
-      />
     </Screen>
   );
 }

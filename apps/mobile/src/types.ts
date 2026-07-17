@@ -5,6 +5,7 @@ export type SessionUser = {
   phone: string;
   role: UserRole;
   displayName: string;
+  pilotCohort?: 'legacy' | 'pain_script';
   intakeComplete: boolean;
   planApproved: boolean;
   /** Calendar anchor (YYYY-MM-DD) — Week 1 release = Day 1. */

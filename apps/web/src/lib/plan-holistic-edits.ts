@@ -1,4 +1,4 @@
-import type { GeneratedPlan } from '@/lib/plan-generator';
+import type { GeneratedPlan } from '@/lib/holistic-plan-types';
 
 export type HolisticVisibility = {
   ayurveda: boolean;
@@ -21,6 +21,7 @@ export function applyHolisticVisibility(
     weeks: plan.weeks.map((week) => ({
       ...week,
       ayurvedaBlock: visibility.ayurveda ? week.ayurvedaBlock : undefined,
+      yogicPractice: visibility.yoga ? week.yogicPractice : undefined,
       yogaTrial: visibility.yoga ? week.yogaTrial : undefined,
       musicMoment: visibility.music ? week.musicMoment : undefined,
     })),

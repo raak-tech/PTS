@@ -23,7 +23,7 @@ export default function ClientLayout() {
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="intake" options={{ title: 'Assessment', headerShown: false }} />
+      <Stack.Screen name="intake" options={{ headerShown: false }} />
       <Stack.Screen name="intake-complete" options={{ title: 'Complete' }} />
       <Stack.Screen name="graduation" options={{ title: 'Graduation', headerShown: false }} />
       <Stack.Screen name="waiting-plan" options={{ title: 'Your plan' }} />
@@ -32,6 +32,8 @@ export default function ClientLayout() {
       <Stack.Screen name="program/monthly-check-in" options={{ title: 'Monthly check-in' }} />
       <Stack.Screen name="messages/[id]" options={{ title: 'Conversation' }} />
       <Stack.Screen name="profile/index" options={{ title: 'Profile' }} />
+      <Stack.Screen name="profile/about-you" options={{ title: 'About you' }} />
+      <Stack.Screen name="profile/counselor" options={{ title: 'Your counselor' }} />
       <Stack.Screen name="profile/safety" options={{ title: 'Safety' }} />
       <Stack.Screen name="profile/data" options={{ title: 'Your data' }} />
       <Stack.Screen name="profile/flare-up" options={{ title: 'Flare-up support' }} />

@@ -1,7 +1,7 @@
-import { API_URL } from '@/config';
+import { API_URL, IS_PAIN_SCRIPT_COHORT } from '@/config';
 import { intakeToApiPayload, type IntakeFormData } from '@/lib/intake';
+import type { OneBoxIntakeDraft } from '@/lib/intake-draft';
 import type { SessionUser } from '@/types';
-
 const REQUEST_TIMEOUT_MS = 12_000;
 
 type ApiError = { error: string };
@@ -27,18 +27,33 @@ export type MessageRow = {
 export type GeneratedPlan = {
   overview: string;
   clientSummary: string;
+  formulationSummary?: string;
   weeks: {
     week: number;
     theme: string;
     focus: string;
+    personalizationBasis?: string;
     dailyPractices: { title: string; description: string; duration: string }[];
     weeklyReflection: string;
     counselorNote: string;
-    ayurvedaBlock?: { practices: string[]; rhythmNote: string; disclaimer?: string };
+    ayurvedaBlock?: {
+      dietaryGuidance?: string;
+      foodsToFavour?: string[];
+      foodsToAvoid?: string[];
+      rhythmNote: string;
+      disclaimer?: string;
+      practices?: string[];
+    };
+    yogicPractice?: {
+      breathingTechnique: { title: string; description: string; duration: string };
+      meditation: { title: string; description: string; duration: string };
+      philosophicalFraming: string;
+      disclaimer: string;
+    };
     yogaTrial?: {
       principle: string;
       applicability: string;
-      microMovement: { title: string; description: string; duration: string };
+      microMovement?: { title: string; description: string; duration: string };
       disclaimer: string;
     };
     reinforcementTemplate?: { title: string; bodyText: string };
@@ -46,6 +61,9 @@ export type GeneratedPlan = {
     musicMoment?: {
       purpose: string;
       suggestion: string;
+      mood?: string;
+      searchTerms?: string[];
+      resolvedTracks?: { title: string; artist?: string; url: string }[];
       playlist?: {
         title: string;
         description: string;
@@ -216,11 +234,33 @@ export async function apiGetSession(token: string) {
   );
 }
 
+/** APK B: assign pain_script cohort on first login when build flag is set. */
+export async function apiAssignPilotCohort(token: string) {
+  return parseJson<{ ok: boolean; pilotCohort: 'legacy' | 'pain_script' }>(
+    await fetchWithTimeout(`${API_URL}/api/me/cohort`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({
+        pilotCohort: IS_PAIN_SCRIPT_COHORT ? 'pain_script' : 'legacy',
+      }),
+    }),
+  );
+}
+
 export async function apiLogout(token: string) {
   await fetchWithTimeout(`${API_URL}/api/auth/logout`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });
+}
+
+export async function apiDeleteAccount(token: string) {
+  return parseJson<{ ok: boolean }>(
+    await fetchWithTimeout(`${API_URL}/api/support/delete`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
 }
 
 export async function apiSubmitIntake(token: string, data: IntakeFormData) {
@@ -229,6 +269,35 @@ export async function apiSubmitIntake(token: string, data: IntakeFormData) {
       method: 'POST',
       headers: authHeaders(token),
       body: JSON.stringify(intakeToApiPayload(data)),
+    }),
+  );
+}
+
+export async function apiGetIntakeDraft(token: string) {
+  const res = await fetchWithTimeout(`${API_URL}/api/intake/draft`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (res.status === 404) {
+    return { draft: null as OneBoxIntakeDraft | null };
+  }
+  return parseJson<{ draft: OneBoxIntakeDraft }>(res);
+}
+
+export async function apiPutIntakeDraft(token: string, draft: OneBoxIntakeDraft) {
+  return parseJson<{ ok: boolean }>(
+    await fetchWithTimeout(`${API_URL}/api/intake/draft`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify({ draft }),
+    }),
+  );
+}
+
+export async function apiDeleteIntakeDraft(token: string) {
+  return parseJson<{ ok: boolean }>(
+    await fetchWithTimeout(`${API_URL}/api/intake/draft`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
     }),
   );
 }
@@ -314,10 +383,24 @@ export async function apiGetProviderQueue(token: string) {
 export async function apiGetContacts(token: string) {
   return parseJson<{
     ok: boolean;
-    counselor?: { id: string; name: string; unreadCount: number; calendlyUrl?: string | null } | null;
+    counselor?: CounselorPublicProfile | null;
     clients?: { id: string; name: string; planStatus: string; unreadCount: number }[];
   }>(await fetchWithTimeout(`${API_URL}/api/me/contacts`, { headers: { Authorization: `Bearer ${token}` } }));
 }
+
+export type CounselorPublicProfile = {
+  id: string;
+  name: string;
+  title?: string | null;
+  credentials?: string | null;
+  bio?: string | null;
+  yearsExperience?: string | null;
+  specialisations?: string[];
+  languages?: string[];
+  calendlyUrl?: string | null;
+  sessionJoinUrl?: string | null;
+  unreadCount: number;
+};
 
 export async function apiGetMessages(token: string, withUserId: string) {
   return parseJson<{ ok: boolean; messages: MessageRow[] }>(
@@ -473,6 +556,13 @@ export async function apiGetProviderClientMeta(token: string, clientId: string) 
     ok: boolean;
     planId: string | null;
     weekStatuses: Record<number, 'draft' | 'edited' | 'approved'>;
+    intake: {
+      painSource: string;
+      painDescription: string;
+      recoveryGoal: string;
+      hasRedFlags: boolean;
+      isSafe: boolean;
+    } | null;
     clientUpdates: { id: string; title: string; bodyText: string; createdAt: string }[];
   }>(
     await fetchWithTimeout(`${API_URL}/api/provider/clients/${clientId}/plan-meta`, {
@@ -597,6 +687,8 @@ export async function apiGetPendingIntakes(token: string) {
       userId: string;
       anonEmail: string;
       painSource: string;
+      painDescription?: string;
+      recoveryGoal?: string;
       submittedAt: string;
       hasRedFlags: boolean;
       isSafe: boolean;
@@ -858,6 +950,96 @@ export async function apiSubmitMonthlyCheckIn(
       method: 'POST',
       headers: authHeaders(token),
       body: JSON.stringify({ painLevel, sleepQuality, intention }),
+    }),
+  );
+}
+
+export type FlareSupportMessage = {
+  opening: string;
+  intervention: string;
+  readOut?: string;
+  safety: string;
+};
+
+export async function apiSubmitFlare(
+  token: string,
+  opts: { painLevel?: number; triggerText?: string },
+) {
+  return parseJson<{
+    ok: boolean;
+    flareId: string;
+    safetyConcern: boolean;
+    severity: string;
+    message: FlareSupportMessage;
+  }>(
+    await fetchWithTimeout(`${API_URL}/api/flares`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify(opts),
+    }),
+  );
+}
+
+export type ClientProfileField = {
+  key: string;
+  label: string;
+  value: string | null;
+  sensitive: boolean;
+  consentScope: 'medical' | null;
+  editable: boolean;
+  lockedReason?: string;
+};
+
+export type ClientProfileView = {
+  fields: ClientProfileField[];
+  completeness: number;
+  completenessLabel: string;
+  pendingFieldRequests: {
+    id: string;
+    fieldKey: string;
+    fieldLabel: string;
+    prompt: string;
+    status: string;
+    createdAt: string;
+  }[];
+  consentGrants: { scope: 'medical'; granted: boolean; grantedAt: string | null }[];
+  microPrompt: { fieldKey: string; label: string; prompt: string } | null;
+};
+
+export async function apiGetClientProfile(token: string) {
+  return parseJson<{ ok: boolean; profile: ClientProfileView }>(
+    await fetchWithTimeout(`${API_URL}/api/profile`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
+}
+
+export async function apiUpdateClientProfile(token: string, patch: Record<string, string | null>) {
+  return parseJson<{ ok: boolean; profile: ClientProfileView }>(
+    await fetchWithTimeout(`${API_URL}/api/profile`, {
+      method: 'PATCH',
+      headers: authHeaders(token),
+      body: JSON.stringify(patch),
+    }),
+  );
+}
+
+export async function apiSetProfileConsent(token: string, scope: 'medical', granted: boolean) {
+  return parseJson<{ ok: boolean; consentGrants: ClientProfileView['consentGrants'] }>(
+    await fetchWithTimeout(`${API_URL}/api/profile/consent`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ scope, granted }),
+    }),
+  );
+}
+
+export async function apiAnswerProfileFieldRequest(token: string, requestId: string, value: string) {
+  return parseJson<{ ok: boolean; profile: ClientProfileView }>(
+    await fetchWithTimeout(`${API_URL}/api/profile/field-requests`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ requestId, value }),
     }),
   );
 }

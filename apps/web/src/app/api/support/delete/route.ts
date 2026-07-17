@@ -1,29 +1,28 @@
-import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 import { getDb } from '../../../../db';
-import { passwordResetTokens, sessions, supportArtifacts, userConsents, users } from '../../../../db/schema';
-import { logError } from '../../../../lib/logger';
 import { clearSessionCookie } from '../../../../lib/cookies';
+import { deleteClientAccountData } from '../../../../lib/delete-client-account';
+import { logError } from '../../../../lib/logger';
 import { getUserFromRequest } from '../../../../lib/session';
 
 function unauthorized() {
   return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 }
 
+/** Hard-delete the signed-in client account + related data. */
 export async function POST(request: Request) {
   try {
     const user = await getUserFromRequest(request);
     if (!user) return unauthorized();
 
-    const db = getDb();
+    if (user.role !== 'client') {
+      return NextResponse.json({ error: 'clients_only' }, { status: 403 });
+    }
 
-    await db.transaction(async (tx) => {
-      await tx.delete(supportArtifacts).where(eq(supportArtifacts.userId, user.id));
-      await tx.delete(userConsents).where(eq(userConsents.userId, user.id));
-      await tx.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, user.id));
-      await tx.delete(sessions).where(eq(sessions.userId, user.id));
-      await tx.delete(users).where(eq(users.id, user.id));
+    await deleteClientAccountData(getDb(), {
+      id: user.id,
+      phone: user.phone ?? null,
     });
 
     const response = NextResponse.json({ ok: true });

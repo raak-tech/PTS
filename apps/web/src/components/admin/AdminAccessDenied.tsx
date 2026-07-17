@@ -12,9 +12,14 @@ export function AdminAccessDenied({ email }: { email: string }) {
         {' '}<code>ADMIN_EMAILS</code> environment variable on Vercel.
       </p>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <Link href="/logout" style={{ padding: '10px 18px', borderRadius: 999, background: '#111', color: 'white', fontWeight: 700, textDecoration: 'none', fontSize: 14 }}>
-          Sign out
-        </Link>
+        <form action="/logout" method="post">
+          <button
+            type="submit"
+            style={{ padding: '10px 18px', borderRadius: 999, background: '#111', color: 'white', fontWeight: 700, border: 'none', fontSize: 14, cursor: 'pointer' }}
+          >
+            Sign out
+          </button>
+        </form>
         <Link href="/" style={{ padding: '10px 18px', borderRadius: 999, border: '2px solid #ccc', color: '#111', fontWeight: 600, textDecoration: 'none', fontSize: 14 }}>
           Go home
         </Link>

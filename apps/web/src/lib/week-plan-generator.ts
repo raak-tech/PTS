@@ -1,11 +1,22 @@
 import { log, logError } from '@/lib/logger';
 import {
+  buildPainScriptWeekPlanPromptSection,
+  type ProtectedFormulation,
+} from '@/lib/confidential/pain-script-framework';
+import {
   parseOpenRouterUsage,
   recordLlmUsage,
   type LlmUsageContext,
 } from '@/lib/llm-usage';
-import type { WeekPlan } from '@/lib/plan-generator';
+import type { WeekPlan } from '@/lib/holistic-plan-types';
+import { holisticWeekJsonSchemaSnippet } from '@/lib/holistic-plan-types';
 import type { WeeklySummary } from '@/lib/weekly-summary';
+import { modelForOperation } from '@/lib/pain-script/models';
+import { normalizeWeekPlan } from '@/lib/pain-script/plan-post-process';
+import type { ProfileSnapshot } from '@/lib/pain-script/types';
+import type { PainScriptFormulation } from '@/lib/pain-script/types';
+import { buildPlanStage2Framing } from '@/lib/pain-script/prompts';
+import type { OnsetType } from '@/lib/pain-script/modalities';
 
 export type WeekPlanIntake = {
   painSource: string;
@@ -19,6 +30,10 @@ function buildWeekPrompt(
   weekNumber: number,
   summary: WeeklySummary,
   priorWeek?: WeekPlan,
+  protectedFormulation?: ProtectedFormulation | null,
+  formulation?: PainScriptFormulation | null,
+  profile?: ProfileSnapshot | null,
+  onsetType?: OnsetType,
 ): string {
   const insights = summary.scheduleInsights.slice(0, 6).join('\n- ') || 'No scheduling feedback yet.';
   const prior = priorWeek
@@ -87,36 +102,14 @@ ${shares}
 - Client scheduling notes:
 - ${insights}
 ${summary.latestWeeklyCheckIn ? `\nLATEST WEEKLY CHECK-IN (client words):\n${summary.latestWeeklyCheckIn}\n` : ''}${counselorComment}
+${formulation ? `\nAPPROVED FORMULATION PRIMARY TARGETS: ${formulation.primaryTargets.join(', ')}\n` : ''}
+${buildPlanStage2Framing(onsetType ?? null)}
 
-Generate JSON for week ${weekNumber} ONLY (no markdown). Match this structure exactly:
+${buildPainScriptWeekPlanPromptSection(protectedFormulation)}
+
+Generate JSON for week ${weekNumber} ONLY (no markdown). Match this structure:
 {
-  "week": ${weekNumber},
-  "theme": "short theme",
-  "focus": "1-2 sentences",
-  "dailyPractices": [
-    { "title": "...", "description": "...", "duration": "X min" }
-  ],
-  "weeklyReflection": "one question",
-  "counselorNote": "1-2 sentences for counselor",
-  "ayurvedaBlock": { "practices": ["..."], "rhythmNote": "...", "disclaimer": "..." },
-  "yogaTrial": {
-    "principle": "...",
-    "applicability": "...",
-    "microMovement": { "title": "...", "description": "...", "duration": "2-5 min" },
-    "disclaimer": "..."
-  },
-  "reinforcementTemplate": { "title": "...", "bodyText": "..." },
-  "reinforcementTemplates": [{ "title": "...", "bodyText": "..." }],
-  "musicMoment": {
-    "purpose": "grounding|activation|flare|reflection",
-    "suggestion": "...",
-    "playlist": {
-      "title": "...",
-      "description": "...",
-      "tracks": [{ "title": "...", "artist": "...", "note": "..." }],
-      "spotifySearchQuery": "..."
-    }
-  }
+  ${holisticWeekJsonSchemaSnippet(weekNumber)}
 }
 
 Adapt to engagement data (e.g. fewer evening blocks if client skipped them). Week ${weekNumber} should build on prior progress.
@@ -128,12 +121,16 @@ export async function generateWeekPlan(opts: {
   weekNumber: number;
   summary: WeeklySummary;
   priorWeek?: WeekPlan;
+  protectedFormulation?: ProtectedFormulation | null;
+  formulation?: PainScriptFormulation | null;
+  profile?: ProfileSnapshot | null;
+  onsetType?: OnsetType;
   context?: LlmUsageContext;
 }): Promise<WeekPlan> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error('OPENROUTER_API_KEY not configured');
 
-  const model = 'anthropic/claude-sonnet-4.6';
+  const model = modelForOperation('week_generation');
   log('week_plan_generation_start', { weekNumber: opts.weekNumber });
 
   const controller = new AbortController();
@@ -157,7 +154,7 @@ export async function generateWeekPlan(opts: {
       },
       body: JSON.stringify({
         model,
-        messages: [{ role: 'user', content: buildWeekPrompt(opts.intake, opts.weekNumber, opts.summary, opts.priorWeek) }],
+        messages: [{ role: 'user', content: buildWeekPrompt(opts.intake, opts.weekNumber, opts.summary, opts.priorWeek, opts.protectedFormulation, opts.formulation, opts.profile, opts.onsetType) }],
         temperature: 0.7,
         max_tokens: 4000,
         usage: { include: true },
@@ -207,6 +204,11 @@ export async function generateWeekPlan(opts: {
   try {
     const week = JSON.parse(cleaned) as WeekPlan;
     week.week = opts.weekNumber;
+    const normalized = await normalizeWeekPlan(week, {
+      profile: opts.profile ?? null,
+      primaryTargets: opts.formulation?.primaryTargets,
+      resolveMusic: true,
+    });
     log('week_plan_generation_complete', { weekNumber: opts.weekNumber, costUsd: usage?.cost });
     await recordLlmUsage({
       operation: 'week_generation',
@@ -217,7 +219,7 @@ export async function generateWeekPlan(opts: {
       latencyMs,
       requestId: data.id ?? null,
     });
-    return week;
+    return normalized;
   } catch {
     logError('week_plan_generation_parse_error', new Error('Invalid JSON'), { raw: cleaned.slice(0, 200) });
     await recordLlmUsage({

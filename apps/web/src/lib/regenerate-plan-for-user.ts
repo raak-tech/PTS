@@ -4,6 +4,12 @@ import { eq } from 'drizzle-orm';
 
 import { getDb } from '@/db';
 import { intakeResponses, plans } from '@/db/schema';
+import { loadPainScriptSignalsForUser } from '@/lib/confidential/load-pain-script-signals';
+import { getUserPilotCohort } from '@/lib/pain-script/cohort';
+import { usesPainScriptPath } from '@/lib/pain-script/flags';
+import { getApprovedFormulation } from '@/lib/pain-script/formulation-store';
+import { generatePlanFromFormulation } from '@/lib/pain-script/plan-from-formulation';
+import { loadProfileSnapshot } from '@/lib/pain-script/profile-snapshot';
 import { log, logError } from '@/lib/logger';
 import { generatePlan } from '@/lib/plan-generator';
 import { seedDraftPlanWeeks } from '@/lib/seed-plan-weeks';
@@ -21,15 +27,48 @@ export async function regeneratePlanDraftForUser(userId: string): Promise<string
     return null;
   }
 
+  const cohort = await getUserPilotCohort(userId);
+
   try {
-    const generated = await generatePlan(
-      {
-        ...saved,
-        hasDependents:
-          saved.hasDependents == null ? null : saved.hasDependents ? 'yes' : 'no',
-      },
-      { userId },
-    );
+    let generated;
+    let formulationId: string | null = null;
+    let formulationVersion: number | null = null;
+
+    if (usesPainScriptPath(cohort)) {
+      const approved = await getApprovedFormulation(userId);
+      if (!approved) {
+        throw new Error('formulation_not_approved');
+      }
+      formulationId = approved.id;
+      formulationVersion = approved.version;
+      const profile = await loadProfileSnapshot(userId);
+      generated = await generatePlanFromFormulation(
+        approved.formulation,
+        {
+          painSource: saved.painSource,
+          painDescription: saved.painDescription,
+          painDuration: saved.painDuration,
+          activitiesAffected: saved.activitiesAffected,
+          biggestChange: saved.biggestChange,
+          recoveryGoal: saved.recoveryGoal,
+          ayurvedaPreferences: saved.ayurvedaPreferences,
+          onsetType: (saved.onsetType as 'sudden' | 'gradual' | 'mixed' | null) ?? null,
+        },
+        profile,
+        { userId },
+      );
+    } else {
+      const painScriptSignals = await loadPainScriptSignalsForUser(userId);
+      generated = await generatePlan(
+        {
+          ...saved,
+          hasDependents:
+            saved.hasDependents == null ? null : saved.hasDependents ? 'yes' : 'no',
+          painScriptSignals,
+        },
+        { userId },
+      );
+    }
 
     const isCrisis = saved.hasRedFlags || !saved.isSafe;
     const crisisNote = isCrisis
@@ -42,6 +81,8 @@ export async function regeneratePlanDraftForUser(userId: string): Promise<string
       userId,
       intakeResponseId: saved.id,
       generatedContent: JSON.stringify(generated),
+      formulationId,
+      formulationVersion,
       status: 'draft',
       counselorNotes: crisisNote,
       createdAt: new Date(),
@@ -49,7 +90,7 @@ export async function regeneratePlanDraftForUser(userId: string): Promise<string
 
     await seedDraftPlanWeeks(planId, generated);
 
-    log('plan_regenerated', { userId, planId });
+    log('plan_regenerated', { userId, planId, cohort });
     return planId;
   } catch (err) {
     logError('plan_regenerate_failed', err, { userId });

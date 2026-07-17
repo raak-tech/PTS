@@ -68,6 +68,7 @@ export async function POST(request: Request, context: RouteContext) {
       body: parsed.data.text,
       resolvedAt: null,
       resolvedBy: null,
+      resolutionNote: null,
       createdAt: now,
     };
 

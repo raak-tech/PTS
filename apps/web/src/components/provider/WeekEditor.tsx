@@ -8,6 +8,12 @@ import {
   withWeekReinforcementTemplates,
   type ReinforcementTemplate,
 } from '@/lib/reinforcement-templates';
+import {
+  HolisticTraceability,
+  PersonalizationBasis,
+  PracticeTraceability,
+  TargetChips,
+} from '@/components/provider/PlanTraceability';
 
 export const btnSecondary: CSSProperties = {
   fontSize: 14,
@@ -235,6 +241,17 @@ export function WeekEditor({
 
         <EditableField label="Week theme" value={data.theme} onSave={v => updateField('theme', v)} />
         <EditableField label="Week focus" value={data.focus} multiline onSave={v => updateField('focus', v)} />
+
+        {data.targets?.length ? (
+          <div style={{ marginBottom: 12, padding: '10px 12px', background: '#f5f5f5', borderRadius: 8, border: '1px solid #e0e0e0' }}>
+            <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+              Week formulation targets
+            </p>
+            <TargetChips targets={data.targets} />
+          </div>
+        ) : null}
+        <PersonalizationBasis text={data.personalizationBasis} />
+
         <EditableField label="Weekly reflection prompt" value={data.weeklyReflection} multiline onSave={v => updateField('weeklyReflection', v)} />
         <EditableField label="Counselor note (private)" value={data.counselorNote ?? ''} multiline onSave={v => updateField('counselorNote', v)} />
 
@@ -244,6 +261,11 @@ export function WeekEditor({
             <EditableField label={`Practice ${i + 1} title`} value={p.title} onSave={v => updatePractice(i, 'title', v)} />
             <EditableField label="Description" value={p.description} multiline onSave={v => updatePractice(i, 'description', v)} />
             <EditableField label="Duration" value={p.duration} onSave={v => updatePractice(i, 'duration', v)} />
+            <PracticeTraceability
+              targets={p.targets}
+              mechanism={p.mechanism}
+              modality={p.modality}
+            />
             <button
               type="button"
               onClick={() => {
@@ -307,38 +329,46 @@ export function WeekEditor({
           <>
             <p style={{ margin: '16px 0 8px', fontWeight: 600, fontSize: 13 }}>Ayurveda-informed wellness</p>
             <div style={{ padding: '10px 12px', background: '#f1f8e9', borderRadius: 8, border: '1px solid #c8e6c9', marginBottom: 8 }}>
+              <HolisticTraceability
+                targets={data.ayurvedaBlock.targets}
+                mechanism={data.ayurvedaBlock.mechanism}
+                modality="MOD_AYU"
+              />
+              <PersonalizationBasis text={data.ayurvedaBlock.personalizationBasis} />
+              <EditableField label="Dietary guidance" value={data.ayurvedaBlock.dietaryGuidance ?? (data.ayurvedaBlock.practices ?? []).join('\n')} multiline onSave={v => updateField('ayurvedaBlock', { ...data.ayurvedaBlock!, dietaryGuidance: v, practices: undefined })} />
+              <EditableField label="Foods to favour (one per line)" value={(data.ayurvedaBlock.foodsToFavour ?? []).join('\n')} multiline onSave={v => updateField('ayurvedaBlock', { ...data.ayurvedaBlock!, foodsToFavour: v.split('\n').map(s => s.trim()).filter(Boolean) })} />
+              <EditableField label="Foods to limit (one per line)" value={(data.ayurvedaBlock.foodsToAvoid ?? []).join('\n')} multiline onSave={v => updateField('ayurvedaBlock', { ...data.ayurvedaBlock!, foodsToAvoid: v.split('\n').map(s => s.trim()).filter(Boolean) })} />
               <EditableField label="Rhythm note" value={data.ayurvedaBlock.rhythmNote} multiline onSave={v => updateField('ayurvedaBlock', { ...data.ayurvedaBlock!, rhythmNote: v })} />
-              <EditableField
-                label="Practices (one per line)"
-                value={(data.ayurvedaBlock.practices ?? []).join('\n')}
-                multiline
-                onSave={v =>
-                  updateField('ayurvedaBlock', {
-                    ...data.ayurvedaBlock!,
-                    practices: v.split('\n').map((s) => s.trim()).filter(Boolean),
-                  })
-                }
-              />
-              <EditableField
-                label="Disclaimer"
-                value={data.ayurvedaBlock.disclaimer ?? ''}
-                multiline
-                onSave={v => updateField('ayurvedaBlock', { ...data.ayurvedaBlock!, disclaimer: v })}
-              />
+              <EditableField label="Disclaimer" value={data.ayurvedaBlock.disclaimer ?? ''} multiline onSave={v => updateField('ayurvedaBlock', { ...data.ayurvedaBlock!, disclaimer: v })} />
             </div>
           </>
         )}
 
-        {data.yogaTrial && (
+        {(data.yogicPractice || data.yogaTrial) && (
           <>
-            <p style={{ margin: '16px 0 8px', fontWeight: 600, fontSize: 13 }}>Yoga principle trial</p>
+            <p style={{ margin: '16px 0 8px', fontWeight: 600, fontSize: 13 }}>Breath, meditation & reflection</p>
             <div style={{ padding: '10px 12px', background: '#fff8e1', borderRadius: 8, border: '1px solid #ffe082', marginBottom: 8 }}>
-              <EditableField label="Principle" value={data.yogaTrial.principle} onSave={v => updateField('yogaTrial', { ...data.yogaTrial!, principle: v })} />
-              <EditableField label="Applicability" value={data.yogaTrial.applicability} multiline onSave={v => updateField('yogaTrial', { ...data.yogaTrial!, applicability: v })} />
-              <EditableField label="Micro-movement title" value={data.yogaTrial.microMovement.title} onSave={v => updateField('yogaTrial', { ...data.yogaTrial!, microMovement: { ...data.yogaTrial!.microMovement, title: v } })} />
-              <EditableField label="Micro-movement description" value={data.yogaTrial.microMovement.description} multiline onSave={v => updateField('yogaTrial', { ...data.yogaTrial!, microMovement: { ...data.yogaTrial!.microMovement, description: v } })} />
-              <EditableField label="Duration" value={data.yogaTrial.microMovement.duration} onSave={v => updateField('yogaTrial', { ...data.yogaTrial!, microMovement: { ...data.yogaTrial!.microMovement, duration: v } })} />
-              <EditableField label="Disclaimer" value={data.yogaTrial.disclaimer ?? ''} multiline onSave={v => updateField('yogaTrial', { ...data.yogaTrial!, disclaimer: v })} />
+              {data.yogicPractice ? (
+                <>
+                  <HolisticTraceability
+                    targets={data.yogicPractice.targets}
+                    mechanism={data.yogicPractice.mechanism}
+                    modality="MOD_YOGA"
+                  />
+                  <PersonalizationBasis text={data.yogicPractice.personalizationBasis} />
+                  <EditableField label="Breathing title" value={data.yogicPractice.breathingTechnique.title} onSave={v => updateField('yogicPractice', { ...data.yogicPractice!, breathingTechnique: { ...data.yogicPractice!.breathingTechnique, title: v } })} />
+                  <EditableField label="Breathing description" value={data.yogicPractice.breathingTechnique.description} multiline onSave={v => updateField('yogicPractice', { ...data.yogicPractice!, breathingTechnique: { ...data.yogicPractice!.breathingTechnique, description: v } })} />
+                  <EditableField label="Meditation title" value={data.yogicPractice.meditation.title} onSave={v => updateField('yogicPractice', { ...data.yogicPractice!, meditation: { ...data.yogicPractice!.meditation, title: v } })} />
+                  <EditableField label="Meditation description" value={data.yogicPractice.meditation.description} multiline onSave={v => updateField('yogicPractice', { ...data.yogicPractice!, meditation: { ...data.yogicPractice!.meditation, description: v } })} />
+                  <EditableField label="Philosophical framing" value={data.yogicPractice.philosophicalFraming} multiline onSave={v => updateField('yogicPractice', { ...data.yogicPractice!, philosophicalFraming: v })} />
+                  <EditableField label="Disclaimer" value={data.yogicPractice.disclaimer ?? ''} multiline onSave={v => updateField('yogicPractice', { ...data.yogicPractice!, disclaimer: v })} />
+                </>
+              ) : data.yogaTrial ? (
+                <>
+                  <EditableField label="Principle (legacy)" value={data.yogaTrial.principle} onSave={v => updateField('yogaTrial', { ...data.yogaTrial!, principle: v })} />
+                  <EditableField label="Applicability" value={data.yogaTrial.applicability} multiline onSave={v => updateField('yogaTrial', { ...data.yogaTrial!, applicability: v })} />
+                </>
+              ) : null}
             </div>
           </>
         )}
@@ -347,59 +377,22 @@ export function WeekEditor({
           <>
             <p style={{ margin: '16px 0 8px', fontWeight: 600, fontSize: 13 }}>Music moment</p>
             <div style={{ padding: '10px 12px', background: '#f3e5f5', borderRadius: 8, border: '1px solid #e1bee7', marginBottom: 8 }}>
-              <EditableField label="Purpose" value={data.musicMoment.purpose} onSave={v => updateField('musicMoment', { ...data.musicMoment!, purpose: v })} />
+              <HolisticTraceability
+                targets={data.musicMoment.targets}
+                mechanism={data.musicMoment.mechanism}
+                modality="MOD_MUSIC"
+              />
+              <PersonalizationBasis text={data.musicMoment.personalizationBasis} />
+              <EditableField label="Purpose" value={String(data.musicMoment.purpose)} onSave={v => updateField('musicMoment', { ...data.musicMoment!, purpose: v as 'grounding' | 'activation' | 'flare' | 'reflection' })} />
+              <EditableField label="Mood" value={data.musicMoment.mood ?? ''} onSave={v => updateField('musicMoment', { ...data.musicMoment!, mood: v })} />
               <EditableField label="Suggestion" value={data.musicMoment.suggestion} multiline onSave={v => updateField('musicMoment', { ...data.musicMoment!, suggestion: v })} />
-              {data.musicMoment.playlist ? (
-                <>
-                  <EditableField
-                    label="Playlist title"
-                    value={data.musicMoment.playlist.title}
-                    onSave={v =>
-                      updateField('musicMoment', {
-                        ...data.musicMoment!,
-                        playlist: { ...data.musicMoment!.playlist, title: v },
-                      })
-                    }
-                  />
-                  <EditableField
-                    label="Spotify search query"
-                    value={data.musicMoment.playlist.spotifySearchQuery ?? ''}
-                    onSave={v =>
-                      updateField('musicMoment', {
-                        ...data.musicMoment!,
-                        playlist: { ...data.musicMoment!.playlist, spotifySearchQuery: v },
-                      })
-                    }
-                  />
-                  {data.musicMoment.playlist.tracks?.map((track, ti) => (
-                    <div key={ti} style={{ marginTop: 8, padding: 8, background: '#faf5fc', borderRadius: 6 }}>
-                      <EditableField
-                        label={`Track ${ti + 1} title`}
-                        value={track.title}
-                        onSave={v => {
-                          const tracks = [...data.musicMoment!.playlist.tracks];
-                          tracks[ti] = { ...tracks[ti], title: v };
-                          updateField('musicMoment', {
-                            ...data.musicMoment!,
-                            playlist: { ...data.musicMoment!.playlist, tracks },
-                          });
-                        }}
-                      />
-                      <EditableField
-                        label="Artist"
-                        value={track.artist}
-                        onSave={v => {
-                          const tracks = [...data.musicMoment!.playlist.tracks];
-                          tracks[ti] = { ...tracks[ti], artist: v };
-                          updateField('musicMoment', {
-                            ...data.musicMoment!,
-                            playlist: { ...data.musicMoment!.playlist, tracks },
-                          });
-                        }}
-                      />
-                    </div>
-                  ))}
-                </>
+              <EditableField label="Search terms (comma-separated)" value={(data.musicMoment.searchTerms ?? []).join(', ')} onSave={v => updateField('musicMoment', { ...data.musicMoment!, searchTerms: v.split(',').map(s => s.trim()).filter(Boolean) })} />
+              {data.musicMoment.resolvedTracks?.length ? (
+                <p style={{ fontSize: 13, color: '#555', marginTop: 8 }}>
+                  Resolved tracks: {data.musicMoment.resolvedTracks.map(t => t.title).join(', ')}
+                </p>
+              ) : data.musicMoment.playlist ? (
+                <p style={{ fontSize: 13, color: '#888', marginTop: 8 }}>Legacy playlist — regenerate week to resolve real tracks.</p>
               ) : null}
             </div>
           </>

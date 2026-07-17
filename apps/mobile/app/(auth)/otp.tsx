@@ -106,6 +106,14 @@ export default function OtpScreen() {
       title="Enter verification code"
       subtitle={`Code sent to ${formatPhoneDisplay(phone ?? '')}`}
       scroll={false}
+      footer={
+        <Button
+          label="Verify & sign in"
+          onPress={onVerify}
+          loading={loading}
+          disabled={code.length !== 6}
+        />
+      }
     >
       <View style={styles.boxContainer}>
         {digits.map((digit, i) => (
@@ -129,8 +137,6 @@ export default function OtpScreen() {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Text style={styles.hint}>Prototype OTP: {MOCK_OTP}</Text>
-
-      <Button label="Verify & sign in" onPress={onVerify} loading={loading} disabled={code.length !== 6} />
 
       <Pressable onPress={onResend} disabled={countdown > 0}>
         <Text style={[styles.link, countdown > 0 && styles.linkDisabled]}>

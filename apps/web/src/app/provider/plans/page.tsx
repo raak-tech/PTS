@@ -1,177 +1,36 @@
-import type { Metadata } from 'next';
+import { eq } from 'drizzle-orm';
+import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
-import { eq, inArray, isNull } from 'drizzle-orm';
 
-import { getDb } from '../../../db';
-import { intakeResponses, planWeeks, plans, users } from '../../../db/schema';
-import { isAdminUser } from '@/lib/admin';
-import { getClientCounselorMap, isClientVisibleToProvider } from '../../../lib/client-access';
-import { formatClientContact } from '@/lib/pii';
-import { describePendingPlanWeeks } from '@/lib/provider-console-access';
-import type { GeneratedPlan } from '../../../lib/plan-generator';
-import { getUserFromCookieHeader } from '../../../lib/session';
-import { PlanReviewClient } from './PlanReviewClient';
-import { PendingIntakesClient } from './PendingIntakesClient';
+import { getDb } from '@/db';
+import { plans } from '@/db/schema';
+import { getUserFromCookieHeader } from '@/lib/session';
 
-export const metadata: Metadata = { title: 'Plan review | Provider' };
-
-export default async function ProviderPlansPage({
+/**
+ * Plan review is no longer a second counselor home.
+ * Caseload filter deep-links into Client Chart → Plan mode.
+ * Optional ?highlight=<planId> opens that client's chart.
+ */
+export default async function ProviderPlansRedirectPage({
   searchParams,
 }: {
   searchParams?: Promise<{ highlight?: string }>;
 }) {
-  const db = getDb();
   const user = await getUserFromCookieHeader((await headers()).get('cookie'));
+  if (!user) redirect('/login?next=/provider/clients?filter=plans');
+
   const sp = (await Promise.resolve(searchParams ?? {})) as { highlight?: string };
-  const highlightPlanId = sp.highlight ?? null;
-  const providerId = user?.id ?? '';
-  const isAdmin = isAdminUser(user);
-  const assignmentMap = providerId && !isAdmin ? await getClientCounselorMap() : {};
-  const isVisible = (clientId: string) =>
-    isAdmin || (providerId ? isClientVisibleToProvider(clientId, providerId, assignmentMap) : true);
-
-  // Pending intakes (no plan yet)
-  type PendingIntakeRow = { userId: string; painSource: string; hasRedFlags: boolean; isSafe: boolean; createdAt: Date };
-  const pendingIntakes = (await db
-    .select({
-      userId: intakeResponses.userId,
-      painSource: intakeResponses.painSource,
-      hasRedFlags: intakeResponses.hasRedFlags,
-      isSafe: intakeResponses.isSafe,
-      createdAt: intakeResponses.createdAt,
-    })
-    .from(intakeResponses)
-    .leftJoin(plans, eq(intakeResponses.userId, plans.userId))
-    .where(isNull(plans.id))
-    .orderBy(intakeResponses.createdAt)) as PendingIntakeRow[];
-  const visiblePendingIntakes = pendingIntakes.filter((i) => isVisible(i.userId));
-
-  // All draft plans awaiting review
-  type PlanRow = { id: string; userId: string; generatedContent: string; counselorNotes: string | null; status: string; createdAt: Date };
-  const draftPlans = (await db
-    .select()
-    .from(plans)
-    .where(eq(plans.status, 'draft'))
-    .orderBy(plans.createdAt)) as PlanRow[];
-  const visibleDraftPlans = draftPlans.filter((p) => isVisible(p.userId));
-
-  const approvedPlans = (await db
-    .select()
-    .from(plans)
-    .where(eq(plans.status, 'approved'))
-    .orderBy(plans.createdAt)) as PlanRow[];
-  const visibleApprovedPlans = approvedPlans.filter((p) => isVisible(p.userId));
-
-  // Fetch client emails for display (for both draft/approved plans AND pending intakes)
-  const allUserIds = [...new Set([...visibleDraftPlans, ...visibleApprovedPlans, ...visiblePendingIntakes].map(p => p.userId))];
-  type UserRow = { id: string; email: string; phone: string | null; displayName: string | null };
-  const clientUsers = allUserIds.length > 0
-    ? (await db.select({ id: users.id, email: users.email, phone: users.phone, displayName: users.displayName }).from(users).where(inArray(users.id, allUserIds))) as UserRow[]
-    : [];
-
-  const userById = Object.fromEntries(clientUsers.map((u) => [u.id, u]));
-
-  // Fetch intake responses for context (draft/approved plans)
-  const planUserIds = [...new Set([...visibleDraftPlans, ...visibleApprovedPlans].map(p => p.userId))];
-  type IntakeContextRow = { userId: string; painSource: string; painDescription: string; recoveryGoal: string };
-  const intakes = planUserIds.length > 0
-    ? (await db.select({ userId: intakeResponses.userId, painSource: intakeResponses.painSource, painDescription: intakeResponses.painDescription, recoveryGoal: intakeResponses.recoveryGoal })
-        .from(intakeResponses)
-        .where(inArray(intakeResponses.userId, planUserIds))) as IntakeContextRow[]
-    : [];
-
-  const intakeByUserId = Object.fromEntries(intakes.map(i => [i.userId, i]));
-
-  // Fetch planWeeks statuses for all draft plans so the editor shows current state
-  const draftPlanIds = visibleDraftPlans.map(p => p.id);
-  type WeekStatusRow = { planId: string; weekNumber: number; status: string };
-  const allWeekStatuses: WeekStatusRow[] = draftPlanIds.length > 0
-    ? (await db
-        .select({ planId: planWeeks.planId, weekNumber: planWeeks.weekNumber, status: planWeeks.status })
-        .from(planWeeks)
-        .where(inArray(planWeeks.planId, draftPlanIds))) as WeekStatusRow[]
-    : [];
-
-  const weekStatusByPlan: Record<string, Record<number, 'draft' | 'edited' | 'approved'>> = {};
-  for (const row of allWeekStatuses) {
-    if (!weekStatusByPlan[row.planId]) weekStatusByPlan[row.planId] = {};
-    weekStatusByPlan[row.planId][row.weekNumber] = row.status as 'draft' | 'edited' | 'approved';
+  if (sp.highlight) {
+    const db = getDb();
+    const [row] = await db
+      .select({ userId: plans.userId })
+      .from(plans)
+      .where(eq(plans.id, sp.highlight))
+      .limit(1);
+    if (row?.userId) {
+      redirect(`/provider/clients/${row.userId}?tab=plan`);
+    }
   }
 
-  function clientContact(userId: string) {
-    const client = userById[userId] ?? { email: 'unknown@unknown.com', phone: null, displayName: null };
-    return formatClientContact(client);
-  }
-
-  const enriched = visibleDraftPlans.map(p => ({
-    ...p,
-    clientEmail: clientContact(p.userId),
-    intake: intakeByUserId[p.userId] ?? null,
-    parsed: JSON.parse(p.generatedContent) as GeneratedPlan,
-    weekStatuses: weekStatusByPlan[p.id] ?? {},
-    pendingWeeksLabel: describePendingPlanWeeks(
-      p.status,
-      Object.entries(weekStatusByPlan[p.id] ?? {}).map(([weekNumber, status]) => ({
-        weekNumber: Number(weekNumber),
-        status,
-      })),
-    ),
-    hasCrisisNotes: (p.counselorNotes ?? '').includes('CRISIS'),
-  }));
-
-  return (
-    <>
-      <h1 className="provider-page-title">Plan review</h1>
-      <p className="provider-page-subtitle">Review Week 1 drafts and approve each week before clients see it.</p>
-
-      {/* Pending intakes section */}
-      <PendingIntakesClient
-        intakes={visiblePendingIntakes.map(intake => ({
-          userId: intake.userId,
-          painSource: intake.painSource,
-          hasRedFlags: intake.hasRedFlags,
-          isSafe: intake.isSafe,
-          createdAt: intake.createdAt,
-          email: clientContact(intake.userId),
-        }))}
-      />
-
-      {enriched.length === 0 && (
-        <div style={{ padding: 32, textAlign: 'center', color: 'var(--muted)', border: '1px dashed var(--border)', borderRadius: 18 }}>
-          <p style={{ margin: 0 }}>No draft plans awaiting review.</p>
-          <p style={{ margin: '8px 0 0', fontSize: 14 }}>Check pending intakes above to generate new plans.</p>
-        </div>
-      )}
-
-      {enriched.map(plan => (
-        <PlanReviewClient
-          key={plan.id}
-          planId={plan.id}
-          clientEmail={plan.clientEmail}
-          clientId={plan.userId}
-          intake={plan.intake}
-          plan={plan.parsed}
-          createdAt={plan.createdAt.toLocaleDateString()}
-          initialWeekStatuses={plan.weekStatuses}
-          pendingWeeksLabel={plan.pendingWeeksLabel}
-          hasCrisisNotes={plan.hasCrisisNotes}
-          initialExpanded={highlightPlanId === plan.id}
-        />
-      ))}
-
-      {visibleApprovedPlans.length > 0 && (
-        <section style={{ marginTop: 40 }}>
-          <h2 style={{ fontSize: 16, color: 'var(--muted)' }}>Approved plans ({visibleApprovedPlans.length})</h2>
-          <div style={{ display: 'grid', gap: 8 }}>
-            {visibleApprovedPlans.map(p => (
-              <div key={p.id} style={{ padding: '12px 16px', border: '1px solid var(--border)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 14 }}>{clientContact(p.userId)}</span>
-                <span style={{ fontSize: 12, color: 'var(--muted)' }}>Approved</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-    </>
-  );
+  redirect('/provider/clients?filter=plans');
 }

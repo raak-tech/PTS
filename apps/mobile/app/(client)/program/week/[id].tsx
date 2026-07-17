@@ -25,6 +25,7 @@ export default function WeekDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useState<string>(fallback.theme);
   const [focus, setFocus] = useState<string>(fallback.focus);
+  const [personalizationBasis, setPersonalizationBasis] = useState<string | null>(null);
   const [practices, setPractices] = useState<{ title: string; description: string; duration: string }[]>([]);
   const [reflection, setReflection] = useState('');
   const { week: holisticWeek } = useHolisticWeek();
@@ -44,6 +45,7 @@ export default function WeekDetailScreen() {
       if (week) {
         setTheme(week.theme);
         setFocus(week.focus);
+        setPersonalizationBasis(week.personalizationBasis ?? null);
         setPractices(week.dailyPractices);
         setReflection(week.weeklyReflection);
       }
@@ -77,6 +79,11 @@ export default function WeekDetailScreen() {
 
   return (
     <Screen title={`Week ${id}: ${theme}`} subtitle={`Focus: ${focus}`}>
+      {personalizationBasis ? (
+        <Card title="Because you shared…">
+          <Text style={styles.body}>{personalizationBasis}</Text>
+        </Card>
+      ) : null}
       <Card title="Daily practices">
         {practices.length > 0 ? (
           practices.map((p) => (

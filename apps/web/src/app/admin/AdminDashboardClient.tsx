@@ -203,7 +203,7 @@ function DetailTable({ detail }: { detail: MetricDetail }) {
                 ) : null}
                 {detail.kind === 'pending-plans' && row.id ? (
                   <Link href={`/provider/plans?highlight=${String(row.id)}`} style={{ fontSize: 13, marginLeft: 8 }}>
-                    Review
+                    Open chart →
                   </Link>
                 ) : null}
               </td>

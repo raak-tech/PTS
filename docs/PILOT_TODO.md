@@ -1,37 +1,66 @@
 # PTS Pilot — Consolidated Todo (single source of truth)
 
-**Last updated:** 2026-07-11 (Pain Script model parked on `PainModelLearned` branch)  
-**Purpose:** One execution queue for dev runs, APK drops, and counselor pilot.  
-**Rule:** Add new work here. Other docs keep product context only — link here instead of duplicating todos.
+**Last updated:** 2026-07-17 (Pain Script sole path; music M1 quality + intake Tier 0; corrected action queue)
 
-**Parked work (not on `master`):** [`PAIN_MODEL_BRANCH.md`](PAIN_MODEL_BRANCH.md) — RAak Pain Script / BASIC I.D. integration on branch `PainModelLearned` (`137fd03`). Awaiting approval; do not merge or deploy until signed off.
-
-**Session snapshot (2026-07-04):**
-- **Run I shipped (web):** Plan tab week sub-tabs, per-week `WeekEditor` (edit + approve every round), per-week activity panel, cross-week patterns, and the edit→client propagation fix. `tsc` + `next build` green.
-- **Web:** production at https://pts-web-pied.vercel.app (redeploy after commit/push).
-- **Mobile:** APK **build 14** (`versionCode=14`) at `apps/mobile/dist/pts-mobile-release.apk` — installed on Pixel 7 (`2A101FDH200DWJ`). No mobile change in Run I.
-- **DB:** no new migration in Run I. `0024_monthly_check_ins.sql` applied (local + production via build migrate).
-- **Deferred:** MSG91 go-live, `CRON_SECRET` (optional until 90-day intake cleanup cron is wanted), Sentry/staging.
-- **Next:** §5 device QA pass; verify the Week-1 approve→client flow end-to-end on the waiting client.
-
-**Process (required before multi-surface code):** [`DEV_WORKFLOW.md`](DEV_WORKFLOW.md) — Analyze → Document → Review → Build  
-**Related (not execution queues):** `PROJECT_BRIEF.md`, `PROVIDER_WORKFLOW.md`, `MOBILE_APP_UX.md`, `DECISIONS.md`  
-**Long-term backlog (strategic):** `BACKLOG.md` — tracks 10+ product areas; **pilot work is pulled from this file**
+**Process:** [`DEV_WORKFLOW.md`](DEV_WORKFLOW.md) · KB [`kb/README.md`](kb/README.md)
+**Pickup ranking:** [`plans/2026-07-17-action-queue-corrected.md`](plans/2026-07-17-action-queue-corrected.md) · GTM notes [`plans/2026-07-17-gtm-assessment.md`](plans/2026-07-17-gtm-assessment.md)
 
 ---
 
-## Kickoff bar for next dev run
+## Active queue (2026-07-17)
 
-**Build 14 (client) on device.** Runs D–H complete (mapping, enrichment, SLA, post-week-6, infra). **Next:** §5 device QA pass on Pixel 7 (crisis gate, C7, OTP autofill).
+### P0 — Pilot gates
+
+- [x] **Cohort / merge decision** — Pain Script is the sole product; merge `PainModelLearned` → `master` (see `DECISIONS.md` 2026-07-17).
+- [ ] **Pain Script device QA on Pixel (APK)** — Spec H smoke + Phase E `onsetType` end-to-end; music moment opens non-Hz tracks.
+- [ ] **§16 clinical sign-off with Ramya** — music M1/M2, Ayurveda authority, SD_BEHAVIOUR, modality set, EAET.
+- [ ] **Crisis escalation SOP + notification flow** — safety gate before real users (`PILOT_RECRUITMENT.md`).
+- [ ] **Pilot ops hygiene** — counselor invite codes, Ramya metrics dashboard, recruitment script.
+
+### P1 — Client-felt quality
+
+- [x] **Music M1 quality tuning** — sanitize search terms; filter Hz/healing titles; purpose-based instrumental queries; prompt bans.
+- [x] **Intake Tier 0 free gates** — max length, mash heuristics, rate limit, hash cache; round-3 requires core fields.
+- [ ] **Today rhythm device smoke** — weekly check-in + morning NRS on device.
+- [ ] **Counselor reply / "I'm struggling" response state** — sent / waiting / replied clarity.
+
+### P2 — After pilot signal
+
+- [ ] Inactive re-engagement (2+ days)
+- [ ] Owned-IP music library M2 (after §16)
+- [ ] Payment / paywall after Week 1 (pricing still open — see GTM doc)
+
+**Parked:** MSG91/Sentry/staging until go-live week; control-APK §5 QA; RAG counselor assist (no pilot spec).
+
+---
+
+## Tomorrow (2026-07-15) — kickoff list (historical)
+
+| # | Item | Why |
+|---|------|-----|
+| 1 | Install/verify APK B **v25** on Pixel — re-run intake confirm; no “The client…”, no confidence %, soft pain-source labels | Close tonight’s client-copy bug on device |
+| 2 | Spec H **device** smoke — waiting-plan `formulationSummary`, week `personalizationBasis`, flare ≠ crisis | API 9/9; device not fully signed off |
+| 3 | Spec Phase E **depth** — coverage follow-ups on thin cells with real multi-round intake; verify `onsetType` lands in DB → formulation/plan modalities | Partial ship; needs end-to-end proof |
+| 4 | Close **§16** decisions with Ramya (music M1/M2, Ayurveda sign-off, SD_BEHAVIOUR, modality set, EAET) | Unblocks post-pilot library work |
+| 5 | Optional: copy MacBook Pain Script **spec** into `docs/specs/` for line-by-line checklist | Tailscale/Mac source often unreachable |
+| 6 | Pilot ops hygiene — MSG91 / `CRON_SECRET` / Sentry only if go-live week | Deferred unless recruitment starts |
+
+**Leave deferred:** curated `holistic_items`, owned-IP music M2, `MOD_EAET`/`MOD_PEER`.
+
+---
+
+## Kickoff bar (legacy pilot UX)
+
+Pain Script path is primary on `PainModelLearned`. Control APK §5 device QA still open if cohort A is in the pilot.
 
 | # | Must-have | Status |
 |---|---|---|
-| 1 | Profile reachable + sign out + build info on **waiting-plan** | ✅ build 11 |
-| 2 | Client **share with counselor** on Profile (§2) | ✅ build 11 |
-| 3 | Initial LLM → **Week 1 only** + counselor comment gate before Week 2+ (§3) | ✅ API + workspace Plan tab |
-| 4 | At least one read-out voice item (client replay **or** counselor playback) | ✅ client + counselor web + mobile |
-| 5 | `/api/me/contacts` 500 fixed | ✅ deployed |
-| **Next** | **§5 device QA** on APK 14 (5a crisis gate, 5b C7, 5g weekly check-in, 5h OTP autofill) | 📋 QA |
+| 1 | Profile reachable + sign out + build info on **waiting-plan** | ✅ |
+| 2 | Client **share with counselor** on Profile (§2) | ✅ |
+| 3 | Initial LLM → **Week 1 only** + counselor comment gate before Week 2+ (§3) | ✅ |
+| 4 | At least one read-out voice item | ✅ |
+| 5 | `/api/me/contacts` 500 fixed | ✅ |
+| **Parked** | §5 device QA on control APK (5a/5b/5g/5h) | 📋 if cohort A runs |
 
 ---
 
@@ -74,17 +103,6 @@
 - [x] **Program tab** — locked weeks show teaser copy until counselor releases (Run C1, APK 13).
 - [x] **Docs:** update `PROVIDER_WORKFLOW.md` + `PROJECT_STATUS_REVIEW.md` for Week-1-first model (§9.8).
 
-### 3b. Pain Script model (PARKED — not on `master`)
-
-**Branch:** `PainModelLearned` · **Doc:** [`PAIN_MODEL_BRANCH.md`](PAIN_MODEL_BRANCH.md) · **Status:** Awaiting approval — do not merge
-
-- [x] **Spike:** gap analysis — onboarding vs Pain Script / BASIC I.D. (formulation vs situation/goal)
-- [x] **Spike:** confidential framework in Week 1 + Weeks 2–6 LLM prompts; `protectedFormulation` counselor field
-- [x] **Spike:** optional `painScriptSignals` in intake extraction; client API stripping
-- [ ] **Approve** integration with product/counselor review
-- [ ] **Merge** `PainModelLearned` → `master` + deploy + test regeneration side-by-side
-- [ ] **Optional:** intake follow-ups when pain-script signals empty; workspace UI for protected formulation
-
 ---
 
 ## 4. 🟠 Bugs & data integrity
@@ -117,6 +135,7 @@
 - [x] Counselor “open web workspace” link from mobile client detail.
 - [x] **Provider mobile parity** — §9.6, APK 12.
 - [x] All **6 weeks visible** in mobile plan review — Week 1 + Weeks 2–6 **locked cards** (Run C2, APK 13).
+- [x] **Counselor mobile Bridge (2026-07-16)** — Chart `?tab=` deep-links; L1 Client story; formulation generate escape; demote Apply / fake holistic toggles; Chart-lite client detail. Spec: `docs/plans/2026-07-16-counselor-mobile-bridge.md`.
 - [x] Locked week teaser cards on Program tab — Run C1: `releasedWeeks` fallback → `[1]`, test-clock respects releasedWeeks, week detail locked guard (APK 13).
 - [x] Weekly check-in one-question-at-a-time flow (`program/check-in.tsx`); device QA pending.
 - [ ] 6-box OTP — verify Android autofill / paste on Pixel.
@@ -138,7 +157,7 @@
 - [x] **Per-week activity panel** — `GET /api/provider/clients/[id]/week/[n]/activity` + `WeekActivityPanel` (read-outs, blocks, check-ins, pain, reflections, holistic) (Run I).
 - [x] **Cross-week patterns** — `client-week-metrics.ts` + `GET /api/provider/clients/[id]/program-metrics` + `ProgramPatternsPanel` (adherence/read-out/pain trends table) (Run I).
 - [x] **Plan review queue slimmed** — cards link into the workspace Plan tab ("Open in workspace") (Run I).
-
+- [x] **Caseload + Client Chart IA (2026-07-15)** — four layers; Layer-1 rail; Plan/Activity/Messages/Notes; `/provider/plans` → Caseload filter; Generate Week 1 + formulations on Caseload; light theme; POST logout. Spec: `docs/plans/2026-07-15-counselor-chart-ia.md`. Ship: `…-ship.md`. KB: `docs/kb/COUNSELOR_WEB.md`.
 ---
 
 ## 10. 🟠 Super Admin Panel
@@ -181,8 +200,8 @@
 
 ## 9. 🟠 Counselor web & mobile alignment
 
-**Spec:** [`docs/plans/2026-07-02-section-9-counselor-alignment.md`](plans/2026-07-02-section-9-counselor-alignment.md)  
-**Process:** [`DEV_WORKFLOW.md`](DEV_WORKFLOW.md)  
+**Spec:** [`docs/plans/2026-07-02-section-9-counselor-alignment.md`](plans/2026-07-02-section-9-counselor-alignment.md)
+**Process:** [`DEV_WORKFLOW.md`](DEV_WORKFLOW.md)
 **Status:** ✅ Run A + Run B shipped — **9.5 optional**
 
 ### Context
@@ -218,9 +237,9 @@ Build 11 shipped client + API. **Run A + Run B (2026-07-02)** aligned counselor 
 
 ### Suggested dev runs (after approval)
 
-- **Run A (web):** 9.8 + 9.1 + 9.2 + 9.4  
-- **Run B (web + APK 12):** 9.3 + 9.7 + 9.6  
-- **Run C (web + APK 13):** 5.C1 + 5.C2 + 9.5  
+- **Run A (web):** 9.8 + 9.1 + 9.2 + 9.4
+- **Run B (web + APK 12):** 9.3 + 9.7 + 9.6
+- **Run C (web + APK 13):** 5.C1 + 5.C2 + 9.5
 
 ### Package checklist
 
@@ -251,6 +270,63 @@ Build 11 shipped client + API. **Run A + Run B (2026-07-02)** aligned counselor 
 - [x] **Runs D–H (build 14):** counselor claim-on-first-action, scoped queues, Message-counselor gating, inline plan editing, pain sparklines, admin SLA panel, monthly check-ins + graduation, intake cleanup cron, pending-intake waiting UX
 - [x] APK build 14 at `apps/mobile/dist/pts-mobile-release.apk` — installed on Pixel 7 2026-07-03
 
+## ✅ Done (2026-07-16 session — web prod; mobile in tree, APK on request)
+
+Ship note: [`docs/plans/2026-07-16-intake-counselor-client-bridge-ship.md`](plans/2026-07-16-intake-counselor-client-bridge-ship.md)
+
+- [x] **Incomplete intake Account exit** — Sign out + Delete on intake/waiting-plan; `delete-client-account.ts` hard wipe
+- [x] **Hybrid ready-pool** — hide incomplete intake from Caseload; Generate Week 1 gated on `completedAt`; admin allocate
+- [x] **Intake-only local nudges** — `syncClientNotifications`; no program reminders until plan approved
+- [x] **Your counselor card** — public profile on contacts API; Profile + waiting-plan + `profile/counselor`
+- [x] **Counselor profile** — yearsExperience, Calendly, ephemeral `sessionJoinUrl`; Join session CTA
+- [x] **No marketplace decision** — documented in `DECISIONS.md` 2026-07-16
+- [x] **APK policy** — build only when user explicitly asks
+- [x] Migrations `0033` (note resolution), `0034` (session join URL) — applied prod
+- [x] **Git commit + push** — `075e851` on `PainModelLearned`
+- [x] **APK v33 (2026-07-17)** — arm64 pain-pilot build includes Account exit, Your counselor, notification gating, and production YouTube resolver path
+
+## ✅ Done (2026-07-17 — music + intake gates; sole-path merge)
+
+- [x] Corrected action queue + GTM assessment copied to `docs/plans/2026-07-17-*`
+- [x] Music M1 quality filter + prompt bans
+- [x] Intake Tier 0 gates + round-3 core-field escape
+- [x] Decision: Pain Script sole product → merge to `master`
+- [x] APK v34 for Pixel device QA
+
+---
+
+## Deferred — Intake quality, LLM cost, and payment gates
+
+**Context (2026-07-13):** Avoid burning OpenRouter on nonsense intake; align client payment with deliverable value (Week 1), not raw LLM calls.
+
+**Policy (target):** Cheap automation for intake structure; expensive AI only when intake is complete and counselor is ready to deliver Week 1; **payment only after Week 1 approval** (or explicit enrollment post–counselor review).
+
+### Tier 0 — Free gates (before any LLM)
+- [x] Max length cap on intake free-text (anti-spam) — 4000 chars (2026-07-17)
+- [x] Heuristic nonsense detection (keyboard mash, repeated chars, too few distinct words) — strengthened 2026-07-17
+- [x] Per-user / per-phone rate limits on `POST /api/intake/extract` — 20/hour (2026-07-17)
+- [x] Idempotency / cache: same text hash → return cached extraction — memory + `intake_sessions` (2026-07-17)
+- [x] Round-3 escape requires core fields (not blind force-through) — 2026-07-17
+
+### Tier 1 — Cheap on-topic check
+- [ ] Lightweight classifier or small model: “personal health/sleep/stress concern?” → block extraction LLM if off-topic
+- [ ] Friendly UX copy when blocked (not a raw error)
+
+### Tier 2 — Tighten existing extraction gate
+- [ ] Review round-3 escape hatch (`canSubmit` when `round >= 3` even if required fields weak) — require minimum bar, not blind submit
+- [ ] Segment-specific required fields (e.g. sleep pattern for sleep segment, not only pain-shaped fields)
+- [ ] Counselor queue flag: “low-quality intake” when confidence low
+
+### Tier 3 — Expensive LLM (formulation / Week 1)
+- [ ] Ensure formulation + Week 1 generation never run without complete intake + counselor action (audit current pain-script path)
+- [ ] Admin dashboard: LLM spend per client / per intake session (extend `llm_usage`)
+
+### Payment & commercial
+- [ ] Define paywall placement: **after Week 1 approved & released** (not on intake submit or background formulation)
+- [ ] Copy: clients pay for counselor-reviewed program, not “AI processing”
+- [ ] Refund / decline path if intake unusable or counselor declines case
+- [ ] OpenRouter hard spend cap + alerts for pilot
+
 ---
 
 ## Test accounts
@@ -270,7 +346,7 @@ OTP (pilot): `123456` for test numbers.
 | Document | Role now |
 |----------|----------|
 | **`PILOT_TODO.md`** | **← Active execution queue (this file)** |
-| **`PAIN_MODEL_BRANCH.md`** | **← Parked Pain Script integration (`PainModelLearned` branch)** |
+| **`docs/kb/`** | **← Incidents, mobile/intake/ops learnings; continuous capture + review** |
 | **`DEV_WORKFLOW.md`** | **← Analyze → Document → Review → Build (required before §9 code)** |
 | `docs/plans/2026-07-02-section-9-counselor-alignment.md` | **§9 feature spec (shipped Run A–C)** |
 | `BACKLOG.md` | Long-term product backlog by track |

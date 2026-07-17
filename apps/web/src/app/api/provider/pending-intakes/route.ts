@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 import { getDb } from '@/db';
 import { intakeResponses, plans, users } from '@/db/schema';
-import { getClientCounselorMap, isClientVisibleToProvider } from '@/lib/client-access';
+import { getClientCounselorMap, getCompletedIntakeClientIds, isClientVisibleToProvider } from '@/lib/client-access';
 import { logError } from '@/lib/logger';
 import { formatClientContact } from '@/lib/pii';
 import { getUserFromRequest } from '@/lib/session';
@@ -22,6 +22,9 @@ export async function GET(request: Request) {
     type PendingIntakeRow = {
       userId: string;
       painSource: string;
+      painSourceOther: string | null;
+      painDescription: string;
+      recoveryGoal: string;
       hasRedFlags: boolean;
       isSafe: boolean;
       createdAt: Date;
@@ -31,6 +34,9 @@ export async function GET(request: Request) {
       .select({
         userId: intakeResponses.userId,
         painSource: intakeResponses.painSource,
+        painSourceOther: intakeResponses.painSourceOther,
+        painDescription: intakeResponses.painDescription,
+        recoveryGoal: intakeResponses.recoveryGoal,
         hasRedFlags: intakeResponses.hasRedFlags,
         isSafe: intakeResponses.isSafe,
         createdAt: intakeResponses.createdAt,
@@ -41,8 +47,9 @@ export async function GET(request: Request) {
       .orderBy(desc(intakeResponses.createdAt))) as PendingIntakeRow[];
 
     const assignmentMap = await getClientCounselorMap();
+    const completedIntakeIds = await getCompletedIntakeClientIds();
     const visibleIntakes = pendingIntakes.filter((intake) =>
-      isClientVisibleToProvider(intake.userId, user.id, assignmentMap),
+      isClientVisibleToProvider(intake.userId, user.id, assignmentMap, completedIntakeIds),
     );
 
     // Fetch user details for display
@@ -75,7 +82,9 @@ export async function GET(request: Request) {
         anonEmail: formatClientContact(client),
         clientPhone: client.phone,
         clientEmail: client.email,
-        painSource: intake.painSource,
+        painSource: intake.painSourceOther ?? intake.painSource,
+        painDescription: intake.painDescription,
+        recoveryGoal: intake.recoveryGoal,
         submittedAt: intake.createdAt.toISOString(),
         hasRedFlags: intake.hasRedFlags,
         isSafe: intake.isSafe,

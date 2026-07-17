@@ -2,9 +2,11 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-import { USE_MOCK_AUTH } from '@/config';
+import { IS_PAIN_SCRIPT_COHORT, USE_MOCK_AUTH } from '@/config';
 import {
+  apiAssignPilotCohort,
   apiCheckPhone,
+  apiDeleteAccount,
   apiGetSession,
   apiLogout,
   apiSendOtp,
@@ -13,6 +15,7 @@ import {
 } from '@/lib/api';
 import { clearIntakeDraft } from '@/hooks/useIntakeDraft';
 import type { IntakeFormData } from '@/lib/intake';
+import { clearOneBoxDraftEverywhere } from '@/lib/intake-draft-sync';
 import { normalizePhone } from '@/lib/phone';
 import { findAccountByPhone, MOCK_OTP } from '@/mock/data';
 import type { SessionUser } from '@/types';
@@ -76,6 +79,8 @@ type AuthContextValue = {
   completeIntake: (data: IntakeFormData) => Promise<void>;
   refreshUser: () => Promise<void>;
   signOut: () => Promise<void>;
+  /** Hard-delete client account on server, then clear local session/drafts. */
+  deleteAccount: () => Promise<void>;
   signOutIfDifferentPhone: (phone: string) => Promise<void>;
   devSignInAs: (user: SessionUser) => Promise<void>;
   resetProgramClock: () => Promise<void>;
@@ -121,8 +126,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(sessionUser);
         await persistSession(storedToken, sessionUser);
         try {
-          const { scheduleDailyReminders, registerPushTokenWithServer } = await import('@/lib/localNotifications');
-          await scheduleDailyReminders();
+          const { syncClientNotifications, registerPushTokenWithServer } = await import('@/lib/localNotifications');
+          await syncClientNotifications({
+            intakeComplete: Boolean(sessionUser.intakeComplete),
+            planApproved: Boolean(sessionUser.planApproved),
+          });
           await registerPushTokenWithServer(storedToken);
         } catch {
           /* optional */
@@ -179,15 +187,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const { token: sessionToken, user: apiUser } = await apiVerifyOtp(normalized, code, dataStorageConsent);
-    const sessionUser = mapApiUser(apiUser);
+    if (IS_PAIN_SCRIPT_COHORT) {
+      try {
+        await apiAssignPilotCohort(sessionToken);
+      } catch {
+        /* non-fatal */
+      }
+    }
+    const { user: refreshed } = await apiGetSession(sessionToken);
+    const sessionUser = mapApiUser(refreshed ?? apiUser);
     await clearIntakeDraft();
     await persistSession(sessionToken, sessionUser);
     setToken(sessionToken);
     setUser(sessionUser);
     setPendingPhone(null);
     try {
-      const { scheduleDailyReminders, registerPushTokenWithServer } = await import('@/lib/localNotifications');
-      await scheduleDailyReminders();
+      const { syncClientNotifications, registerPushTokenWithServer } = await import('@/lib/localNotifications');
+      await syncClientNotifications({
+        intakeComplete: Boolean(sessionUser.intakeComplete),
+        planApproved: Boolean(sessionUser.planApproved),
+      });
       await registerPushTokenWithServer(sessionToken);
     } catch {
       /* optional */
@@ -201,6 +220,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const sessionUser = mapApiUser(fresh);
     setUser(sessionUser);
     await persistSession(token, sessionUser);
+    try {
+      const { syncClientNotifications } = await import('@/lib/localNotifications');
+      await syncClientNotifications({
+        intakeComplete: Boolean(sessionUser.intakeComplete),
+        planApproved: Boolean(sessionUser.planApproved),
+      });
+    } catch {
+      /* optional */
+    }
   }, [token]);
 
   const completeIntake = useCallback(
@@ -211,11 +239,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const updated = { ...user, intakeComplete: true };
         setUser(updated);
         await persistSession(token, updated);
+        await clearOneBoxDraftEverywhere(null);
+        await clearIntakeDraft();
+        try {
+          const { syncClientNotifications } = await import('@/lib/localNotifications');
+          await syncClientNotifications({
+            intakeComplete: true,
+            planApproved: Boolean(updated.planApproved),
+          });
+        } catch {
+          /* optional */
+        }
         return;
       }
 
       await apiSubmitIntake(token, payload);
+      await clearOneBoxDraftEverywhere(token);
+      await clearIntakeDraft();
       await refreshUser();
+      try {
+        const { syncClientNotifications } = await import('@/lib/localNotifications');
+        await syncClientNotifications({
+          intakeComplete: true,
+          planApproved: Boolean(user.planApproved),
+        });
+      } catch {
+        /* optional */
+      }
     },
     [user, token, refreshUser],
   );
@@ -227,6 +277,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch {
         // ignore
       }
+    }
+    try {
+      const { cancelDailyReminders } = await import('@/lib/localNotifications');
+      await cancelDailyReminders();
+    } catch {
+      /* optional */
+    }
+    await clearIntakeDraft();
+    await clearSession();
+    setUser(null);
+    setToken(null);
+    setPendingPhone(null);
+  }, [token]);
+
+  const deleteAccount = useCallback(async () => {
+    if (!token) throw new Error('Not signed in');
+    if (!USE_MOCK_AUTH && !token.startsWith('mock-')) {
+      await apiDeleteAccount(token);
     }
     try {
       const { cancelDailyReminders } = await import('@/lib/localNotifications');
@@ -285,11 +353,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       completeIntake,
       refreshUser,
       signOut,
+      deleteAccount,
       signOutIfDifferentPhone,
       devSignInAs,
       resetProgramClock,
     }),
-    [user, token, loading, pendingPhone, checkPhone, sendOtp, verifyOtp, completeIntake, refreshUser, signOut, signOutIfDifferentPhone, devSignInAs, resetProgramClock],
+    [user, token, loading, pendingPhone, checkPhone, sendOtp, verifyOtp, completeIntake, refreshUser, signOut, deleteAccount, signOutIfDifferentPhone, devSignInAs, resetProgramClock],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

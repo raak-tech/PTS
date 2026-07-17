@@ -1,0 +1,14 @@
+---
+description: Expo Router and mobile release pitfalls for PTS apps/mobile
+globs: apps/mobile/**/*
+alwaysApply: false
+---
+
+# Mobile / Expo
+
+- **Route conflict:** Never add `path.tsx` next to `path/`. Use `path/_layout.tsx` + `path/index.tsx`. Details: `docs/kb/MOBILE.md`, incident 2026-07-14 in `docs/kb/INCIDENTS.md`.
+- **APK:** Do **not** build or install APK unless the user explicitly asks. Complete a coherent set of mobile work first; build only on request.
+- **Before APK (when asked):** `npm run check:routes` (also in `scripts/build-apk-pain-pilot.sh`). Verify launch with logcat after install.
+- **Keyboard:** Prefer `Screen` `footer` for submit/composer above keyboard; Android uses `softwareKeyboardLayoutMode: 'resize'`.
+- **Release API:** Gradle release ignores local LAN `.env`; production default is `https://pts-web-pied.vercel.app`.
+- Prefer `PTS_ANDROID_ABI=arm64-v8a` for Pixel-sized rebuilds when iterating.

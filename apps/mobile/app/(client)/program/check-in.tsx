@@ -99,7 +99,24 @@ export default function WeeklyCheckInScreen() {
   const progress = ((currentStep + 1) / prompts.length) * 100;
 
   return (
-    <Screen title="Weekly check-in" subtitle="Help your counselor adapt next week's plan">
+    <Screen
+      title="Weekly check-in"
+      subtitle="Help your counselor adapt next week's plan"
+      scrollToEndOnKeyboard
+      footer={
+        <View style={{ gap: 8 }}>
+          <Button
+            label={isLastQuestion ? 'Submit check-in' : 'Continue'}
+            onPress={onContinue}
+            loading={saving}
+            disabled={!currentAnswer.trim()}
+          />
+          {currentStep > 0 ? (
+            <Button label="Back" variant="secondary" onPress={() => setCurrentStep((s) => s - 1)} />
+          ) : null}
+        </View>
+      }
+    >
       <View style={styles.progressBar}>
         <View style={[styles.progressFill, { width: `${progress}%` }]} />
       </View>
@@ -124,18 +141,6 @@ export default function WeeklyCheckInScreen() {
           <Text style={styles.done}>✓ Previously saved for this week</Text>
         </Card>
       ) : null}
-
-      <View style={{ gap: 8 }}>
-        <Button
-          label={isLastQuestion ? 'Submit check-in' : 'Continue'}
-          onPress={onContinue}
-          loading={saving}
-          disabled={!currentAnswer.trim()}
-        />
-        {currentStep > 0 ? (
-          <Button label="Back" variant="secondary" onPress={() => setCurrentStep((s) => s - 1)} />
-        ) : null}
-      </View>
     </Screen>
   );
 }

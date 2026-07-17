@@ -24,6 +24,7 @@ const schema = z.object({
   phone: z.string().min(8).max(20),
   role: z.enum(['client', 'provider']),
   displayName: z.string().trim().min(2).max(120),
+  pilotCohort: z.enum(['legacy', 'pain_script']).optional(),
   title: optionalField(2, 120),
   bio: optionalField(10, 1500),
 });
@@ -104,6 +105,7 @@ export async function POST(request: Request) {
       passwordHash: null,
       role,
       displayName: parsed.data.displayName,
+      pilotCohort: parsed.data.pilotCohort ?? 'legacy',
       createdAt: now,
     });
 

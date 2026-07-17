@@ -1,43 +1,85 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback } from 'react';
 import { Platform } from 'react-native';
 
 import type { IntakeDraft } from '@/lib/intake';
+import {
+  isOneBoxIntakeDraft,
+  ONEBOX_DRAFT_STORAGE_KEY,
+  type OneBoxIntakeDraft,
+} from '@/lib/intake-draft';
 
-const memoryStore = new Map<string, string>();
-const DRAFT_KEY = 'intake_draft';
+const LEGACY_DRAFT_KEY = 'intake_draft';
 
-async function persistDraft(draft: IntakeDraft) {
-  const json = JSON.stringify(draft);
+async function storageGet(key: string): Promise<string | null> {
   if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
-    localStorage.setItem(DRAFT_KEY, json);
-  } else {
-    memoryStore.set(DRAFT_KEY, json);
+    return localStorage.getItem(key);
   }
+  return AsyncStorage.getItem(key);
 }
 
-async function readDraft(): Promise<IntakeDraft | null> {
-  let json: string | null = null;
+async function storageSet(key: string, value: string): Promise<void> {
   if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
-    json = localStorage.getItem(DRAFT_KEY);
-  } else {
-    json = memoryStore.get(DRAFT_KEY) ?? null;
+    localStorage.setItem(key, value);
+    return;
   }
+  await AsyncStorage.setItem(key, value);
+}
+
+async function storageRemove(key: string): Promise<void> {
+  if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
+    localStorage.removeItem(key);
+    return;
+  }
+  await AsyncStorage.removeItem(key);
+}
+
+// —— Legacy multi-step draft (opt-in legacy intake) ——
+
+async function persistLegacyDraft(draft: IntakeDraft) {
+  await storageSet(LEGACY_DRAFT_KEY, JSON.stringify(draft));
+}
+
+async function readLegacyDraft(): Promise<IntakeDraft | null> {
+  const json = await storageGet(LEGACY_DRAFT_KEY);
   if (!json) return null;
   return JSON.parse(json) as IntakeDraft;
 }
 
-async function removeDraft() {
-  if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
-    localStorage.removeItem(DRAFT_KEY);
-  } else {
-    memoryStore.delete(DRAFT_KEY);
+async function removeLegacyDraft() {
+  await storageRemove(LEGACY_DRAFT_KEY);
+}
+
+// —— One-box draft ——
+
+export async function loadOneBoxDraftLocal(): Promise<OneBoxIntakeDraft | null> {
+  try {
+    const json = await storageGet(ONEBOX_DRAFT_STORAGE_KEY);
+    if (!json) return null;
+    const parsed: unknown = JSON.parse(json);
+    return isOneBoxIntakeDraft(parsed) ? parsed : null;
+  } catch {
+    return null;
   }
 }
 
-/** Clear saved intake progress (e.g. on sign-out or account switch). */
+export async function saveOneBoxDraftLocal(draft: OneBoxIntakeDraft): Promise<void> {
+  await storageSet(ONEBOX_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+}
+
+export async function clearOneBoxDraftLocal(): Promise<void> {
+  await storageRemove(ONEBOX_DRAFT_STORAGE_KEY);
+}
+
+/** Clear legacy + one-box local drafts (sign-out / account switch). Does not hit server. */
 export async function clearIntakeDraft() {
   try {
-    await removeDraft();
+    await removeLegacyDraft();
+  } catch {
+    // Ignore
+  }
+  try {
+    await clearOneBoxDraftLocal();
   } catch {
     // Ignore
   }
@@ -46,7 +88,7 @@ export async function clearIntakeDraft() {
 export function useIntakeDraft() {
   const saveDraft = useCallback(async (draft: IntakeDraft) => {
     try {
-      await persistDraft(draft);
+      await persistLegacyDraft(draft);
     } catch {
       // Ignore storage failures — intake can still be completed online.
     }
@@ -54,7 +96,7 @@ export function useIntakeDraft() {
 
   const loadDraft = useCallback(async () => {
     try {
-      return await readDraft();
+      return await readLegacyDraft();
     } catch {
       return null;
     }
@@ -62,7 +104,7 @@ export function useIntakeDraft() {
 
   const clearDraft = useCallback(async () => {
     try {
-      await removeDraft();
+      await removeLegacyDraft();
     } catch {
       // Ignore
     }

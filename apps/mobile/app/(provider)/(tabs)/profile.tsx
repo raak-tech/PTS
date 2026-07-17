@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import { Text } from 'react-native';
 
@@ -6,6 +7,7 @@ import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { useAuth } from '@/context/AuthContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
+import { caseloadUrl } from '@/lib/counselorWeb';
 
 export default function ProviderProfileScreen() {
   const router = useRouter();
@@ -19,7 +21,11 @@ export default function ProviderProfileScreen() {
     <Screen layout="tab" title="Profile" subtitle={user?.displayName ?? 'Counselor account'}>
       {user?.phone ? <Text style={styles.phone}>{user.phone}</Text> : null}
       <Text style={styles.line}>Counselor · Pain recovery program</Text>
-      <Text style={styles.line}>Session booking is configured on the web dashboard for pilot.</Text>
+      <Text style={styles.line}>
+        Deep clinical work (Plan edit, formulation, Notes) lives on the web Caseload / Client Chart. Phone OTP
+        is for quick queue and messaging.
+      </Text>
+      <Button label="Open Caseload on web" variant="secondary" onPress={() => void Linking.openURL(caseloadUrl())} />
       <Button
         label="Sign out"
         variant="ghost"

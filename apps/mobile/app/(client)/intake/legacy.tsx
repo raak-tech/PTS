@@ -1,3 +1,7 @@
+/**
+ * Legacy multi-step intake form. Only reached when
+ * EXPO_PUBLIC_USE_LEGACY_INTAKE=true (via intake/index redirect).
+ */
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Modal, Text, View } from 'react-native';
@@ -20,20 +24,8 @@ import {
 } from '@/lib/intake';
 import { spacing } from '@/theme';
 
-// Phase 4 rollback flag
-const USE_LEGACY_INTAKE = false;
-
-export default function IntakeScreen() {
+export default function LegacyIntakeScreen() {
   const router = useRouter();
-
-  // Phase 4: redirect to new onboarding unless legacy flag is set
-  if (!USE_LEGACY_INTAKE) {
-    useEffect(() => {
-      router.replace('/(client)/intake/segment');
-    }, []);
-    return null;
-  }
-
   const { completeIntake } = useAuth();
   const { colors } = useTheme();
   const draftStorage = useIntakeDraft();
@@ -123,7 +115,6 @@ export default function IntakeScreen() {
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <CrisisBar />
 
-      {/* Abandonment modal */}
       <Modal visible={showAbandonmentModal} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: spacing.lg }}>
           <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: spacing.lg, maxWidth: 340 }}>
@@ -168,7 +159,7 @@ export default function IntakeScreen() {
       <View style={styles.progressTrack}>
         <View style={[styles.progressFill, { width: `${progress}%` }]} />
       </View>
-      <Screen title={current.title} subtitle={current.subtitle} showCrisis={false}>
+      <Screen title={current.title} subtitle={current.subtitle} showCrisis={false} showAccountExit>
         <Text style={styles.stepLabel}>
           Step {step + 1} of {INTAKE_STEPS.length}
         </Text>
