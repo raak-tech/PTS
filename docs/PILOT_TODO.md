@@ -1,20 +1,40 @@
 # PTS Pilot — Consolidated Todo (single source of truth)
 
-**Last updated:** 2026-07-14 (Spec H QA pass; Phase E onsetType; client intake copy fix; APK B v25)
-
-**Session snapshot (2026-07-14 evening):**
-- **Branch:** `PainModelLearned` (ahead of master; not merged).
-- **Web:** production https://pts-web-pied.vercel.app — Spec H path + Phase E extract + client `toClientFacingText` live.
-- **Mobile:** pain-pilot APK **versionCode 25** — `apps/mobile/dist/pts-mobile-pain-pilot.apk` → prod API, `com.pts.mobile.painscript`.
-- **QA account:** client `9988776655` (OTP `123456`); counselor `+919900000002`.
-- **Spec H:** formulation → approve → Week 1 with `formulationSummary` + `personalizationBasis` — API script **9/9**.
-- **Do not commit:** WhatsApp screenshots / secrets.
+**Last updated:** 2026-07-17 (Pain Script sole path; music M1 quality + intake Tier 0; corrected action queue)
 
 **Process:** [`DEV_WORKFLOW.md`](DEV_WORKFLOW.md) · KB [`kb/README.md`](kb/README.md)
+**Pickup ranking:** [`plans/2026-07-17-action-queue-corrected.md`](plans/2026-07-17-action-queue-corrected.md) · GTM notes [`plans/2026-07-17-gtm-assessment.md`](plans/2026-07-17-gtm-assessment.md)
 
 ---
 
-## Tomorrow (2026-07-15) — kickoff list
+## Active queue (2026-07-17)
+
+### P0 — Pilot gates
+
+- [x] **Cohort / merge decision** — Pain Script is the sole product; merge `PainModelLearned` → `master` (see `DECISIONS.md` 2026-07-17).
+- [ ] **Pain Script device QA on Pixel (APK)** — Spec H smoke + Phase E `onsetType` end-to-end; music moment opens non-Hz tracks.
+- [ ] **§16 clinical sign-off with Ramya** — music M1/M2, Ayurveda authority, SD_BEHAVIOUR, modality set, EAET.
+- [ ] **Crisis escalation SOP + notification flow** — safety gate before real users (`PILOT_RECRUITMENT.md`).
+- [ ] **Pilot ops hygiene** — counselor invite codes, Ramya metrics dashboard, recruitment script.
+
+### P1 — Client-felt quality
+
+- [x] **Music M1 quality tuning** — sanitize search terms; filter Hz/healing titles; purpose-based instrumental queries; prompt bans.
+- [x] **Intake Tier 0 free gates** — max length, mash heuristics, rate limit, hash cache; round-3 requires core fields.
+- [ ] **Today rhythm device smoke** — weekly check-in + morning NRS on device.
+- [ ] **Counselor reply / "I'm struggling" response state** — sent / waiting / replied clarity.
+
+### P2 — After pilot signal
+
+- [ ] Inactive re-engagement (2+ days)
+- [ ] Owned-IP music library M2 (after §16)
+- [ ] Payment / paywall after Week 1 (pricing still open — see GTM doc)
+
+**Parked:** MSG91/Sentry/staging until go-live week; control-APK §5 QA; RAG counselor assist (no pilot spec).
+
+---
+
+## Tomorrow (2026-07-15) — kickoff list (historical)
 
 | # | Item | Why |
 |---|------|-----|
@@ -180,8 +200,8 @@ Pain Script path is primary on `PainModelLearned`. Control APK §5 device QA sti
 
 ## 9. 🟠 Counselor web & mobile alignment
 
-**Spec:** [`docs/plans/2026-07-02-section-9-counselor-alignment.md`](plans/2026-07-02-section-9-counselor-alignment.md)  
-**Process:** [`DEV_WORKFLOW.md`](DEV_WORKFLOW.md)  
+**Spec:** [`docs/plans/2026-07-02-section-9-counselor-alignment.md`](plans/2026-07-02-section-9-counselor-alignment.md)
+**Process:** [`DEV_WORKFLOW.md`](DEV_WORKFLOW.md)
 **Status:** ✅ Run A + Run B shipped — **9.5 optional**
 
 ### Context
@@ -217,9 +237,9 @@ Build 11 shipped client + API. **Run A + Run B (2026-07-02)** aligned counselor 
 
 ### Suggested dev runs (after approval)
 
-- **Run A (web):** 9.8 + 9.1 + 9.2 + 9.4  
-- **Run B (web + APK 12):** 9.3 + 9.7 + 9.6  
-- **Run C (web + APK 13):** 5.C1 + 5.C2 + 9.5  
+- **Run A (web):** 9.8 + 9.1 + 9.2 + 9.4
+- **Run B (web + APK 12):** 9.3 + 9.7 + 9.6
+- **Run C (web + APK 13):** 5.C1 + 5.C2 + 9.5
 
 ### Package checklist
 
@@ -262,22 +282,31 @@ Ship note: [`docs/plans/2026-07-16-intake-counselor-client-bridge-ship.md`](plan
 - [x] **No marketplace decision** — documented in `DECISIONS.md` 2026-07-16
 - [x] **APK policy** — build only when user explicitly asks
 - [x] Migrations `0033` (note resolution), `0034` (session join URL) — applied prod
-- [ ] **Git commit** — working tree uncommitted at handoff
+- [x] **Git commit + push** — `075e851` on `PainModelLearned`
 - [x] **APK v33 (2026-07-17)** — arm64 pain-pilot build includes Account exit, Your counselor, notification gating, and production YouTube resolver path
+
+## ✅ Done (2026-07-17 — music + intake gates; sole-path merge)
+
+- [x] Corrected action queue + GTM assessment copied to `docs/plans/2026-07-17-*`
+- [x] Music M1 quality filter + prompt bans
+- [x] Intake Tier 0 gates + round-3 core-field escape
+- [x] Decision: Pain Script sole product → merge to `master`
+- [x] APK v34 for Pixel device QA
 
 ---
 
 ## Deferred — Intake quality, LLM cost, and payment gates
 
-**Context (2026-07-13):** Avoid burning OpenRouter on nonsense intake; align client payment with deliverable value (Week 1), not raw LLM calls. **No code yet** — pick up when pilot traffic justifies it.
+**Context (2026-07-13):** Avoid burning OpenRouter on nonsense intake; align client payment with deliverable value (Week 1), not raw LLM calls.
 
 **Policy (target):** Cheap automation for intake structure; expensive AI only when intake is complete and counselor is ready to deliver Week 1; **payment only after Week 1 approval** (or explicit enrollment post–counselor review).
 
 ### Tier 0 — Free gates (before any LLM)
-- [ ] Max length cap on intake free-text (anti-spam)
-- [ ] Heuristic nonsense detection (keyboard mash, repeated chars, too few distinct words)
-- [ ] Per-user / per-phone rate limits on `POST /api/intake/extract`
-- [ ] Idempotency / cache: same text hash → return cached extraction (avoid double-billing on retries)
+- [x] Max length cap on intake free-text (anti-spam) — 4000 chars (2026-07-17)
+- [x] Heuristic nonsense detection (keyboard mash, repeated chars, too few distinct words) — strengthened 2026-07-17
+- [x] Per-user / per-phone rate limits on `POST /api/intake/extract` — 20/hour (2026-07-17)
+- [x] Idempotency / cache: same text hash → return cached extraction — memory + `intake_sessions` (2026-07-17)
+- [x] Round-3 escape requires core fields (not blind force-through) — 2026-07-17
 
 ### Tier 1 — Cheap on-topic check
 - [ ] Lightweight classifier or small model: “personal health/sleep/stress concern?” → block extraction LLM if off-topic

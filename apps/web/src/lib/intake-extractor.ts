@@ -285,7 +285,7 @@ function parseExtractionResponse(raw: string): {
 
 // ── Compute gate status ───────────────────────────────────────
 
-function computeGateStatus(
+export function computeGateStatus(
   extracted: ExtractedIntake,
   round: number,
 ): {
@@ -311,11 +311,18 @@ function computeGateStatus(
   const overallConfidence =
     confidences.reduce((a, b) => a + b, 0) / confidences.length;
 
-  // After round 2 (3 counting initial), surrender to counselor
-  const requiredFieldsMet =
-    round >= 3
-      ? true // force through — counselor will see flags
-      : missingRequired.length === 0 && lowConfidenceRequired.length === 0;
+  // After round 3, allow soft only if the core story fields exist — not a blind force-through.
+  const CORE_AT_ESCAPE = ['painDescription', 'biggestChange', 'recoveryGoal'] as const;
+  let requiredFieldsMet =
+    missingRequired.length === 0 && lowConfidenceRequired.length === 0;
+
+  if (round >= 3 && !requiredFieldsMet) {
+    const coreMissing = CORE_AT_ESCAPE.filter((field) => {
+      const entry = extracted[field];
+      return entry.value === null || entry.value === undefined || entry.value === '';
+    });
+    requiredFieldsMet = coreMissing.length === 0;
+  }
 
   return {
     requiredFieldsMet,

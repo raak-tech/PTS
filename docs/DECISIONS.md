@@ -160,3 +160,21 @@ Use this to record decisions that affect architecture, product scope, safety/pri
 - **Why:** Iteration speed; avoid 10+ minute builds after every small change.
 - **Alternatives considered:** Auto-build after every mobile change (rejected for this pilot phase).
 - **Consequences / follow-ups:** `MOBILE.md`, `AGENTS.md`, `.cursor/rules/mobile-expo.mdc`, `.cursor/rules/pts-knowledge-base.mdc`.
+
+- **Date:** 2026-07-17
+- **Decision:** **Pain Script (`PainModelLearned`) is the sole product path.** Merge into `master` and stop maintaining a separate control/legacy cohort as the pilot product. Cohort B / pain-script is the only client experience going forward.
+- **Why:** Pilot will run one coherent product; dual-branch A/B and master-control APK are deferred indefinitely.
+- **Alternatives considered:** Keep A/B against master control (rejected for this pilot); leave branch unmerged (rejected — ops and docs drift).
+- **Consequences / follow-ups:** Merge `PainModelLearned` → `master`; update `PILOT_TODO.md` to the corrected action queue; park control-APK §5 QA unless explicitly revived.
+
+- **Date:** 2026-07-17
+- **Decision:** **Music M1 quality filter** — YouTube resolver sanitizes search terms and drops titles matching Hz / solfeggio / “sound healing” / manifestation patterns; purpose-based instrumental queries are the default. LLM prompts forbid those search terms.
+- **Why:** Live YouTube results skewed to pseudoscientific frequency-healing videos, conflicting with “no healing claims” music guidance.
+- **Alternatives considered:** Manual curator-only catalog (deferred to M2); leave unfiltered (rejected).
+- **Consequences / follow-ups:** Owned-IP M2 still after §16 Ramya sign-off. Probe `/api/health/youtube`.
+
+- **Date:** 2026-07-17
+- **Decision:** **Intake Tier 0 gates promoted into the live extract path** — max length 4000, stronger mash/diversity checks, per-user extract rate limit (20/hour via `llm_usage`), identical-text cache (memory + `intake_sessions`), and round-3 escape requires core fields (`painDescription`, `biggestChange`, `recoveryGoal`) rather than a blind force-through.
+- **Why:** Protect OpenRouter spend and plan quality before pilot recruitment.
+- **Alternatives considered:** Leave deferred until traffic (rejected — cheap and high leverage now).
+- **Consequences / follow-ups:** Tier 1 on-topic classifier still deferred; see `docs/plans/2026-07-17-action-queue-corrected.md`.

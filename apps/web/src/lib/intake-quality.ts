@@ -15,6 +15,13 @@ export function assessIntakeTextQuality(text: string): {
   clientMessage: string;
 } {
   const trimmed = text.trim();
+  const MAX_LEN = 4000;
+  if (trimmed.length > MAX_LEN) {
+    return {
+      ok: false,
+      clientMessage: `Please keep this under ${MAX_LEN} characters — a clear short story works best.`,
+    };
+  }
   if (trimmed.length < 30) {
     return {
       ok: false,
@@ -35,6 +42,15 @@ export function assessIntakeTextQuality(text: string): {
     };
   }
 
+  // Keyboard mash / low lexical diversity (e.g. "asdf asdf asdf …")
+  if (words.length >= 8 && uniqueWords.size / words.length < 0.35) {
+    return {
+      ok: false,
+      clientMessage:
+        'That looks repeated or unclear. Please describe your situation in a few different sentences.',
+    };
+  }
+
   const alphaRatio = (trimmed.match(/[a-zA-Z]/g)?.length ?? 0) / trimmed.length;
   if (alphaRatio < 0.5) {
     return {
@@ -44,10 +60,26 @@ export function assessIntakeTextQuality(text: string): {
     };
   }
 
+  const vowels = (trimmed.match(/[aeiouAEIOU]/g)?.length ?? 0) / Math.max(1, (trimmed.match(/[a-zA-Z]/g)?.length ?? 0));
+  if (vowels < 0.2 && trimmed.length >= 40) {
+    return {
+      ok: false,
+      clientMessage: 'Please rewrite in normal sentences so your counselor can understand you.',
+    };
+  }
+
   if (/(.)\1{6,}/.test(trimmed)) {
     return {
       ok: false,
       clientMessage: 'Please rewrite in normal sentences so your counselor can understand you.',
+    };
+  }
+
+  // Common keyboard-row mash patterns
+  if (/asdf|qwer|zxcv|hjkl|1234|abcd abcd/i.test(trimmed) && uniqueWords.size < 8) {
+    return {
+      ok: false,
+      clientMessage: 'Please describe what is happening in your own words — a few real sentences help most.',
     };
   }
 

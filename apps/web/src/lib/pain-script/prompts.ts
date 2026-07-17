@@ -63,6 +63,8 @@ export const PLAN_STAGE2_BOUNDARIES = `BOUNDARIES:
 - Ayurveda: general dietary/lifestyle wellbeing only — no herbs, dosha diagnosis, or treatment claims.
 - Never tell the client to stop/start medication; never contradict a clinician.
 - Music: output mood/purpose/searchTerms ONLY — never invent track names or artists.
+  searchTerms must be ordinary music descriptors (e.g. "calm piano instrumental", "soft acoustic guitar").
+  NEVER use Hz frequencies, solfeggio, "sound healing", "frequency healing", manifestation, or miracle-heal language.
 
 CLIENT-SAFE LANGUAGE (formulationSummary, overview, dailyPractices, personalizationBasis):
 Never use "script", "fantasy", "transactional analysis", "maintenance loop", "displays",

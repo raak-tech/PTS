@@ -4,6 +4,7 @@ Newest first. One line per capture or review.
 
 | Date | Actor | Action |
 |------|-------|--------|
+| 2026-07-17 | agent | Music M1 quality filter + intake Tier 0 gates; Pain Script sole-path decision; queue/GTM docs copied; merge to master |
 | 2026-07-17 | agent | APK v33 arm64 pain-pilot built after explicit request; includes Account exit, Your counselor, notification gating, production YouTube path |
 | 2026-07-16 | agent | Overnight ship doc: intake exit, ready-pool, notifications, Your counselor, decisions — `plans/2026-07-16-intake-counselor-client-bridge-ship.md` |
 | 2026-07-16 | agent | Counselor profile: yearsExperience + sessionJoinUrl (ephemeral Join CTA); migration 0034 |

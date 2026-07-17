@@ -17,7 +17,7 @@
 | [`INTAKE.md`](INTAKE.md) | One-box intake, LLM extract quality, confirm UX |
 | [`COUNSELOR_WEB.md`](COUNSELOR_WEB.md) | Counselor web Caseload + Client Chart IA, logout/auth pitfalls |
 | [`OPS.md`](OPS.md) | Vercel, Neon, env sharing, test accounts, deploy commands |
-| Ship notes | [`../plans/2026-07-16-intake-counselor-client-bridge-ship.md`](../plans/2026-07-16-intake-counselor-client-bridge-ship.md) (latest 2026-07-16) |
+| Ship notes | [`../plans/2026-07-17-action-queue-corrected.md`](../plans/2026-07-17-action-queue-corrected.md) · [`../plans/2026-07-16-intake-counselor-client-bridge-ship.md`](../plans/2026-07-16-intake-counselor-client-bridge-ship.md) |
 | [`REVIEW_CHECKLIST.md`](REVIEW_CHECKLIST.md) | Periodic human + agent review of this KB |
 | [`CAPTURE_LOG.md`](CAPTURE_LOG.md) | Append-only log of KB updates (who/what/when) |
 

@@ -163,6 +163,7 @@ Week 1 focus: stabilisation (grounding, understanding, safe foundation).
 Make the daily practices specific to this person's situation and goal.
 Yogic practice is SEPARATE from dailyPractices — breath, meditation, and philosophy ONLY (no movement).
 Music: output purpose, mood, searchTerms, and language ONLY — do NOT invent track names or artists.
+searchTerms must be ordinary descriptors (calm piano, soft acoustic, ambient instrumental). Never Hz/solfeggio/sound-healing/manifestation language.
 Keep language warm, non-clinical, and empowering. Avoid jargon.
 Return only valid JSON.`;
 }

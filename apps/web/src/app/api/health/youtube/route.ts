@@ -18,9 +18,10 @@ export async function GET() {
     const url = new URL('https://www.googleapis.com/youtube/v3/search');
     url.searchParams.set('part', 'snippet');
     url.searchParams.set('type', 'video');
-    url.searchParams.set('q', 'calm instrumental grounding pain support');
-    url.searchParams.set('maxResults', '3');
+    url.searchParams.set('q', 'calm ambient instrumental soft piano no vocals');
+    url.searchParams.set('maxResults', '5');
     url.searchParams.set('safeSearch', 'strict');
+    url.searchParams.set('videoCategoryId', '10');
     url.searchParams.set('key', apiKey);
 
     const res = await fetch(url.toString());
@@ -46,10 +47,14 @@ export async function GET() {
       });
     }
 
-    const sample = (body.items ?? []).map(item => ({
-      videoId: item.id?.videoId,
-      title: item.snippet?.title,
-    }));
+    const banned =
+      /\b(\d{3,4}\s*hz|solfeggio|frequency|sound\s*healing|healing\s*session|manifest|chakra|binaural)\b/i;
+    const sample = (body.items ?? [])
+      .filter((item) => !banned.test(item.snippet?.title ?? ''))
+      .map((item) => ({
+        videoId: item.id?.videoId,
+        title: item.snippet?.title,
+      }));
 
     return NextResponse.json({
       status: sample.length ? 'ok' : 'error',
