@@ -39,7 +39,7 @@ export default function Index() {
 
   if (user.role === 'provider') return <Redirect href="/(provider)/(tabs)" />;
 
-  if (!user.intakeComplete) return <Redirect href="/(client)/intake" />;
+  if (!user.intakeComplete) return <Redirect href="/(client)/clinic-enroll" />;
   if (!user.planApproved) return <Redirect href="/(client)/waiting-plan" />;
   if (programTime?.programComplete) return <Redirect href="/(client)/graduation" />;
 

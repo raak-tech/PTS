@@ -1,36 +1,44 @@
 # PTS Pilot — Consolidated Todo (single source of truth)
 
-**Last updated:** 2026-07-17 (Pain Script sole path; music M1 quality + intake Tier 0; corrected action queue)
+**Last updated:** 2026-07-17 (B2B2C clinic design-partner pivot; Run 1 in build)
 
 **Process:** [`DEV_WORKFLOW.md`](DEV_WORKFLOW.md) · KB [`kb/README.md`](kb/README.md)
 **Pickup ranking:** [`plans/2026-07-17-action-queue-corrected.md`](plans/2026-07-17-action-queue-corrected.md) · GTM notes [`plans/2026-07-17-gtm-assessment.md`](plans/2026-07-17-gtm-assessment.md)
 
 ---
 
-## Active queue (2026-07-17)
+## Active queue (2026-07-17 — clinic B2B2C)
 
 ### P0 — Pilot gates
 
 - [x] **Cohort / merge decision** — Pain Script is the sole product; merge `PainModelLearned` → `master` (see `DECISIONS.md` 2026-07-17).
-- [ ] **Pain Script device QA on Pixel (APK)** — Spec H smoke + Phase E `onsetType` end-to-end; music moment opens non-Hz tracks.
+- [x] **GTM decision** — B2B2C only; Sagar's Rehab first design partner; per-active-patient pricing unit.
+- [ ] **Pain Script device QA on Pixel (APK v34)** — Spec H smoke + Phase E `onsetType` end-to-end; music moment opens non-Hz tracks.
 - [ ] **§16 clinical sign-off with Ramya** — music M1/M2, Ayurveda authority, SD_BEHAVIOUR, modality set, EAET.
 - [ ] **Crisis escalation SOP + notification flow** — safety gate before real users (`PILOT_RECRUITMENT.md`).
-- [ ] **Pilot ops hygiene** — counselor invite codes, Ramya metrics dashboard, recruitment script.
+- [ ] **DPDP/clinic contract gate** — legal review, named grievance officer, sharing addendum, breach SOP.
 
-### P1 — Client-felt quality
+### P1 — Clinic design-partner build
 
-- [x] **Music M1 quality tuning** — sanitize search terms; filter Hz/healing titles; purpose-based instrumental queries; prompt bans.
-- [x] **Intake Tier 0 free gates** — max length, mash heuristics, rate limit, hash cache; round-3 requires core fields.
-- [ ] **Today rhythm device smoke** — weekly check-in + morning NRS on device.
-- [ ] **Counselor reply / "I'm struggling" response state** — sent / waiting / replied clarity.
+- [x] **Run 1: clinic data model + role foundation** — `0035` migration, Drizzle schema, Sagar's seed. Shipped prod 2026-07-17. Spec: [`plans/2026-07-17-clinic-b2b2c-buyer-layer.md`](plans/2026-07-17-clinic-b2b2c-buyer-layer.md).
+- [x] **Run 2: enrollment code + separate clinic-sharing consent** — redeem/consent/admin-attach APIs; mobile `clinic-enroll` code+consent before intake. Built 2026-07-18.
+- [x] **Run 3: clinic-scoped referrer projection** — `/clinic` web (referrer + clinic_admin), whitelisted `GET /api/clinic/patients`, code generation, audited; no counselor content. Built 2026-07-18.
+- [x] **Run 4: baseline/Week-6 instruments + daily exercise self-report** — full instrument set (`0036`), server-side scoring, mobile runner + physio Yes/Partly/No card. Built 2026-07-18.
+- [x] **Run 5: aggregate clinic outcomes dashboard** — `GET /api/clinic/dashboard`, `n<5` suppression, PTS engagement vs physio self-report separated. Built 2026-07-18.
+- [x] **Run 6: active-patient billing meter** — `GET /api/clinic/billing` (+CSV); active = in-program AND ≥1 PTS engagement/month. Built 2026-07-18.
+- [x] **Management gaps closed** — admin clinic-staff onboarding (`/admin/clinics`, create/attach/remove referrer + clinic_admin), enrollment lifecycle (status + referrer reassign via `PATCH /api/clinic/enrollments/[id]`), code revocation (`DELETE /api/clinic/codes/[id]`), and patient-side clinic-sharing withdrawal (mobile Privacy & data toggle). Built 2026-07-18; no schema change. See buyer-layer plan "Management gaps closed".
+- [ ] **Deploy Runs 2–6 + management layer to prod + Pixel APK QA** — onboarding now routes through `clinic-enroll`; verify skip path, code redeem, consent, instruments, physio card, and the new admin/clinic/patient management actions before recruiting.
 
-### P2 — After pilot signal
+### P2 — Client quality / after pilot signal
 
+- [x] Music M1 quality tuning and intake Tier 0 gates.
+- [ ] Today rhythm + weekly check-in device smoke.
+- [ ] Counselor reply / "I'm struggling" response state.
 - [ ] Inactive re-engagement (2+ days)
 - [ ] Owned-IP music library M2 (after §16)
-- [ ] Payment / paywall after Week 1 (pricing still open — see GTM doc)
+- [ ] Verified physio-plan adherence (post-pilot prescription-ingestion wedge)
 
-**Parked:** MSG91/Sentry/staging until go-live week; control-APK §5 QA; RAG counselor assist (no pilot spec).
+**Parked:** D2C/payment paywall, MSG91/Sentry/staging until go-live week, control-APK QA, RAG counselor assist, physio-prescription ingestion.
 
 ---
 

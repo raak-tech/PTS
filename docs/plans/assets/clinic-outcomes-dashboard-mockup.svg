@@ -1,0 +1,88 @@
+<svg viewBox="0 0 1040 636" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, Segoe UI, Roboto, sans-serif">
+<title>Clinic outcomes dashboard mockup for Sagar's Rehab</title>
+<desc>Aggregate, de-identified cohort read-out separating PTS program engagement from self-reported physio-exercise adherence, plus retention and baseline-to-week-6 outcome changes. Sample data.</desc>
+<rect x="0" y="0" width="1040" height="636" fill="#F5F7F7"/>
+<text x="24" y="34" font-size="21" font-weight="700" fill="#1E2A2A">Pain to Strength · Clinic Outcomes</text>
+<text x="24" y="56" font-size="13" fill="#6C7B7B">Cohort: ACL post-op · 6-week pilot · sample data</text>
+<rect x="836" y="18" width="180" height="34" rx="17" fill="#DCEBEA"/>
+<text x="926" y="40" font-size="13" font-weight="600" fill="#14746F" text-anchor="middle">Sagar's Rehab</text>
+<g>
+<rect x="24" y="80" width="239" height="78" rx="10" fill="#FFFFFF" stroke="#E2E8E8"/>
+<text x="44" y="112" font-size="30" font-weight="700" fill="#1E2A2A">14</text>
+<text x="44" y="136" font-size="12" fill="#6C7B7B">Enrolled</text>
+</g>
+<g>
+<rect x="275" y="80" width="239" height="78" rx="10" fill="#FFFFFF" stroke="#14746F"/>
+<text x="295" y="112" font-size="30" font-weight="700" fill="#14746F">11</text>
+<text x="295" y="136" font-size="12" fill="#6C7B7B">Active this month</text>
+</g>
+<g>
+<rect x="526" y="80" width="239" height="78" rx="10" fill="#FFFFFF" stroke="#E2E8E8"/>
+<text x="546" y="112" font-size="30" font-weight="700" fill="#2E7D5B">9</text>
+<text x="546" y="136" font-size="12" fill="#6C7B7B">Reached Week 6</text>
+</g>
+<g>
+<rect x="777" y="80" width="239" height="78" rx="10" fill="#FFFFFF" stroke="#E2E8E8"/>
+<text x="797" y="112" font-size="30" font-weight="700" fill="#C77D28">2</text>
+<text x="797" y="136" font-size="12" fill="#6C7B7B">Withdrawn</text>
+</g>
+<rect x="24" y="176" width="478" height="104" rx="10" fill="#FFFFFF" stroke="#E2E8E8"/>
+<text x="44" y="202" font-size="13" font-weight="600" fill="#1E2A2A">Engagement between visits</text>
+<text x="482" y="202" font-size="11" fill="#6C7B7B" text-anchor="end">n = 11</text>
+<text x="44" y="244" font-size="30" font-weight="700" fill="#14746F">78%</text>
+<text x="44" y="264" font-size="11" fill="#6C7B7B">PTS program (check-ins, practices)</text>
+<line x1="262" y1="214" x2="262" y2="268" stroke="#E2E8E8"/>
+<text x="284" y="244" font-size="30" font-weight="700" fill="#2E7D5B">71%</text>
+<text x="284" y="264" font-size="11" fill="#6C7B7B">Physio exercises · self-reported</text>
+<rect x="24" y="292" width="478" height="152" rx="10" fill="#FFFFFF" stroke="#E2E8E8"/>
+<text x="44" y="320" font-size="13" font-weight="600" fill="#1E2A2A">Retention</text>
+<text x="44" y="350" font-size="12" fill="#6C7B7B">Day 7</text>
+<rect x="120" y="340" width="330" height="12" rx="6" fill="#EAF0EF"/>
+<rect x="120" y="340" width="284" height="12" rx="6" fill="#2E7D5B"/>
+<text x="460" y="350" font-size="12" font-weight="600" fill="#1E2A2A">86%</text>
+<text x="44" y="382" font-size="12" fill="#6C7B7B">Day 14</text>
+<rect x="120" y="372" width="330" height="12" rx="6" fill="#EAF0EF"/>
+<rect x="120" y="372" width="234" height="12" rx="6" fill="#2E7D5B"/>
+<text x="460" y="382" font-size="12" font-weight="600" fill="#1E2A2A">71%</text>
+<text x="44" y="414" font-size="12" fill="#6C7B7B">Week 6</text>
+<rect x="120" y="404" width="330" height="12" rx="6" fill="#EAF0EF"/>
+<rect x="120" y="404" width="211" height="12" rx="6" fill="#14746F"/>
+<text x="460" y="414" font-size="12" font-weight="600" fill="#1E2A2A">64%</text>
+<text x="44" y="434" font-size="11" fill="#2E7D5B">Targets met: Day 7 e 70% · Day 14 e 40%</text>
+<rect x="514" y="176" width="502" height="268" rx="10" fill="#FFFFFF" stroke="#E2E8E8"/>
+<text x="534" y="204" font-size="13" font-weight="600" fill="#1E2A2A">Outcome change · baseline ’ Week 6</text>
+<rect x="820" y="192" width="14" height="10" rx="2" fill="#B8C4C4"/>
+<text x="838" y="201" font-size="11" fill="#6C7B7B">baseline</text>
+<rect x="908" y="192" width="14" height="10" rx="2" fill="#14746F"/>
+<text x="926" y="201" font-size="11" fill="#6C7B7B">Week 6</text>
+<text x="534" y="234" font-size="12" font-weight="600" fill="#1E2A2A">Fear of re-injury (TSK-11) <tspan fill="#6C7B7B" font-weight="400">· lower is better</tspan></text>
+<rect x="534" y="242" width="232" height="10" rx="5" fill="#B8C4C4"/>
+<text x="772" y="251" font-size="11" fill="#6C7B7B">34</text>
+<rect x="534" y="256" width="164" height="10" rx="5" fill="#14746F"/>
+<text x="704" y="265" font-size="11" fill="#14746F" font-weight="600">24</text>
+<rect x="928" y="243" width="72" height="24" rx="12" fill="#E7F1EC"/>
+<text x="964" y="259" font-size="12" font-weight="700" fill="#2E7D5B" text-anchor="middle">¼ 10</text>
+<text x="534" y="300" font-size="12" font-weight="600" fill="#1E2A2A">Return-to-sport readiness <tspan fill="#6C7B7B" font-weight="400">· 010</tspan></text>
+<rect x="534" y="308" width="126" height="10" rx="5" fill="#B8C4C4"/>
+<text x="666" y="317" font-size="11" fill="#6C7B7B">4.2</text>
+<rect x="534" y="322" width="213" height="10" rx="5" fill="#14746F"/>
+<text x="753" y="331" font-size="11" fill="#14746F" font-weight="600">7.1</text>
+<rect x="928" y="309" width="72" height="24" rx="12" fill="#E7F1EC"/>
+<text x="964" y="325" font-size="12" font-weight="700" fill="#2E7D5B" text-anchor="middle">² 2.9</text>
+<text x="534" y="366" font-size="12" font-weight="600" fill="#1E2A2A">Pain self-efficacy (PSEQ) <tspan fill="#6C7B7B" font-weight="400">· 060</tspan></text>
+<rect x="534" y="374" width="160" height="10" rx="5" fill="#B8C4C4"/>
+<text x="700" y="383" font-size="11" fill="#6C7B7B">32</text>
+<rect x="534" y="388" width="230" height="10" rx="5" fill="#14746F"/>
+<text x="770" y="397" font-size="11" fill="#14746F" font-weight="600">46</text>
+<rect x="928" y="375" width="72" height="24" rx="12" fill="#E7F1EC"/>
+<text x="964" y="391" font-size="12" font-weight="700" fill="#2E7D5B" text-anchor="middle">² 14</text>
+<text x="534" y="428" font-size="11" fill="#6C7B7B">n = 9 completed both baseline and Week 6</text>
+<rect x="24" y="456" width="992" height="56" rx="10" fill="#14746F"/>
+<text x="44" y="480" font-size="13" fill="#DCEBEA">Active patients this month</text>
+<text x="44" y="502" font-size="16" font-weight="700" fill="#FFFFFF">11 patients · basis for per-active-patient invoice</text>
+<text x="996" y="490" font-size="12" fill="#DCEBEA" text-anchor="end">Billing meter</text>
+<text x="24" y="540" font-size="12" font-weight="600" fill="#1E2A2A">Privacy &amp; scope</text>
+<text x="24" y="560" font-size="12" fill="#6C7B7B">Aggregate &amp; de-identified; every metric shows n; cells with n&lt;5 suppressed. "PTS program" = engagement with PTS practices;</text>
+<text x="24" y="578" font-size="12" fill="#6C7B7B">"Physio exercises" is patient self-report, not device-verified. Clinic sees engagement/progress only  no counseling content.</text>
+<text x="24" y="606" font-size="11" fill="#9AA8A8" font-style="italic">Sample data for layout  not real patients.</text>
+</svg>

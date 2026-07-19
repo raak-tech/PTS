@@ -4,6 +4,7 @@ import { Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { PhysioSelfReportCard } from '@/components/clinic/PhysioSelfReportCard';
 import { CalendarBuilder } from '@/components/daily/CalendarBuilder';
 import { CounselorAudioPlayer } from '@/components/daily/CounselorAudioPlayer';
 import { VoiceReadOut } from '@/components/daily/VoiceReadOut';
@@ -802,6 +803,8 @@ export default function TodayScreen() {
           <TodayTaskQueue tasks={eveningTasks} renderExpanded={renderEveningTask} />
         </>
       )}
+
+      <PhysioSelfReportCard />
 
       {programTime?.weeklyCheckInDue ? (
         <Card title="Weekly check-in due">

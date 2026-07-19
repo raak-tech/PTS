@@ -23,6 +23,8 @@ export default function ClientLayout() {
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="clinic-enroll" options={{ headerShown: false }} />
+      <Stack.Screen name="instruments" options={{ title: 'Questionnaires' }} />
       <Stack.Screen name="intake" options={{ headerShown: false }} />
       <Stack.Screen name="intake-complete" options={{ title: 'Complete' }} />
       <Stack.Screen name="graduation" options={{ title: 'Graduation', headerShown: false }} />

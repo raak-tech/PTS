@@ -10,6 +10,12 @@ Use this to record decisions that affect architecture, product scope, safety/pri
 - **Consequences / follow-ups:**
 
 ## Decisions
+- **Date:** 2026-07-18
+- **Decision:** Locked the clinic B2B2C pilot design decisions and built Runs 2–6: (1) clinic-sharing consent is a **separate** opt-in screen shown right after the patient enters an enrollment code, never bundled into intake program consent; (2) Sagar's gets **both** clinic roles — `referrer` (own attributed patients) and `clinic_admin` (aggregate + billing); (3) the pilot instrument set is **full** — TSK-11 + return-to-sport readiness + PSEQ + PHQ-2/GAD-2 + PCS at baseline and Week 6; (4) a billable **active patient** = in-program AND ≥1 PTS engagement event in the calendar month; (5) the physio-exercise self-report is a daily **Yes / Partly / No** patient self-report.
+- **Why:** Unblocks the Sagar's Rehab pilot buyer layer while keeping the DPDP-aligned consent separation and the honesty boundary (PTS program engagement is never reported as physiotherapy adherence).
+- **Alternatives considered:** Bundled consent (rejected — weakens separate lawful basis for clinic sharing); single combined clinic role (rejected — owner and physio need different scopes); minimal instrument set (rejected — user chose the richer set); usage-independent billing (rejected — pay for value/engagement).
+- **Consequences / follow-ups:** Server scores instruments authoritatively (clients never submit a trusted score). Aggregates suppress cells with n<5. Still gated before recruitment: prod deploy, Pixel APK QA (onboarding routing now passes through `clinic-enroll`), clinical sign-off on instruments, and the DPDP addendum + named grievance officer. Refs: `docs/plans/2026-07-17-clinic-b2b2c-buyer-layer.md`.
+
 - **Date:** 2026-04-18
 - **Decision:** Create initial repo scaffold under `/home/satananth/projects/PTS`.
 - **Why:** Establish a stable place to capture scope + safety/privacy constraints and iterate quickly.
@@ -178,3 +184,15 @@ Use this to record decisions that affect architecture, product scope, safety/pri
 - **Why:** Protect OpenRouter spend and plan quality before pilot recruitment.
 - **Alternatives considered:** Leave deferred until traffic (rejected — cheap and high leverage now).
 - **Consequences / follow-ups:** Tier 1 on-topic classifier still deferred; see `docs/plans/2026-07-17-action-queue-corrected.md`.
+
+- **Date:** 2026-07-17
+- **Decision:** **B2B2C only for GTM; no D2C.** A physio/sports-med clinic is the buyer and distribution channel, the patient is the mobile user, and PTS is the psychological support layer alongside the clinic's physical rehabilitation. First design partner: **Sagar's Rehab, Adyar**. Pilot pricing unit: **active patient per month** (exact active definition remains a Run 6 decision).
+- **Why:** Clinic handoff lowers acquisition friction and stigma, gives PTS a payer aligned to outcomes, and concentrates the initial sports/activity-injury cohort.
+- **Alternatives considered:** Patient-paid D2C (rejected for initial GTM); employer/insurer-first B2B (deferred until outcome evidence and data posture mature).
+- **Consequences / follow-ups:** Build the thin clinic buyer layer in `docs/plans/2026-07-17-clinic-b2b2c-buyer-layer.md`. PTS counselor retains formulation/plan/safety ownership. Clinic/referrer access is a separately consented, server-whitelisted projection only — never messages, counseling notes, reflections, read-outs, safety detail, or plan content.
+
+- **Date:** 2026-07-17
+- **Decision:** **Never present PTS program engagement as physiotherapy adherence.** Pilot reports two separate metrics: (1) PTS program engagement derived from PTS activities and (2) patient self-reported physio-exercise completion (Yes/Partly/No), explicitly labeled self-report and not device-verified.
+- **Why:** PTS does not ingest or verify the clinic's exercise prescription; conflating its psychological practices with rehab adherence would overclaim and undermine clinic trust.
+- **Alternatives considered:** Claim PTS completion as rehab adherence (rejected); ingest the physio prescription now (deferred post-pilot wedge).
+- **Consequences / follow-ups:** Enforce wording in APIs, clinic UI, dashboard, pitch, and DPDP documentation. Keep full prescription ingestion out of the pilot.

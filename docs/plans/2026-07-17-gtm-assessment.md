@@ -1,72 +1,72 @@
-# Pain to Strength — GTM Assessment
+# Pain to Strength — GTM Assessment (v2.1)
 
 **Date:** 2026-07-17
-**Grounded in:** `PROJECT_BRIEF.md`, `DECISIONS.md`, `TRACK0_DECISIONS.md`, `PILOT_RECRUITMENT.md`, `BACKLOG.md`.
-**Framing:** This is a working assessment, not a plan of record. It names the motion I'd run and the gaps that will bite before you can scale past the pilot.
+**Grounded in:** `PROJECT_BRIEF.md`, `DECISIONS.md`, `TRACK0_DECISIONS.md`, `PILOT_RECRUITMENT.md`, `BACKLOG.md` + GTM decisions locked this session.
+
+## Decisions locked this session
+1. **B2B2C only — no direct-to-consumer.** The middle-B aggregates and delivers users (CAC collapses) and is the payer (no charging a pain patient with cost + stigma barriers). Fits the "no marketplace / scale via program + RAG / human time is scarce" thesis.
+2. **First design partner = physio / sports-med network** (Sagar's Rehab, Adyar, Chennai).
+3. **Pricing unit = per active patient / month.**
 
 ---
 
-## 1. Where you actually are
+## 1. The model
 
-You've made most of the hard *product* decisions and very few of the hard *commercial* ones. Decided: brand ("Pain to Strength"), mobile-only client / web counselor, two pilot personas (general health disruption + sports/activity injury, Chennai), counseling-led scope, 12h SLA, credentialing, no marketplace, external live sessions, scale-via-program+RAG rather than 1:1 human headcount.
+The **clinic is the buyer and the distribution channel**; the **patient is the end user**; **PTS is the psychological support layer alongside the physio's physical rehab.** The physio rebuilds the body; PTS works on the fear of re-injury, identity loss, motivation, and consistency that decide whether the patient follows through.
 
-**Undecided and load-bearing for GTM:** who pays, how much, through what channel, and whether counselors are compensated. `BACKLOG.md` Track 0 still lists "business model (D2C / B2B / both)" and "pricing and access model" as open 🟠, and `DECISIONS.md` has **no pricing entry**. The pilot as currently specced measures engagement, not willingness-to-pay or outcome. That's the core gap.
+## 2. What you're selling (ROI to the clinic) — stated honestly
 
----
+Physio home-exercise non-adherence runs ~30–50% and is the biggest reason rehab outcomes disappoint. **The honest claim:** PTS moves the *psychological drivers* of that non-adherence — it does **not** measure or verify the physio's exercise prescription (PTS's daily practices are psychological, not the rehab exercises). So what PTS actually improves and can prove:
+- **Fear of re-injury (TSK-11) ↓** — an under-treated driver of dropout and repeat episodes
+- **Pain self-efficacy (PSEQ) ↑** and **return-to-sport readiness ↑**
+- **Consistency / reduced mid-rehab dropout** (retention)
+- **A patient self-reported signal on doing their exercises** (labeled self-report, not device-verified)
 
-## 2. The motion I'd run
+These are causally upstream of the clinic's return-to-sport rate and time-to-function. Position it as *"we move the mindset that drives your outcomes, and we measure it,"* not *"we raise your exercise adherence."* (Verifying actual exercise completion = ingesting the physio's plan = the post-pilot wedge.)
 
-**Primary wedge — physio / ortho clinic referral, D2C in Chennai.** Your own brief is the pitch: *"the physio fixes the knee; nobody helps with the fear of re-injury, the identity loss, the anxiety."* That is a referral handoff at the exact moment of need, from a clinician who already has the patient's trust and no product to hand them for the psychological half. This beats social/network recruitment on CAC, intent, and defensibility. It is missing today: there is no clinician referral link, no partner view, no "refer a patient" surface. Build the referral as a product, not a favour.
+> **Do not over-claim adherence.** Reporting PTS-engagement as rehab-exercise adherence is the one thing a sports-med clinician will catch instantly and it poisons trust in every other number. Keep PTS engagement and self-reported exercise adherence as two clearly separate, labeled metrics.
 
-**Why not the alternatives first:**
-- **Broad D2C / paid social** — high CAC into a stigmatised, low-intent audience; save it for after you have outcome proof.
-- **B2B (employer / insurer / TPA)** — biggest TAM (workplace-injury and motor-accident claims in India), but you deferred the workplace persona for legal reasons, and it needs data residency + regulatory posture you've explicitly parked. Right *second* act, wrong *first*.
-- **Sports academies / gyms / sports-med** — a clean, motivated cohort and a good secondary channel once the clinic playbook works.
+## 3. What this forces you to build (net-new, buyer-side)
 
-**Sequence:** clinic-referral D2C pilot (prove outcome + willingness-to-pay) → productise the referral channel + 2–3 anchor clinics → then open a B2B conversation (employer/insurer) *armed with outcome data*.
+Everything shipped is end-user (mobile client) or internal ops (`/admin`). B2B2C flips the customer; the buyer-side product barely exists. See the build brief (`docs/plans/2026-07-17-clinic-b2b2c-buyer-layer.md`):
+- **Physio-referrer role + clinic org layer** — thin, not a second counselor Chart.
+- **Clinic outcomes dashboard** — aggregate, de-identified. *This is the product you sell.*
+- **Clinician-initiated enrollment** replacing self-serve signup.
+- **Per-active-patient billing meter.**
+- **Outcome instruments + a self-reported exercise-adherence item** (the honest adherence figure).
 
----
+## 4. Outcome measurement (now contractual)
 
-## 3. What's missing — the honest list
+At intake + Week 6: TSK-11, return-to-sport readiness, PSEQ, PHQ-2/GAD-2. Daily: a single self-reported "did you do your exercises?" item. A pre/post delta joined to retention is the renewal case and, later, the insurer/employer wedge.
 
-**A. Monetisation is undefined.** No price, no payer, no willingness-to-pay test. The deferred note ("pay after Week 1 approval") is a *placement* instinct, not a model. **Add a price test to the pilot** even if the pilot is free — a fake-door ("after the free pilot this would be ₹X/month — would you continue?") or a paid second cohort. Without this you'll scale a thing you can't charge for.
+## 5. Clinical + data boundary
 
-**B. No outcome measurement.** For a pain product this is the whole ballgame — it's your D2C conversion proof, your clinic-referral credibility, and eventually your B2B/insurer wedge. Current pilot metrics are all *process* (activation, retention, SLA). Add validated instruments at intake and Week 6: **Pain Self-Efficacy Questionnaire (PSEQ)**, **Pain Catastrophizing Scale (PCS)**, **Brief Pain Inventory (BPI)** for interference, plus **PHQ-2/GAD-2** for mood. A pre/post delta is the single most valuable artifact the pilot can produce.
+PTS is *alongside* physio, explicitly **not medical**. The physio sees engagement + high-level progress, **not** private counseling content — enforced at the API layer.
 
-**C. Acquisition is a channel, not an engine.** Recruitment leans on Ramya's network + social. That gets you 10–20 people, not a business. The engine is the clinic-referral loop in §2 — it needs a build (referral link, attribution, a light partner dashboard) and a value exchange for the referrer.
+## 6. Regulatory / data — can no longer be parked
 
-**D. Counselor supply economics.** You've correctly named human time as the scarce factor and bet on RAG to relieve it — but counselor **compensation is undefined** (BACKLOG Track 7, 🟡). Unpaid pilot goodwill does not scale into supply. Model caseload economics now: revenue per client ÷ counselor hours per client (formulation + Week-1 + weekly edits + sessions + messages) at your 12h SLA. That ratio decides whether the unit works and how much RAG has to offload.
+**DPDP Rules 2025 were notified 13–14 Nov 2025**, phased: consent-manager rules from Nov 2026, substantive obligations ~May 2027. A clinic partner will still want a data/consent answer and a sharing addendum now. Move "revisit before B2B" to **"resolve before first signed contract."** See `DPDP_CONSENT.md`.
 
-**E. Retention isn't built.** Drop-off before Week 3 is your listed top risk; the re-engagement flow is unbuilt. Daily engagement *is* the product — a retention hole is a product hole, not a growth afterthought.
+## 7. The pilot — new shape
 
-**F. No competitive positioning.** You're adjacent to EAP/mental-health apps (Wysa, Intellect, Amaha/InnerHour, YourDOST in India) and to MSK digital-care (Hinge Health, Sword, Kaia globally). Your differentiator is real and narrow: **pain-specific + counseling-led + human-in-the-loop + works alongside physio.** Write that positioning down and pressure-test it, or you'll get pattern-matched to "another therapy app."
+Old model (Ramya's network + social recruitment) is irrelevant. New gate = **Sagar's Rehab as design partner:**
+1. Co-design the cohort (e.g. post-op ortho / ACL / chronic overuse).
+2. Enrol at the **end of the first physio consult**.
+3. Agree the **2–3 outcome measures the clinic cares about** up front (kinesiophobia, return-to-sport, dropout).
+4. Run 6 weeks; deliver an outcomes read-out.
+5. **Bake a per-active-patient price probe into the read-out.**
 
-**G. Regulatory / data at scale.** Fine to defer for a small pilot (your call is defensible). But India's **DPDP Act** and data residency come due *before* any paid public launch or B2B contract — and B2B buyers will ask on day one. Put a "revisit before B2B / paid launch" stake in the ground so it doesn't ambush a deal.
+## 8. What you can reuse (most of the product)
 
-**H. Crisis SOP.** Operational safety gap for real users (see action queue P0 #4). This is table stakes before recruitment, and it's also a *trust* asset in the clinic pitch — clinicians won't refer if they can't see the safety net.
+Client mobile app, Pain Script model, counselor Chart, ready-pool + admin-allocate, Your-counselor card, external sessions via Calendly. The new build is the thin **buyer-side layer** + **instruments**, not a rebuild.
 
----
+## 9. Open decisions
 
-## 4. The one strategic question underneath all of it
+1. **Active-patient definition** (drives revenue) — see build brief Run 6.
+2. **Counselor economics under the clinic funnel** — model hours-per-patient at the 12h SLA against the per-patient price.
+3. **When to build verified adherence** (physio-plan ingestion) — the post-pilot wedge that makes the adherence claim literally true.
+4. **Downstream payer later** — clinic pays, or clinic is a channel to an insurer/employer (B2B2B2C)? Changes the pricing ceiling.
 
-You want clients to feel they *"always interact with a human,"* and you've architected RAG/program to avoid the human becoming the growth bottleneck. Those pull in opposite directions, and you've half-resolved it by gating humans where they matter (formulation, Week 1, safety, sessions). Good — but the *actual variable that decides your economics and your ceiling is unknown*: **how much human contact does a client need to get the outcome and stay?**
+## 10. Still-standing strategic question (unchanged by channel)
 
-Your current pilot won't answer that. It measures whether people engage, not how much human touch the outcome required. I'd make that the pilot's headline learning objective: instrument **human-touch dosage** (counselor messages, session minutes, edit effort per client) against **retention and outcome delta**. If good outcomes hold at low human dosage, your RAG scale thesis is validated and you can price aggressively. If they only hold at high dosage, you have a services business wearing a software costume — better to know at n=15 than n=500.
-
----
-
-## 5. Concrete pilot additions (cheap, high-signal)
-
-1. **Outcome instruments** at intake + Week 6 (PSEQ, PCS, BPI, PHQ-2/GAD-2).
-2. **Willingness-to-pay probe** (fake-door price or paid second cohort).
-3. **Human-touch dosage tracking** per client (messages, session minutes, edit time) joined to retention/outcome.
-4. **One clinic partner** for referral — even one physio/ortho practice — to test the channel that has to work.
-5. **Counselor economics one-pager** — hours per client at 12h SLA × pilot caseload → revenue needed per client to make it sustainable.
-
----
-
-## 6. Decisions I need from you to go further
-
-1. **Payer & model:** D2C subscription, per-program fee, or B2B-first? And is the pilot free, price-tested, or paid?
-2. **Primary channel:** commit to clinic-referral as the wedge, or keep it network/social for now?
-3. **Human-touch dosage:** are you willing to make "minimum human contact for a good outcome" the pilot's headline question — and instrument for it?
+*How much human contact does a good outcome actually require?* Instrument **human-touch dosage** (counselor messages, session minutes, edit effort per patient) against retention + outcome delta. If outcomes hold at low dosage, the RAG scale thesis and your per-patient margin both work. Learn it at n=15, not n=500.

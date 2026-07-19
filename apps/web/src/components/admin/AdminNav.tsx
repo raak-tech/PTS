@@ -7,6 +7,7 @@ const links = [
   { href: '/admin/explorer', label: 'Data explorer' },
   { href: '/admin/audit', label: 'Audit log' },
   { href: '/admin/music', label: 'Music' },
+  { href: '/admin/clinics', label: 'Clinics' },
 ];
 
 export function AdminNav({ current }: { current?: string }) {

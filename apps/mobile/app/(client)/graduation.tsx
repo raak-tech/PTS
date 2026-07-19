@@ -1,16 +1,35 @@
 import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
+import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
+import { apiGetClinicEnrollment, apiGetOutcomeMeasures } from '@/lib/api';
 import { spacing } from '@/theme';
 
 export default function GraduationScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { token } = useAuth();
+  const [showInstruments, setShowInstruments] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    void (async () => {
+      try {
+        const { enrollment } = await apiGetClinicEnrollment(token);
+        if (!enrollment || !enrollment.consentSharedWithClinic) return;
+        const { measures } = await apiGetOutcomeMeasures(token);
+        if (!measures.some((m) => m.phase === 'week6')) setShowInstruments(true);
+      } catch {
+        // optional
+      }
+    })();
+  }, [token]);
   const styles = useThemedStyles((c) => ({
     checkmark: { fontSize: 80, textAlign: 'center' as const, marginBottom: 20 },
     title: { fontSize: 26, fontWeight: '700' as const, color: c.text, textAlign: 'center' as const, marginBottom: 12 },
@@ -53,6 +72,19 @@ export default function GraduationScreen() {
           </Text>
         </Card>
       </View>
+
+      {showInstruments ? (
+        <Card title="One last step for your clinic">
+          <Text style={styles.body}>
+            The same short questionnaires from the start — completing them now shows how far you&apos;ve
+            come. About 5 minutes.
+          </Text>
+          <Button
+            label="Complete final questionnaires"
+            onPress={() => router.push({ pathname: '/(client)/instruments', params: { phase: 'week6' } })}
+          />
+        </Card>
+      ) : null}
 
       <Button
         label="View your maintenance plan"

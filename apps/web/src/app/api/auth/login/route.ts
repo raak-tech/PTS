@@ -92,7 +92,9 @@ export async function POST(request: Request) {
           ? '/admin'
           : user.role === 'provider'
             ? '/provider'
-            : '/';
+            : user.role === 'referrer'
+              ? '/clinic'
+              : '/';
     const response = NextResponse.redirect(new URL(dest, request.url), 303);
     response.cookies.set(createSessionCookie(sessionToken));
     return response;

@@ -1043,3 +1043,114 @@ export async function apiAnswerProfileFieldRequest(token: string, requestId: str
     }),
   );
 }
+
+// ---- Clinic B2B2C (enrollment, consent, outcome instruments) ----
+
+export type ClinicEnrollment = {
+  enrollmentId: string;
+  clinicId: string;
+  clinicName: string;
+  cohortLabel: string | null;
+  status: string;
+  consentSharedWithClinic: boolean;
+};
+
+export async function apiGetClinicEnrollment(token: string) {
+  return parseJson<{ ok: boolean; enrollment: ClinicEnrollment | null }>(
+    await fetchWithTimeout(`${API_URL}/api/enroll/clinic-code`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
+}
+
+export async function apiRedeemClinicCode(token: string, code: string) {
+  return parseJson<{
+    ok: boolean;
+    enrollmentId: string;
+    clinicName: string;
+    cohortLabel: string | null;
+    alreadyEnrolled: boolean;
+    consentSharedWithClinic: boolean;
+  }>(
+    await fetchWithTimeout(`${API_URL}/api/enroll/clinic-code`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ code }),
+    }),
+  );
+}
+
+export async function apiSetClinicSharingConsent(token: string, enrollmentId: string, granted: boolean) {
+  return parseJson<{ ok: boolean; consentSharedWithClinic: boolean }>(
+    await fetchWithTimeout(`${API_URL}/api/enroll/consent`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ enrollmentId, granted }),
+    }),
+  );
+}
+
+export type InstrumentOption = { value: number; label: string };
+export type InstrumentDef = {
+  id: string;
+  title: string;
+  intro: string;
+  betterDirection: 'lower' | 'higher';
+  scoreRange: { min: number; max: number };
+  options: InstrumentOption[];
+  items: { key: string; text: string; reverse?: boolean }[];
+};
+
+export async function apiGetInstruments(token: string) {
+  return parseJson<{ ok: boolean; order: string[]; instruments: InstrumentDef[] }>(
+    await fetchWithTimeout(`${API_URL}/api/outcome-measures/instruments`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
+}
+
+export async function apiGetOutcomeMeasures(token: string, userId?: string) {
+  const q = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+  return parseJson<{
+    ok: boolean;
+    measures: { phase: string; instrument: string; score: number; capturedAt: string }[];
+  }>(
+    await fetchWithTimeout(`${API_URL}/api/outcome-measures${q}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
+}
+
+export async function apiSubmitOutcomeMeasure(
+  token: string,
+  phase: 'baseline' | 'week6',
+  instrument: string,
+  answers: Record<string, number>,
+) {
+  return parseJson<{ ok: boolean; score: number }>(
+    await fetchWithTimeout(`${API_URL}/api/outcome-measures`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ phase, instrument, answers }),
+    }),
+  );
+}
+
+export async function apiGetPhysioSelfReport(token: string, date?: string) {
+  const q = date ? `?date=${encodeURIComponent(date)}` : '';
+  return parseJson<{ ok: boolean; date: string; report: { status: string; submittedAt: string } | null }>(
+    await fetchWithTimeout(`${API_URL}/api/physio-self-report${q}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
+}
+
+export async function apiSubmitPhysioSelfReport(token: string, status: 'yes' | 'partly' | 'no') {
+  return parseJson<{ ok: boolean; date: string; status: string }>(
+    await fetchWithTimeout(`${API_URL}/api/physio-self-report`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ status }),
+    }),
+  );
+}

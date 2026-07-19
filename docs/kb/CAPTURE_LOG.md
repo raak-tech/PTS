@@ -4,6 +4,8 @@ Newest first. One line per capture or review.
 
 | Date | Actor | Action |
 |------|-------|--------|
+| 2026-07-18 | agent | Clinic B2B2C Runs 2–6 built: enrollment code + separate sharing consent, referrer+clinic_admin `/clinic` web, validated instruments (`0036`) with server-side scoring, aggregate dashboard (n<5 suppression) + active-patient billing meter; mobile code/consent + instrument runner + physio self-report card. Decisions locked (consent-at-enrollment, both roles, full instrument set, active=≥1 PTS engagement/mo, Yes/Partly/No physio) |
+| 2026-07-17 | agent | B2B2C clinic pivot docs synchronized; honesty boundary (PTS engagement ≠ physio adherence); Run 1 clinic schema + Sagar's seed shipped prod (`0035`) |
 | 2026-07-17 | agent | Music M1 quality filter + intake Tier 0 gates; Pain Script sole-path decision; queue/GTM docs copied; merge to master |
 | 2026-07-17 | agent | APK v33 arm64 pain-pilot built after explicit request; includes Account exit, Your counselor, notification gating, production YouTube path |
 | 2026-07-16 | agent | Overnight ship doc: intake exit, ready-pool, notifications, Your counselor, decisions — `plans/2026-07-16-intake-counselor-client-bridge-ship.md` |
